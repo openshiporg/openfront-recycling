@@ -14,13 +14,11 @@ export const VIEW_ORDER = [
   "relationship",
   "timestamp",
   "checkbox",
-  "document",
+  "image",
   "select",
-  "integer",
-  "multiselect",
-  "float",
-  "decimal",
-  "bigInt",
   "json",
-  "image"
+  "decimal",
+  "integer",
+  "@keystone-6/core/fields/types/file/views",
+  "virtual"
 ];

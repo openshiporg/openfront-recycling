@@ -12,72 +12,1951 @@ generator client {
 }
 
 model User {
-  id                      String       @id @default(cuid())
-  name                    String       @default("")
-  email                   String       @unique @default("")
-  password                String
-  role                    Role?        @relation("User_role", fields: [roleId], references: [id])
-  roleId                  String?      @map("role")
-  tasks                   Todo[]       @relation("Todo_assignedTo")
-  passwordResetToken      String?
-  passwordResetIssuedAt   DateTime?
-  passwordResetRedeemedAt DateTime?
-  from_OAuthToken_user    OAuthToken[] @relation("OAuthToken_user")
+  id                                String               @id @default(cuid())
+  name                              String               @default("")
+  email                             String               @unique @default("")
+  password                          String
+  phone                             String               @default("")
+  role                              Role?                @relation("User_role", fields: [roleId], references: [id])
+  roleId                            String?              @map("role")
+  yards                             Yard[]               @relation("User_yards")
+  sellerProfile                     Seller?              @relation("Seller_user")
+  accountContacts                   AccountContact[]     @relation("AccountContact_user")
+  createdAt                         DateTime             @default(now())
+  updatedAt                         DateTime             @default(now()) @updatedAt
+  passwordResetToken                String?
+  passwordResetIssuedAt             DateTime?
+  passwordResetRedeemedAt           DateTime?
+  from_PriceEntry_publishedBy       PriceEntry[]         @relation("PriceEntry_publishedBy")
+  from_IdentityDocument_verifiedBy  IdentityDocument[]   @relation("IdentityDocument_verifiedBy")
+  from_AccountApplication_applicant AccountApplication[] @relation("AccountApplication_applicant")
+  from_AccountApplication_decidedBy AccountApplication[] @relation("AccountApplication_decidedBy")
+  from_ScaleTicket_overrideBy       ScaleTicket[]        @relation("ScaleTicket_overrideBy")
+  from_ScaleTicket_openedBy         ScaleTicket[]        @relation("ScaleTicket_openedBy")
+  from_ScaleTicket_completedBy      ScaleTicket[]        @relation("ScaleTicket_completedBy")
+  from_ScaleTicket_voidedBy         ScaleTicket[]        @relation("ScaleTicket_voidedBy")
+  from_TicketLine_overrideBy        TicketLine[]         @relation("TicketLine_overrideBy")
+  from_WeighEvent_capturedBy        WeighEvent[]         @relation("WeighEvent_capturedBy")
+  from_TicketAttachment_capturedBy  TicketAttachment[]   @relation("TicketAttachment_capturedBy")
+  from_Payout_paidBy                Payout[]             @relation("Payout_paidBy")
+  from_CashDrawerSession_cashier    CashDrawerSession[]  @relation("CashDrawerSession_cashier")
+  from_CashDrawerSession_approvedBy CashDrawerSession[]  @relation("CashDrawerSession_approvedBy")
+  from_CashDrawerEvent_createdBy    CashDrawerEvent[]    @relation("CashDrawerEvent_createdBy")
+  from_Settlement_approvedBy        Settlement[]         @relation("Settlement_approvedBy")
+  from_InventoryMovement_reviewedBy InventoryMovement[]  @relation("InventoryMovement_reviewedBy")
+  from_InventoryMovement_createdBy  InventoryMovement[]  @relation("InventoryMovement_createdBy")
+  from_ProcessingRun_operator       ProcessingRun[]      @relation("ProcessingRun_operator")
+  from_YardTransfer_sentBy          YardTransfer[]       @relation("YardTransfer_sentBy")
+  from_YardTransfer_receivedBy      YardTransfer[]       @relation("YardTransfer_receivedBy")
+  from_Offer_contact                Offer[]              @relation("Offer_contact")
+  from_Offer_decidedBy              Offer[]              @relation("Offer_decidedBy")
+  from_Claim_openedBy               Claim[]              @relation("Claim_openedBy")
+  from_Claim_decidedBy              Claim[]              @relation("Claim_decidedBy")
+  from_PaymentSession_payer         PaymentSession[]     @relation("PaymentSession_payer")
+  from_Payment_recordedBy           Payment[]            @relation("Payment_recordedBy")
+  from_Refund_createdBy             Refund[]             @relation("Refund_createdBy")
+  from_ServiceRequest_requestedBy   ServiceRequest[]     @relation("ServiceRequest_requestedBy")
+  from_DispatchJob_driver           DispatchJob[]        @relation("DispatchJob_driver")
+  from_HoldTag_releasedBy           HoldTag[]            @relation("HoldTag_releasedBy")
+  from_DoNotBuyEntry_addedBy        DoNotBuyEntry[]      @relation("DoNotBuyEntry_addedBy")
+  from_ComplianceReport_generatedBy ComplianceReport[]   @relation("ComplianceReport_generatedBy")
+  from_ComplianceReport_submittedBy ComplianceReport[]   @relation("ComplianceReport_submittedBy")
+  from_AuditEvent_actor             AuditEvent[]         @relation("AuditEvent_actor")
+  from_OAuthToken_user              OAuthToken[]         @relation("OAuthToken_user")
 
   @@index([roleId])
 }
 
 model Role {
-  id                 String  @id @default(cuid())
-  name               String  @default("")
-  canCreateTodos     Boolean @default(false)
-  canManageAllTodos  Boolean @default(false)
-  canSeeOtherPeople  Boolean @default(false)
-  canEditOtherPeople Boolean @default(false)
-  canManagePeople    Boolean @default(false)
-  canManageRoles     Boolean @default(false)
-  canAccessDashboard Boolean @default(false)
-  assignedTo         User[]  @relation("User_role")
+  id                   String   @id @default(cuid())
+  name                 String   @unique @default("")
+  canAccessDashboard   Boolean  @default(false)
+  canManageTickets     Boolean  @default(false)
+  canGradeTickets      Boolean  @default(false)
+  canOverridePrices    Boolean  @default(false)
+  canVoidTickets       Boolean  @default(false)
+  canPaySellers        Boolean  @default(false)
+  canManageCashDrawers Boolean  @default(false)
+  canApproveVariances  Boolean  @default(false)
+  canManagePricing     Boolean  @default(false)
+  canManageMaterials   Boolean  @default(false)
+  canManageSellers     Boolean  @default(false)
+  canManageAccounts    Boolean  @default(false)
+  canManageInventory   Boolean  @default(false)
+  canManageSales       Boolean  @default(false)
+  canManageDispatch    Boolean  @default(false)
+  canDriveJobs         Boolean  @default(false)
+  canManageCompliance  Boolean  @default(false)
+  canManageFinance     Boolean  @default(false)
+  canViewReports       Boolean  @default(false)
+  canManageSettings    Boolean  @default(false)
+  canManageStaff       Boolean  @default(false)
+  canManageOnboarding  Boolean  @default(false)
+  canSeeOtherPeople    Boolean  @default(false)
+  canEditOtherPeople   Boolean  @default(false)
+  canManagePeople      Boolean  @default(false)
+  canManageRoles       Boolean  @default(false)
+  assignedTo           User[]   @relation("User_role")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @default(now()) @updatedAt
 }
 
-model Todo {
-  id                   String      @id @default(cuid())
-  label                String      @default("")
-  description          Json        @default("[{\"type\":\"paragraph\",\"children\":[{\"text\":\"\"}]}]")
-  isComplete           Boolean     @default(false)
-  status               String?     @default("todo")
-  priority             Int?        @default(1)
-  tags                 Json        @default("[]")
-  dueDate              DateTime?
-  weight               Float?      @default(1)
-  budget               Decimal?    @default("0.00") @postgresql.Decimal(10, 2)
-  isPrivate            Boolean     @default(false)
-  largeNumber          BigInt?
-  metadata             Json?
-  secretNote           String?
-  coverImage_id        String?
-  coverImage_filesize  Int?
-  coverImage_width     Int?
-  coverImage_height    Int?
-  coverImage_extension String?
-  todoImages           TodoImage[] @relation("Todo_todoImages")
-  assignedTo           User?       @relation("Todo_assignedTo", fields: [assignedToId], references: [id])
-  assignedToId         String?     @map("assignedTo")
-
-  @@index([assignedToId])
+model BusinessSettings {
+  id               Int      @id
+  name             String   @default("Recycling")
+  legalName        String   @default("")
+  logo_id          String?
+  logo_filesize    Int?
+  logo_width       Int?
+  logo_height      Int?
+  logo_extension   String?
+  weightUnit       String   @default("lb")
+  currencyCode     String   @default("USD")
+  timezone         String   @default("America/New_York")
+  isNonprofit      Boolean  @default(false)
+  ein              String   @default("")
+  supportEmail     String   @default("")
+  supportPhone     String   @default("")
+  about            String   @default("")
+  marketVisibility String   @default("public_without_prices")
+  storefrontTheme  Json?
+  onboardingStatus String   @default("not_started")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @default(now()) @updatedAt
 }
 
-model TodoImage {
-  id              String  @id @default(cuid())
+model Yard {
+  id                          String              @id @default(cuid())
+  name                        String              @default("")
+  code                        String              @unique @default("MAIN")
+  slug                        String              @unique @default("")
+  status                      String              @default("active")
+  addressLine1                String              @default("")
+  addressLine2                String              @default("")
+  city                        String              @default("")
+  region                      String              @default("")
+  postalCode                  String              @default("")
+  country                     String              @default("US")
+  latitude                    Decimal?            @postgresql.Decimal(9, 6)
+  longitude                   Decimal?            @postgresql.Decimal(9, 6)
+  phone                       String              @default("")
+  email                       String              @default("")
+  timezone                    String              @default("America/New_York")
+  hours                       Json?
+  closures                    YardClosure[]       @relation("YardClosure_yard")
+  acceptsPublic               Boolean             @default(true)
+  scaleTypes                  Json?
+  publicNotes                 String              @default("")
+  payoutMethods               Json?               @default("[\"cash\",\"check\",\"transfer\"]")
+  rulesProfile                RulesProfile?       @relation("Yard_rulesProfile", fields: [rulesProfileId], references: [id])
+  rulesProfileId              String?             @map("rulesProfile")
+  boardPriceList              PriceList?          @relation("Yard_boardPriceList", fields: [boardPriceListId], references: [id])
+  boardPriceListId            String?             @map("boardPriceList")
+  feeTaxRatePercent           Decimal             @default("0") @postgresql.Decimal(6, 3)
+  scales                      Scale[]             @relation("Scale_yard")
+  drawers                     CashDrawer[]        @relation("CashDrawer_yard")
+  staff                       User[]              @relation("User_yards")
+  createdAt                   DateTime            @default(now())
+  updatedAt                   DateTime            @default(now()) @updatedAt
+  from_Sequence_yard          Sequence[]          @relation("Sequence_yard")
+  from_PriceList_yard         PriceList[]         @relation("PriceList_yard")
+  from_Visit_yard             Visit[]             @relation("Visit_yard")
+  from_ScaleTicket_yard       ScaleTicket[]       @relation("ScaleTicket_yard")
+  from_InventoryBalance_yard  InventoryBalance[]  @relation("InventoryBalance_yard")
+  from_InventoryMovement_yard InventoryMovement[] @relation("InventoryMovement_yard")
+  from_InventoryUnit_yard     InventoryUnit[]     @relation("InventoryUnit_yard")
+  from_ProcessingRun_yard     ProcessingRun[]     @relation("ProcessingRun_yard")
+  from_YardTransfer_fromYard  YardTransfer[]      @relation("YardTransfer_fromYard")
+  from_YardTransfer_toYard    YardTransfer[]      @relation("YardTransfer_toYard")
+  from_Listing_yard           Listing[]           @relation("Listing_yard")
+  from_SalesOrder_yard        SalesOrder[]        @relation("SalesOrder_yard")
+  from_Container_homeYard     Container[]         @relation("Container_homeYard")
+  from_ServiceRequest_yard    ServiceRequest[]    @relation("ServiceRequest_yard")
+  from_Truck_yard             Truck[]             @relation("Truck_yard")
+  from_DispatchJob_yard       DispatchJob[]       @relation("DispatchJob_yard")
+  from_HoldTag_yard           HoldTag[]           @relation("HoldTag_yard")
+  from_ComplianceReport_yard  ComplianceReport[]  @relation("ComplianceReport_yard")
+  from_AuditEvent_yard        AuditEvent[]        @relation("AuditEvent_yard")
+
+  @@index([rulesProfileId])
+  @@index([boardPriceListId])
+}
+
+model YardClosure {
+  id        String   @id @default(cuid())
+  yard      Yard?    @relation("YardClosure_yard", fields: [yardId], references: [id])
+  yardId    String?  @map("yard")
+  date      DateTime
+  reason    String   @default("")
+  isPartial Boolean  @default(false)
+  openTime  String   @default("")
+  closeTime String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@index([yardId])
+}
+
+model Scale {
+  id                    String       @id @default(cuid())
+  yard                  Yard?        @relation("Scale_yard", fields: [yardId], references: [id])
+  yardId                String?      @map("yard")
+  name                  String       @default("")
+  kind                  String       @default("truck")
+  apiKeyHash            String       @unique @default("")
+  lastReadingWeight     Decimal?     @postgresql.Decimal(14, 2)
+  lastReadingAt         DateTime?
+  lastReadingStable     Boolean      @default(false)
+  isActive              Boolean      @default(true)
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @default(now()) @updatedAt
+  from_WeighEvent_scale WeighEvent[] @relation("WeighEvent_scale")
+
+  @@index([yardId])
+}
+
+model Sequence {
+  id        String   @id @default(cuid())
+  yard      Yard?    @relation("Sequence_yard", fields: [yardId], references: [id])
+  yardId    String?  @map("yard")
+  scopeKey  String   @default("")
+  kind      String   @default("inbound_ticket")
+  next      Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@unique([scopeKey, kind], map: "Sequence_scope_kind_key")
+  @@index([yardId])
+}
+
+model MaterialCategory {
+  id                                String                @id @default(cuid())
+  name                              String                @default("")
+  slug                              String                @unique @default("")
+  kind                              String                @default("non_ferrous")
+  sortOrder                         Int?                  @default(0)
+  image_id                          String?
+  image_filesize                    Int?
+  image_width                       Int?
+  image_height                      Int?
+  image_extension                   String?
+  materials                         Material[]            @relation("Material_category")
+  createdAt                         DateTime              @default(now())
+  updatedAt                         DateTime              @default(now()) @updatedAt
+  from_MaterialRestriction_category MaterialRestriction[] @relation("MaterialRestriction_category")
+}
+
+model Material {
+  id                                String                @id @default(cuid())
+  name                              String                @default("")
+  slug                              String                @unique @default("")
+  code                              String                @unique @default("")
+  category                          MaterialCategory?     @relation("Material_category", fields: [categoryId], references: [id])
+  categoryId                        String?               @map("category")
+  specName                          String                @default("")
+  description                       String                @default("")
+  preparationTips                   String                @default("")
+  image_id                          String?
+  image_filesize                    Int?
+  image_width                       Int?
+  image_height                      Int?
+  image_extension                   String?
+  images                            Json?
+  defaultUnit                       String                @default("lb")
+  direction                         String                @default("pay_seller")
+  isPublic                          Boolean               @default(true)
+  isActive                          Boolean               @default(true)
+  acceptsFromPublic                 Boolean               @default(true)
+  sortOrder                         Int?                  @default(0)
+  minimumWeight                     Decimal?              @postgresql.Decimal(14, 2)
+  standardContainerTare             Decimal?              @postgresql.Decimal(14, 2)
+  createdAt                         DateTime              @default(now())
+  updatedAt                         DateTime              @default(now()) @updatedAt
+  from_PriceEntry_material          PriceEntry[]          @relation("PriceEntry_material")
+  from_TicketLine_material          TicketLine[]          @relation("TicketLine_material")
+  from_InventoryBalance_material    InventoryBalance[]    @relation("InventoryBalance_material")
+  from_InventoryMovement_material   InventoryMovement[]   @relation("InventoryMovement_material")
+  from_InventoryUnit_material       InventoryUnit[]       @relation("InventoryUnit_material")
+  from_Listing_material             Listing[]             @relation("Listing_material")
+  from_SalesOrderLine_material      SalesOrderLine[]      @relation("SalesOrderLine_material")
+  from_InvoiceLine_material         InvoiceLine[]         @relation("InvoiceLine_material")
+  from_Container_currentMaterial    Container[]           @relation("Container_currentMaterial")
+  from_ServiceRequest_material      ServiceRequest[]      @relation("ServiceRequest_material")
+  from_MaterialRestriction_material MaterialRestriction[] @relation("MaterialRestriction_material")
+  from_HoldTag_material             HoldTag[]             @relation("HoldTag_material")
+  from_TheftAlert_materials         TheftAlert[]          @relation("TheftAlert_materials")
+
+  @@index([categoryId])
+}
+
+model PriceList {
+  id                       String       @id @default(cuid())
+  name                     String       @default("")
+  kind                     String       @default("board")
+  yard                     Yard?        @relation("PriceList_yard", fields: [yardId], references: [id])
+  yardId                   String?      @map("yard")
+  isActive                 Boolean      @default(true)
+  accounts                 Account[]    @relation("Account_priceList")
+  entries                  PriceEntry[] @relation("PriceEntry_priceList")
+  createdAt                DateTime     @default(now())
+  updatedAt                DateTime     @default(now()) @updatedAt
+  from_Yard_boardPriceList Yard[]       @relation("Yard_boardPriceList")
+  from_Seller_priceList    Seller[]     @relation("Seller_priceList")
+
+  @@index([yardId])
+}
+
+model PriceEntry {
+  id                         String       @id @default(cuid())
+  priceList                  PriceList?   @relation("PriceEntry_priceList", fields: [priceListId], references: [id])
+  priceListId                String?      @map("priceList")
+  material                   Material?    @relation("PriceEntry_material", fields: [materialId], references: [id])
+  materialId                 String?      @map("material")
+  unit                       String       @default("lb")
+  unitPrice                  Decimal      @default("0") @postgresql.Decimal(14, 5)
+  unitPriceHigh              Decimal?     @postgresql.Decimal(14, 5)
+  isPublic                   Boolean      @default(true)
+  effectiveFrom              DateTime     @default(now())
+  effectiveTo                DateTime?
+  publishedBy                User?        @relation("PriceEntry_publishedBy", fields: [publishedById], references: [id])
+  publishedById              String?      @map("publishedBy")
+  createdAt                  DateTime     @default(now())
+  updatedAt                  DateTime     @default(now()) @updatedAt
+  from_TicketLine_priceEntry TicketLine[] @relation("TicketLine_priceEntry")
+
+  @@index([priceListId])
+  @@index([materialId])
+  @@index([publishedById])
+  @@index([priceListId, materialId, effectiveFrom], map: "PriceEntry_list_material_effective_idx")
+}
+
+model Seller {
+  id                         String             @id @default(cuid())
+  user                       User?              @relation("Seller_user", fields: [userId], references: [id])
+  userId                     String?            @unique @map("user")
+  firstName                  String             @default("")
+  lastName                   String             @default("")
+  searchName                 String             @default("")
+  dateOfBirth                DateTime?
+  phone                      String             @default("")
+  email                      String             @default("")
+  addressLine1               String             @default("")
+  addressLine2               String             @default("")
+  city                       String             @default("")
+  region                     String             @default("")
+  postalCode                 String             @default("")
+  country                    String             @default("US")
+  status                     String             @default("active")
+  statusReason               String             @default("")
+  idVerification             String             @default("unverified")
+  preferredPayout            String             @default("cash")
+  priceList                  PriceList?         @relation("Seller_priceList", fields: [priceListId], references: [id])
+  priceListId                String?            @map("priceList")
+  defaultNonprofit           Account?           @relation("Seller_defaultNonprofit", fields: [defaultNonprofitId], references: [id])
+  defaultNonprofitId         String?            @map("defaultNonprofit")
+  notes                      String             @default("")
+  identityDocuments          IdentityDocument[] @relation("IdentityDocument_seller")
+  vehicles                   Vehicle[]          @relation("Vehicle_seller")
+  tickets                    ScaleTicket[]      @relation("ScaleTicket_seller")
+  createdAt                  DateTime           @default(now())
+  updatedAt                  DateTime           @default(now()) @updatedAt
+  from_ServiceSite_seller    ServiceSite[]      @relation("ServiceSite_seller")
+  from_Visit_seller          Visit[]            @relation("Visit_seller")
+  from_Payout_seller         Payout[]           @relation("Payout_seller")
+  from_Invoice_seller        Invoice[]          @relation("Invoice_seller")
+  from_ServiceRequest_seller ServiceRequest[]   @relation("ServiceRequest_seller")
+  from_Donation_seller       Donation[]         @relation("Donation_seller")
+  from_DoNotBuyEntry_seller  DoNotBuyEntry[]    @relation("DoNotBuyEntry_seller")
+
+  @@index([searchName])
+  @@index([phone])
+  @@index([status])
+  @@index([idVerification])
+  @@index([priceListId])
+  @@index([defaultNonprofitId])
+}
+
+model IdentityDocument {
+  id                        String    @id @default(cuid())
+  seller                    Seller?   @relation("IdentityDocument_seller", fields: [sellerId], references: [id])
+  sellerId                  String?   @map("seller")
+  kind                      String    @default("drivers_license")
+  number                    String    @default("")
+  numberNormalized          String    @default("")
+  issuer                    String    @default("")
+  expiresOn                 DateTime?
+  frontImage_id             String?
+  frontImage_filesize       Int?
+  frontImage_width          Int?
+  frontImage_height         Int?
+  frontImage_extension      String?
+  backImage_id              String?
+  backImage_filesize        Int?
+  backImage_width           Int?
+  backImage_height          Int?
+  backImage_extension       String?
+  thumbprintImage_id        String?
+  thumbprintImage_filesize  Int?
+  thumbprintImage_width     Int?
+  thumbprintImage_height    Int?
+  thumbprintImage_extension String?
+  verifiedBy                User?     @relation("IdentityDocument_verifiedBy", fields: [verifiedById], references: [id])
+  verifiedById              String?   @map("verifiedBy")
+  verifiedAt                DateTime?
+  isCurrent                 Boolean   @default(true)
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @default(now()) @updatedAt
+
+  @@index([sellerId])
+  @@index([numberNormalized])
+  @@index([verifiedById])
+}
+
+model Vehicle {
+  id                       String        @id @default(cuid())
+  seller                   Seller?       @relation("Vehicle_seller", fields: [sellerId], references: [id])
+  sellerId                 String?       @map("seller")
+  account                  Account?      @relation("Vehicle_account", fields: [accountId], references: [id])
+  accountId                String?       @map("account")
+  plate                    String        @default("")
+  plateRegion              String        @default("")
+  make                     String        @default("")
+  model                    String        @default("")
+  color                    String        @default("")
+  kind                     String        @default("pickup")
+  storedTare               Decimal?      @postgresql.Decimal(14, 2)
+  storedTareExpiresOn      DateTime?
+  isRemoved                Boolean       @default(false)
+  createdAt                DateTime      @default(now())
+  updatedAt                DateTime      @default(now()) @updatedAt
+  from_Visit_vehicle       Visit[]       @relation("Visit_vehicle")
+  from_ScaleTicket_vehicle ScaleTicket[] @relation("ScaleTicket_vehicle")
+
+  @@index([sellerId])
+  @@index([accountId])
+  @@index([plate])
+}
+
+model Account {
+  id                              String               @id @default(cuid())
+  name                            String               @default("")
+  legalName                       String               @default("")
+  slug                            String               @unique @default("")
+  accountNumber                   String               @unique @default("")
+  status                          String               @default("active")
+  statusReason                    String               @default("")
+  isSupplier                      Boolean              @default(false)
+  isBuyer                         Boolean              @default(false)
+  isNonprofit                     Boolean              @default(false)
+  taxId                           String               @default("")
+  ein                             String               @default("")
+  billingAddressLine1             String               @default("")
+  billingAddressLine2             String               @default("")
+  billingCity                     String               @default("")
+  billingRegion                   String               @default("")
+  billingPostalCode               String               @default("")
+  billingCountry                  String               @default("US")
+  billingEmail                    String               @default("")
+  phone                           String               @default("")
+  paymentTerms                    String               @default("pay_at_scale")
+  netDays                         Int?                 @default(0)
+  settlementCycle                 String               @default("monthly")
+  weightBasis                     String               @default("shipped")
+  hasCredit                       Boolean              @default(false)
+  priceList                       PriceList?           @relation("Account_priceList", fields: [priceListId], references: [id])
+  priceListId                     String?              @map("priceList")
+  nonprofitSummary                String               @default("")
+  nonprofitWebsite                String               @default("")
+  nonprofitLogo_id                String?
+  nonprofitLogo_filesize          Int?
+  nonprofitLogo_width             Int?
+  nonprofitLogo_height            Int?
+  nonprofitLogo_extension         String?
+  isPublicNonprofit               Boolean              @default(false)
+  contacts                        AccountContact[]     @relation("AccountContact_account")
+  sites                           ServiceSite[]        @relation("ServiceSite_account")
+  documents                       AccountDocument[]    @relation("AccountDocument_account")
+  vehicles                        Vehicle[]            @relation("Vehicle_account")
+  notes                           String               @default("")
+  createdAt                       DateTime             @default(now())
+  updatedAt                       DateTime             @default(now()) @updatedAt
+  from_Seller_defaultNonprofit    Seller[]             @relation("Seller_defaultNonprofit")
+  from_AccountApplication_account AccountApplication[] @relation("AccountApplication_account")
+  from_Visit_nonprofit            Visit[]              @relation("Visit_nonprofit")
+  from_ScaleTicket_account        ScaleTicket[]        @relation("ScaleTicket_account")
+  from_ScaleTicket_nonprofit      ScaleTicket[]        @relation("ScaleTicket_nonprofit")
+  from_Payout_account             Payout[]             @relation("Payout_account")
+  from_AccountCharge_account      AccountCharge[]      @relation("AccountCharge_account")
+  from_Settlement_account         Settlement[]         @relation("Settlement_account")
+  from_Offer_account              Offer[]              @relation("Offer_account")
+  from_SalesOrder_account         SalesOrder[]         @relation("SalesOrder_account")
+  from_Invoice_account            Invoice[]            @relation("Invoice_account")
+  from_Claim_account              Claim[]              @relation("Claim_account")
+  from_Container_account          Container[]          @relation("Container_account")
+  from_ServiceRequest_account     ServiceRequest[]     @relation("ServiceRequest_account")
+  from_DonationCampaign_account   DonationCampaign[]   @relation("DonationCampaign_account")
+  from_Donation_account           Donation[]           @relation("Donation_account")
+
+  @@index([status])
+  @@index([priceListId])
+}
+
+model AccountContact {
+  id              String   @id @default(cuid())
+  account         Account? @relation("AccountContact_account", fields: [accountId], references: [id])
+  accountId       String?  @map("account")
+  user            User?    @relation("AccountContact_user", fields: [userId], references: [id])
+  userId          String?  @map("user")
+  role            String   @default("member")
+  status          String   @default("active")
+  inviteEmail     String   @default("")
+  inviteTokenHash String   @unique @default("")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now()) @updatedAt
+
+  @@unique([accountId, userId], map: "AccountContact_account_user_key")
+  @@index([accountId])
+  @@index([userId])
+  @@index([status])
+}
+
+model AccountApplication {
+  id             String    @id @default(cuid())
+  applicant      User?     @relation("AccountApplication_applicant", fields: [applicantId], references: [id])
+  applicantId    String?   @map("applicant")
+  kind           String    @default("supplier")
+  businessName   String    @default("")
+  legalName      String    @default("")
+  taxId          String    @default("")
+  addressLine1   String    @default("")
+  addressLine2   String    @default("")
+  city           String    @default("")
+  region         String    @default("")
+  postalCode     String    @default("")
+  country        String    @default("US")
+  phone          String    @default("")
+  email          String    @default("")
+  materials      Json?
+  monthlyVolume  String    @default("")
+  containerNeeds String    @default("")
+  message        String    @default("")
+  w9_filesize    Int?
+  w9_filename    String?
+  status         String    @default("submitted")
+  decisionReason String    @default("")
+  decidedBy      User?     @relation("AccountApplication_decidedBy", fields: [decidedById], references: [id])
+  decidedById    String?   @map("decidedBy")
+  decidedAt      DateTime?
+  account        Account?  @relation("AccountApplication_account", fields: [accountId], references: [id])
+  accountId      String?   @map("account")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @default(now()) @updatedAt
+
+  @@index([applicantId])
+  @@index([status])
+  @@index([decidedById])
+  @@index([accountId])
+}
+
+model AccountDocument {
+  id               String       @id @default(cuid())
+  account          Account?     @relation("AccountDocument_account", fields: [accountId], references: [id])
+  accountId        String?      @map("account")
+  ticket           ScaleTicket? @relation("AccountDocument_ticket", fields: [ticketId], references: [id])
+  ticketId         String?      @map("ticket")
+  kind             String       @default("other")
+  file_filesize    Int?
+  file_filename    String?
+  title            String       @default("")
+  body             String       @default("")
+  visibleToAccount Boolean      @default(true)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @default(now()) @updatedAt
+
+  @@index([accountId])
+  @@index([ticketId])
+}
+
+model ServiceSite {
+  id                       String           @id @default(cuid())
+  account                  Account?         @relation("ServiceSite_account", fields: [accountId], references: [id])
+  accountId                String?          @map("account")
+  seller                   Seller?          @relation("ServiceSite_seller", fields: [sellerId], references: [id])
+  sellerId                 String?          @map("seller")
+  name                     String           @default("")
+  addressLine1             String           @default("")
+  addressLine2             String           @default("")
+  city                     String           @default("")
+  region                   String           @default("")
+  postalCode               String           @default("")
+  country                  String           @default("US")
+  contactName              String           @default("")
+  contactPhone             String           @default("")
+  accessNotes              String           @default("")
+  latitude                 Decimal?         @postgresql.Decimal(9, 6)
+  longitude                Decimal?         @postgresql.Decimal(9, 6)
+  isActive                 Boolean          @default(true)
+  createdAt                DateTime         @default(now())
+  updatedAt                DateTime         @default(now()) @updatedAt
+  from_ScaleTicket_site    ScaleTicket[]    @relation("ScaleTicket_site")
+  from_Container_site      Container[]      @relation("Container_site")
+  from_ServiceRequest_site ServiceRequest[] @relation("ServiceRequest_site")
+  from_DispatchJob_site    DispatchJob[]    @relation("DispatchJob_site")
+
+  @@index([accountId])
+  @@index([sellerId])
+}
+
+model Visit {
+  id            String            @id @default(cuid())
+  seller        Seller?           @relation("Visit_seller", fields: [sellerId], references: [id])
+  sellerId      String?           @map("seller")
+  yard          Yard?             @relation("Visit_yard", fields: [yardId], references: [id])
+  yardId        String?           @map("yard")
+  plannedDate   DateTime
+  vehicle       Vehicle?          @relation("Visit_vehicle", fields: [vehicleId], references: [id])
+  vehicleId     String?           @map("vehicle")
+  expectedItems Json?
+  donatePercent Int?              @default(0)
+  nonprofit     Account?          @relation("Visit_nonprofit", fields: [nonprofitId], references: [id])
+  nonprofitId   String?           @map("nonprofit")
+  campaign      DonationCampaign? @relation("Visit_campaign", fields: [campaignId], references: [id])
+  campaignId    String?           @map("campaign")
+  code          String            @unique @default("")
+  status        String            @default("booked")
+  ticket        ScaleTicket?      @relation("ScaleTicket_visit")
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @default(now()) @updatedAt
+
+  @@index([sellerId])
+  @@index([yardId])
+  @@index([vehicleId])
+  @@index([nonprofitId])
+  @@index([campaignId])
+  @@index([status])
+}
+
+model ScaleTicket {
+  id                            String              @id @default(cuid())
+  yard                          Yard?               @relation("ScaleTicket_yard", fields: [yardId], references: [id])
+  yardId                        String?             @map("yard")
+  direction                     String              @default("inbound")
+  number                        Int
+  status                        String              @default("open")
+  seller                        Seller?             @relation("ScaleTicket_seller", fields: [sellerId], references: [id])
+  sellerId                      String?             @map("seller")
+  account                       Account?            @relation("ScaleTicket_account", fields: [accountId], references: [id])
+  accountId                     String?             @map("account")
+  site                          ServiceSite?        @relation("ScaleTicket_site", fields: [siteId], references: [id])
+  siteId                        String?             @map("site")
+  vehicle                       Vehicle?            @relation("ScaleTicket_vehicle", fields: [vehicleId], references: [id])
+  vehicleId                     String?             @map("vehicle")
+  vehiclePlate                  String              @default("")
+  vehiclePlateRegion            String              @default("")
+  vehicleDescription            String              @default("")
+  visit                         Visit?              @relation("ScaleTicket_visit", fields: [visitId], references: [id])
+  visitId                       String?             @unique @map("visit")
+  job                           DispatchJob?        @relation("ScaleTicket_job", fields: [jobId], references: [id])
+  jobId                         String?             @map("job")
+  container                     Container?          @relation("ScaleTicket_container", fields: [containerId], references: [id])
+  containerId                   String?             @map("container")
+  shipment                      Shipment?           @relation("ScaleTicket_shipment", fields: [shipmentId], references: [id])
+  shipmentId                    String?             @unique @map("shipment")
+  adjusts                       ScaleTicket?        @relation("ScaleTicket_adjusts", fields: [adjustsId], references: [id])
+  adjustsId                     String?             @map("adjusts")
+  adjustments                   ScaleTicket[]       @relation("ScaleTicket_adjusts")
+  isAdjustment                  Boolean             @default(false)
+  paymentMode                   String              @default("pay_now")
+  lines                         TicketLine[]        @relation("TicketLine_ticket")
+  weighEvents                   WeighEvent[]        @relation("WeighEvent_ticket")
+  attachments                   TicketAttachment[]  @relation("TicketAttachment_ticket")
+  fees                          Json?               @default("[]")
+  materialTotalCents            Int                 @default(0)
+  feeTotalCents                 Int                 @default(0)
+  taxCents                      Int                 @default(0)
+  totalCents                    Int                 @default(0)
+  collectedCents                Int                 @default(0)
+  donatePercent                 Int?                @default(0)
+  nonprofit                     Account?            @relation("ScaleTicket_nonprofit", fields: [nonprofitId], references: [id])
+  nonprofitId                   String?             @map("nonprofit")
+  campaign                      DonationCampaign?   @relation("ScaleTicket_campaign", fields: [campaignId], references: [id])
+  campaignId                    String?             @map("campaign")
+  complianceSnapshot            Json?
+  overrideReason                String              @default("")
+  overrideBy                    User?               @relation("ScaleTicket_overrideBy", fields: [overrideById], references: [id])
+  overrideById                  String?             @map("overrideBy")
+  lookupCode                    String              @unique @default("")
+  certificateRequested          Boolean             @default(false)
+  openedBy                      User?               @relation("ScaleTicket_openedBy", fields: [openedById], references: [id])
+  openedById                    String?             @map("openedBy")
+  completedBy                   User?               @relation("ScaleTicket_completedBy", fields: [completedById], references: [id])
+  completedById                 String?             @map("completedBy")
+  completedAt                   DateTime?
+  settledAt                     DateTime?
+  voidedBy                      User?               @relation("ScaleTicket_voidedBy", fields: [voidedById], references: [id])
+  voidedById                    String?             @map("voidedBy")
+  voidedAt                      DateTime?
+  voidReason                    String              @default("")
+  payouts                       Payout[]            @relation("Payout_ticket")
+  holdTags                      HoldTag[]           @relation("HoldTag_ticket")
+  settlement                    Settlement?         @relation("ScaleTicket_settlement", fields: [settlementId], references: [id])
+  settlementId                  String?             @map("settlement")
+  notes                         String              @default("")
+  createdAt                     DateTime            @default(now())
+  updatedAt                     DateTime            @default(now()) @updatedAt
+  from_AccountDocument_ticket   AccountDocument[]   @relation("AccountDocument_ticket")
+  from_CashDrawerEvent_ticket   CashDrawerEvent[]   @relation("CashDrawerEvent_ticket")
+  from_InventoryMovement_ticket InventoryMovement[] @relation("InventoryMovement_ticket")
+  from_Invoice_ticket           Invoice[]           @relation("Invoice_ticket")
+  from_PaymentSession_ticket    PaymentSession[]    @relation("PaymentSession_ticket")
+  from_Donation_ticket          Donation[]          @relation("Donation_ticket")
+
+  @@unique([yardId, direction, number], map: "ScaleTicket_yard_direction_number_key")
+  @@index([yardId])
+  @@index([status])
+  @@index([sellerId])
+  @@index([accountId])
+  @@index([siteId])
+  @@index([vehicleId])
+  @@index([vehiclePlate])
+  @@index([jobId])
+  @@index([containerId])
+  @@index([adjustsId])
+  @@index([nonprofitId])
+  @@index([campaignId])
+  @@index([overrideById])
+  @@index([openedById])
+  @@index([completedById])
+  @@index([voidedById])
+  @@index([settlementId])
+  @@index([status, yardId], map: "ScaleTicket_status_yard_idx")
+}
+
+model TicketLine {
+  id                                String               @id @default(cuid())
+  ticket                            ScaleTicket?         @relation("TicketLine_ticket", fields: [ticketId], references: [id])
+  ticketId                          String?              @map("ticket")
+  sortOrder                         Int?                 @default(0)
+  material                          Material?            @relation("TicketLine_material", fields: [materialId], references: [id])
+  materialId                        String?              @map("material")
+  materialName                      String               @default("")
+  direction                         String               @default("pay_seller")
+  grossWeight                       Decimal              @default("0") @postgresql.Decimal(14, 2)
+  tareWeight                        Decimal              @default("0") @postgresql.Decimal(14, 2)
+  netWeight                         Decimal              @default("0") @postgresql.Decimal(14, 2)
+  deductionWeight                   Decimal?             @postgresql.Decimal(14, 2)
+  deductionPercent                  Decimal?             @postgresql.Decimal(14, 2)
+  deductionReason                   String?
+  payWeight                         Decimal              @default("0") @postgresql.Decimal(14, 2)
+  quantity                          Int?
+  unit                              String               @default("lb")
+  unitPrice                         Decimal?             @postgresql.Decimal(14, 5)
+  priceSource                       String?
+  priceEntry                        PriceEntry?          @relation("TicketLine_priceEntry", fields: [priceEntryId], references: [id])
+  priceEntryId                      String?              @map("priceEntry")
+  overrideBy                        User?                @relation("TicketLine_overrideBy", fields: [overrideById], references: [id])
+  overrideById                      String?              @map("overrideBy")
+  overrideReason                    String               @default("")
+  amountCents                       Int                  @default(0)
+  restriction                       MaterialRestriction? @relation("TicketLine_restriction", fields: [restrictionId], references: [id])
+  restrictionId                     String?              @map("restriction")
+  documents                         Json?                @default("[]")
+  payout                            Payout?              @relation("TicketLine_payout", fields: [payoutId], references: [id])
+  payoutId                          String?              @map("payout")
+  inventoryUnit                     InventoryUnit?       @relation("TicketLine_inventoryUnit", fields: [inventoryUnitId], references: [id])
+  inventoryUnitId                   String?              @map("inventoryUnit")
+  createdAt                         DateTime             @default(now())
+  updatedAt                         DateTime             @default(now()) @updatedAt
+  from_WeighEvent_line              WeighEvent[]         @relation("WeighEvent_line")
+  from_TicketAttachment_line        TicketAttachment[]   @relation("TicketAttachment_line")
+  from_InventoryMovement_ticketLine InventoryMovement[]  @relation("InventoryMovement_ticketLine")
+  from_HoldTag_line                 HoldTag[]            @relation("HoldTag_line")
+
+  @@index([ticketId])
+  @@index([materialId])
+  @@index([priceEntryId])
+  @@index([overrideById])
+  @@index([restrictionId])
+  @@index([payoutId])
+  @@index([inventoryUnitId])
+}
+
+model WeighEvent {
+  id              String       @id @default(cuid())
+  ticket          ScaleTicket? @relation("WeighEvent_ticket", fields: [ticketId], references: [id])
+  ticketId        String?      @map("ticket")
+  line            TicketLine?  @relation("WeighEvent_line", fields: [lineId], references: [id])
+  lineId          String?      @map("line")
+  scale           Scale?       @relation("WeighEvent_scale", fields: [scaleId], references: [id])
+  scaleId         String?      @map("scale")
+  kind            String       @default("gross")
+  weight          Decimal      @default("0") @postgresql.Decimal(14, 2)
+  captureMethod   String       @default("manual")
+  capturedBy      User?        @relation("WeighEvent_capturedBy", fields: [capturedById], references: [id])
+  capturedById    String?      @map("capturedBy")
+  capturedAt      DateTime?    @default(now())
+  photo_id        String?
+  photo_filesize  Int?
+  photo_width     Int?
+  photo_height    Int?
+  photo_extension String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @default(now()) @updatedAt
+
+  @@index([ticketId])
+  @@index([lineId])
+  @@index([scaleId])
+  @@index([capturedById])
+}
+
+model TicketAttachment {
+  id              String       @id @default(cuid())
+  ticket          ScaleTicket? @relation("TicketAttachment_ticket", fields: [ticketId], references: [id])
+  ticketId        String?      @map("ticket")
+  line            TicketLine?  @relation("TicketAttachment_line", fields: [lineId], references: [id])
+  lineId          String?      @map("line")
+  kind            String       @default("material_photo")
   image_id        String?
   image_filesize  Int?
   image_width     Int?
   image_height    Int?
   image_extension String?
-  imagePath       String  @default("")
-  altText         String  @default("")
-  todos           Todo[]  @relation("Todo_todoImages")
-  metadata        Json?
+  file_filesize   Int?
+  file_filename   String?
+  signedName      String       @default("")
+  capturedBy      User?        @relation("TicketAttachment_capturedBy", fields: [capturedById], references: [id])
+  capturedById    String?      @map("capturedBy")
+  capturedAt      DateTime?    @default(now())
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @default(now()) @updatedAt
+
+  @@index([ticketId])
+  @@index([lineId])
+  @@index([capturedById])
+}
+
+model Payout {
+  id                          String             @id @default(cuid())
+  ticket                      ScaleTicket?       @relation("Payout_ticket", fields: [ticketId], references: [id])
+  ticketId                    String?            @map("ticket")
+  lines                       TicketLine[]       @relation("TicketLine_payout")
+  settlement                  Settlement?        @relation("Payout_settlement", fields: [settlementId], references: [id])
+  settlementId                String?            @map("settlement")
+  seller                      Seller?            @relation("Payout_seller", fields: [sellerId], references: [id])
+  sellerId                    String?            @map("seller")
+  account                     Account?           @relation("Payout_account", fields: [accountId], references: [id])
+  accountId                   String?            @map("account")
+  amountCents                 Int                @default(0)
+  status                      String             @default("pending")
+  allowedMethods              Json?              @default("[\"cash\",\"check\",\"transfer\"]")
+  method                      String?
+  releaseAt                   DateTime?
+  checkNumber                 String             @default("")
+  bankAccountLabel            String             @default("")
+  transferReference           String             @default("")
+  mailToAddress               String             @default("")
+  paidBy                      User?              @relation("Payout_paidBy", fields: [paidById], references: [id])
+  paidById                    String?            @map("paidBy")
+  paidAt                      DateTime?
+  drawerSession               CashDrawerSession? @relation("Payout_drawerSession", fields: [drawerSessionId], references: [id])
+  drawerSessionId             String?            @map("drawerSession")
+  replaces                    Payout?            @relation("Payout_replaces", fields: [replacesId], references: [id])
+  replacesId                  String?            @map("replaces")
+  returnReason                String             @default("")
+  cancelReason                String             @default("")
+  idempotencyKeyHash          String             @unique @default("")
+  createdAt                   DateTime           @default(now())
+  updatedAt                   DateTime           @default(now()) @updatedAt
+  from_Payout_replaces        Payout[]           @relation("Payout_replaces")
+  from_CashDrawerEvent_payout CashDrawerEvent[]  @relation("CashDrawerEvent_payout")
+  from_Settlement_payout      Settlement[]       @relation("Settlement_payout")
+
+  @@unique([bankAccountLabel, checkNumber], map: "Payout_bank_check_key")
+  @@index([ticketId])
+  @@index([settlementId])
+  @@index([sellerId])
+  @@index([accountId])
+  @@index([status])
+  @@index([paidById])
+  @@index([drawerSessionId])
+  @@index([replacesId])
+  @@index([status, releaseAt], map: "Payout_status_release_idx")
+}
+
+model CashDrawer {
+  id        String              @id @default(cuid())
+  yard      Yard?               @relation("CashDrawer_yard", fields: [yardId], references: [id])
+  yardId    String?             @map("yard")
+  name      String              @default("")
+  isActive  Boolean             @default(true)
+  sessions  CashDrawerSession[] @relation("CashDrawerSession_drawer")
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @default(now()) @updatedAt
+
+  @@index([yardId])
+}
+
+model CashDrawerSession {
+  id                        String            @id @default(cuid())
+  drawer                    CashDrawer?       @relation("CashDrawerSession_drawer", fields: [drawerId], references: [id])
+  drawerId                  String?           @map("drawer")
+  cashier                   User?             @relation("CashDrawerSession_cashier", fields: [cashierId], references: [id])
+  cashierId                 String?           @map("cashier")
+  status                    String            @default("open")
+  openingFloatCents         Int               @default(0)
+  expectedCents             Int               @default(0)
+  countedCents              Int?
+  varianceCents             Int?
+  openedAt                  DateTime?         @default(now())
+  closedAt                  DateTime?
+  approvedBy                User?             @relation("CashDrawerSession_approvedBy", fields: [approvedById], references: [id])
+  approvedById              String?           @map("approvedBy")
+  approvalNote              String            @default("")
+  events                    CashDrawerEvent[] @relation("CashDrawerEvent_session")
+  createdAt                 DateTime          @default(now())
+  updatedAt                 DateTime          @default(now()) @updatedAt
+  from_Payout_drawerSession Payout[]          @relation("Payout_drawerSession")
+
+  @@index([drawerId])
+  @@index([cashierId])
+  @@index([status])
+  @@index([approvedById])
+}
+
+model CashDrawerEvent {
+  id           String             @id @default(cuid())
+  session      CashDrawerSession? @relation("CashDrawerEvent_session", fields: [sessionId], references: [id])
+  sessionId    String?            @map("session")
+  kind         String             @default("add")
+  amountCents  Int                @default(0)
+  payout       Payout?            @relation("CashDrawerEvent_payout", fields: [payoutId], references: [id])
+  payoutId     String?            @map("payout")
+  ticket       ScaleTicket?       @relation("CashDrawerEvent_ticket", fields: [ticketId], references: [id])
+  ticketId     String?            @map("ticket")
+  note         String             @default("")
+  referenceKey String             @unique @default("")
+  createdBy    User?              @relation("CashDrawerEvent_createdBy", fields: [createdById], references: [id])
+  createdById  String?            @map("createdBy")
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @default(now()) @updatedAt
+
+  @@index([sessionId])
+  @@index([payoutId])
+  @@index([ticketId])
+  @@index([createdById])
+}
+
+model AccountCharge {
+  id            String       @id @default(cuid())
+  account       Account?     @relation("AccountCharge_account", fields: [accountId], references: [id])
+  accountId     String?      @map("account")
+  kind          String       @default("other")
+  description   String       @default("")
+  amountCents   Int          @default(0)
+  job           DispatchJob? @relation("AccountCharge_job", fields: [jobId], references: [id])
+  jobId         String?      @map("job")
+  container     Container?   @relation("AccountCharge_container", fields: [containerId], references: [id])
+  containerId   String?      @map("container")
+  serviceDate   DateTime?
+  referenceKey  String       @unique @default("")
+  settlement    Settlement?  @relation("AccountCharge_settlement", fields: [settlementId], references: [id])
+  settlementId  String?      @map("settlement")
+  invoiceLine   InvoiceLine? @relation("AccountCharge_invoiceLine", fields: [invoiceLineId], references: [id])
+  invoiceLineId String?      @map("invoiceLine")
+  status        String       @default("open")
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @default(now()) @updatedAt
+
+  @@index([accountId])
+  @@index([jobId])
+  @@index([containerId])
+  @@index([settlementId])
+  @@index([invoiceLineId])
+  @@index([status])
+}
+
+model Settlement {
+  id                      String          @id @default(cuid())
+  account                 Account?        @relation("Settlement_account", fields: [accountId], references: [id])
+  accountId               String?         @map("account")
+  number                  Int?
+  status                  String          @default("draft")
+  periodStart             DateTime?
+  periodEnd               DateTime?
+  tickets                 ScaleTicket[]   @relation("ScaleTicket_settlement")
+  charges                 AccountCharge[] @relation("AccountCharge_settlement")
+  donations               Donation[]      @relation("Donation_settlement")
+  ticketTotalCents        Int             @default(0)
+  chargeTotalCents        Int             @default(0)
+  donationTotalCents      Int             @default(0)
+  netCents                Int             @default(0)
+  payout                  Payout?         @relation("Settlement_payout", fields: [payoutId], references: [id])
+  payoutId                String?         @map("payout")
+  invoice                 Invoice?        @relation("Settlement_invoice", fields: [invoiceId], references: [id])
+  invoiceId               String?         @map("invoice")
+  approvedBy              User?           @relation("Settlement_approvedBy", fields: [approvedById], references: [id])
+  approvedById            String?         @map("approvedBy")
+  approvedAt              DateTime?
+  paidAt                  DateTime?
+  voidReason              String          @default("")
+  createdAt               DateTime        @default(now())
+  updatedAt               DateTime        @default(now()) @updatedAt
+  from_Payout_settlement  Payout[]        @relation("Payout_settlement")
+  from_Invoice_settlement Invoice[]       @relation("Invoice_settlement")
+
+  @@unique([number], map: "Settlement_number_key")
+  @@index([accountId])
+  @@index([status])
+  @@index([payoutId])
+  @@index([invoiceId])
+  @@index([approvedById])
+}
+
+model InventoryBalance {
+  id             String    @id @default(cuid())
+  yard           Yard?     @relation("InventoryBalance_yard", fields: [yardId], references: [id])
+  yardId         String?   @map("yard")
+  material       Material? @relation("InventoryBalance_material", fields: [materialId], references: [id])
+  materialId     String?   @map("material")
+  onHandWeight   Decimal   @default("0") @postgresql.Decimal(14, 2)
+  reservedWeight Decimal   @default("0") @postgresql.Decimal(14, 2)
+  heldWeight     Decimal   @default("0") @postgresql.Decimal(14, 2)
+  totalCostCents Int       @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @default(now()) @updatedAt
+
+  @@unique([yardId, materialId], map: "InventoryBalance_yard_material_key")
+  @@index([yardId])
+  @@index([materialId])
+}
+
+model InventoryMovement {
+  id              String         @id @default(cuid())
+  yard            Yard?          @relation("InventoryMovement_yard", fields: [yardId], references: [id])
+  yardId          String?        @map("yard")
+  material        Material?      @relation("InventoryMovement_material", fields: [materialId], references: [id])
+  materialId      String?        @map("material")
+  kind            String         @default("receive")
+  weightDelta     Decimal        @default("0") @postgresql.Decimal(14, 2)
+  costDeltaCents  Int            @default(0)
+  weightAfter     Decimal        @default("0") @postgresql.Decimal(14, 2)
+  ticket          ScaleTicket?   @relation("InventoryMovement_ticket", fields: [ticketId], references: [id])
+  ticketId        String?        @map("ticket")
+  ticketLine      TicketLine?    @relation("InventoryMovement_ticketLine", fields: [ticketLineId], references: [id])
+  ticketLineId    String?        @map("ticketLine")
+  processingRun   ProcessingRun? @relation("InventoryMovement_processingRun", fields: [processingRunId], references: [id])
+  processingRunId String?        @map("processingRun")
+  transfer        YardTransfer?  @relation("InventoryMovement_transfer", fields: [transferId], references: [id])
+  transferId      String?        @map("transfer")
+  unit            InventoryUnit? @relation("InventoryMovement_unit", fields: [unitId], references: [id])
+  unitId          String?        @map("unit")
+  reason          String         @default("")
+  needsReview     Boolean        @default(false)
+  reviewedBy      User?          @relation("InventoryMovement_reviewedBy", fields: [reviewedById], references: [id])
+  reviewedById    String?        @map("reviewedBy")
+  reviewedAt      DateTime?
+  referenceKey    String         @unique @default("")
+  occurredAt      DateTime?      @default(now())
+  createdBy       User?          @relation("InventoryMovement_createdBy", fields: [createdById], references: [id])
+  createdById     String?        @map("createdBy")
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @default(now()) @updatedAt
+
+  @@index([yardId])
+  @@index([materialId])
+  @@index([ticketId])
+  @@index([ticketLineId])
+  @@index([processingRunId])
+  @@index([transferId])
+  @@index([unitId])
+  @@index([reviewedById])
+  @@index([createdById])
+}
+
+model InventoryUnit {
+  id                            String              @id @default(cuid())
+  yard                          Yard?               @relation("InventoryUnit_yard", fields: [yardId], references: [id])
+  yardId                        String?             @map("yard")
+  tagNumber                     String              @default("")
+  material                      Material?           @relation("InventoryUnit_material", fields: [materialId], references: [id])
+  materialId                    String?             @map("material")
+  form                          String              @default("bale")
+  weight                        Decimal             @default("0") @postgresql.Decimal(14, 2)
+  location                      String              @default("")
+  status                        String              @default("available")
+  costCents                     Int                 @default(0)
+  shipment                      Shipment?           @relation("InventoryUnit_shipment", fields: [shipmentId], references: [id])
+  shipmentId                    String?             @map("shipment")
+  listing                       Listing?            @relation("InventoryUnit_listing", fields: [listingId], references: [id])
+  listingId                     String?             @map("listing")
+  transfer                      YardTransfer?       @relation("InventoryUnit_transfer", fields: [transferId], references: [id])
+  transferId                    String?             @map("transfer")
+  photo_id                      String?
+  photo_filesize                Int?
+  photo_width                   Int?
+  photo_height                  Int?
+  photo_extension               String?
+  createdFromRun                ProcessingRun?      @relation("InventoryUnit_createdFromRun", fields: [createdFromRunId], references: [id])
+  createdFromRunId              String?             @map("createdFromRun")
+  createdAt                     DateTime            @default(now())
+  updatedAt                     DateTime            @default(now()) @updatedAt
+  from_TicketLine_inventoryUnit TicketLine[]        @relation("TicketLine_inventoryUnit")
+  from_InventoryMovement_unit   InventoryMovement[] @relation("InventoryMovement_unit")
+
+  @@unique([yardId, tagNumber], map: "InventoryUnit_yard_tag_key")
+  @@index([yardId])
+  @@index([materialId])
+  @@index([status])
+  @@index([shipmentId])
+  @@index([listingId])
+  @@index([transferId])
+  @@index([createdFromRunId])
+}
+
+model ProcessingRun {
+  id                                   String              @id @default(cuid())
+  yard                                 Yard?               @relation("ProcessingRun_yard", fields: [yardId], references: [id])
+  yardId                               String?             @map("yard")
+  kind                                 String              @default("other")
+  status                               String              @default("draft")
+  inputs                               Json?               @default("[]")
+  outputs                              Json?               @default("[]")
+  lossWeight                           Decimal             @default("0") @postgresql.Decimal(14, 2)
+  processingCostCents                  Int                 @default(0)
+  operator                             User?               @relation("ProcessingRun_operator", fields: [operatorId], references: [id])
+  operatorId                           String?             @map("operator")
+  postedAt                             DateTime?
+  notes                                String              @default("")
+  createdAt                            DateTime            @default(now())
+  updatedAt                            DateTime            @default(now()) @updatedAt
+  from_InventoryMovement_processingRun InventoryMovement[] @relation("InventoryMovement_processingRun")
+  from_InventoryUnit_createdFromRun    InventoryUnit[]     @relation("InventoryUnit_createdFromRun")
+
+  @@index([yardId])
+  @@index([status])
+  @@index([operatorId])
+}
+
+model YardTransfer {
+  id                              String              @id @default(cuid())
+  fromYard                        Yard?               @relation("YardTransfer_fromYard", fields: [fromYardId], references: [id])
+  fromYardId                      String?             @map("fromYard")
+  toYard                          Yard?               @relation("YardTransfer_toYard", fields: [toYardId], references: [id])
+  toYardId                        String?             @map("toYard")
+  status                          String              @default("draft")
+  lines                           Json?               @default("[]")
+  units                           InventoryUnit[]     @relation("InventoryUnit_transfer")
+  sentAt                          DateTime?
+  receivedAt                      DateTime?
+  sentBy                          User?               @relation("YardTransfer_sentBy", fields: [sentById], references: [id])
+  sentById                        String?             @map("sentBy")
+  receivedBy                      User?               @relation("YardTransfer_receivedBy", fields: [receivedById], references: [id])
+  receivedById                    String?             @map("receivedBy")
+  createdAt                       DateTime            @default(now())
+  updatedAt                       DateTime            @default(now()) @updatedAt
+  from_InventoryMovement_transfer InventoryMovement[] @relation("InventoryMovement_transfer")
+
+  @@index([fromYardId])
+  @@index([toYardId])
+  @@index([status])
+  @@index([sentById])
+  @@index([receivedById])
+}
+
+model Listing {
+  id                          String           @id @default(cuid())
+  yard                        Yard?            @relation("Listing_yard", fields: [yardId], references: [id])
+  yardId                      String?          @map("yard")
+  title                       String           @default("")
+  material                    Material?        @relation("Listing_material", fields: [materialId], references: [id])
+  materialId                  String?          @map("material")
+  form                        String           @default("loose")
+  description                 String           @default("")
+  photos                      Json?            @default("[]")
+  estimatedWeight             Decimal?         @postgresql.Decimal(14, 2)
+  availableWeight             Decimal          @default("0") @postgresql.Decimal(14, 2)
+  units                       InventoryUnit[]  @relation("InventoryUnit_listing")
+  askUnitPrice                Decimal?         @postgresql.Decimal(14, 5)
+  unit                        String           @default("lb")
+  allowOffers                 Boolean          @default(true)
+  buyNow                      Boolean          @default(false)
+  minimumWeight               Decimal?         @postgresql.Decimal(14, 2)
+  terms                       String           @default("fob_yard")
+  closesAt                    DateTime?
+  status                      String           @default("draft")
+  offers                      Offer[]          @relation("Offer_listing")
+  createdAt                   DateTime         @default(now())
+  updatedAt                   DateTime         @default(now()) @updatedAt
+  from_SalesOrderLine_listing SalesOrderLine[] @relation("SalesOrderLine_listing")
+
+  @@index([yardId])
+  @@index([materialId])
+  @@index([status])
+}
+
+model Offer {
+  id               String      @id @default(cuid())
+  listing          Listing?    @relation("Offer_listing", fields: [listingId], references: [id])
+  listingId        String?     @map("listing")
+  account          Account?    @relation("Offer_account", fields: [accountId], references: [id])
+  accountId        String?     @map("account")
+  contact          User?       @relation("Offer_contact", fields: [contactId], references: [id])
+  contactId        String?     @map("contact")
+  weight           Decimal     @default("0") @postgresql.Decimal(14, 2)
+  unitPrice        Decimal?    @postgresql.Decimal(14, 5)
+  unit             String      @default("lb")
+  pickupFrom       DateTime?
+  pickupTo         DateTime?
+  message          String      @default("")
+  status           String      @default("submitted")
+  counterUnitPrice Decimal?    @postgresql.Decimal(14, 5)
+  counterWeight    Decimal?    @postgresql.Decimal(14, 2)
+  counterMessage   String      @default("")
+  decisionReason   String      @default("")
+  expiresAt        DateTime?
+  decidedBy        User?       @relation("Offer_decidedBy", fields: [decidedById], references: [id])
+  decidedById      String?     @map("decidedBy")
+  salesOrder       SalesOrder? @relation("Offer_salesOrder", fields: [salesOrderId], references: [id])
+  salesOrderId     String?     @unique @map("salesOrder")
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @default(now()) @updatedAt
+
+  @@index([listingId])
+  @@index([accountId])
+  @@index([contactId])
+  @@index([status])
+  @@index([decidedById])
+}
+
+model SalesOrder {
+  id              String           @id @default(cuid())
+  number          Int?
+  yard            Yard?            @relation("SalesOrder_yard", fields: [yardId], references: [id])
+  yardId          String?          @map("yard")
+  account         Account?         @relation("SalesOrder_account", fields: [accountId], references: [id])
+  accountId       String?          @map("account")
+  status          String           @default("draft")
+  terms           String           @default("fob_yard")
+  paymentTerms    String           @default("net")
+  netDays         Int?             @default(30)
+  weightBasis     String           @default("shipped")
+  shipFrom        String           @default("")
+  shipTo          String           @default("")
+  shipWindowStart DateTime?
+  shipWindowEnd   DateTime?
+  lines           SalesOrderLine[] @relation("SalesOrderLine_order")
+  shipments       Shipment[]       @relation("Shipment_order")
+  offer           Offer?           @relation("Offer_salesOrder")
+  buyerReference  String           @default("")
+  cancelReason    String           @default("")
+  notes           String           @default("")
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @default(now()) @updatedAt
+
+  @@unique([number], map: "SalesOrder_number_key")
+  @@index([yardId])
+  @@index([accountId])
+  @@index([status])
+}
+
+model SalesOrderLine {
+  id               String      @id @default(cuid())
+  order            SalesOrder? @relation("SalesOrderLine_order", fields: [orderId], references: [id])
+  orderId          String?     @map("order")
+  material         Material?   @relation("SalesOrderLine_material", fields: [materialId], references: [id])
+  materialId       String?     @map("material")
+  materialName     String      @default("")
+  weight           Decimal     @default("0") @postgresql.Decimal(14, 2)
+  tolerancePercent Decimal?    @default("5") @postgresql.Decimal(14, 2)
+  unit             String      @default("lb")
+  unitPrice        Decimal?    @postgresql.Decimal(14, 5)
+  shippedWeight    Decimal     @default("0") @postgresql.Decimal(14, 2)
+  reservedWeight   Decimal     @default("0") @postgresql.Decimal(14, 2)
+  listing          Listing?    @relation("SalesOrderLine_listing", fields: [listingId], references: [id])
+  listingId        String?     @map("listing")
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @default(now()) @updatedAt
+
+  @@index([orderId])
+  @@index([materialId])
+  @@index([listingId])
+}
+
+model Shipment {
+  id                        String          @id @default(cuid())
+  order                     SalesOrder?     @relation("Shipment_order", fields: [orderId], references: [id])
+  orderId                   String?         @map("order")
+  number                    Int?
+  status                    String          @default("scheduled")
+  carrier                   String          @default("")
+  driverName                String          @default("")
+  truckPlate                String          @default("")
+  trailerNumber             String          @default("")
+  sealNumber                String          @default("")
+  bolNumber                 String          @default("")
+  scheduledFor              DateTime?
+  ticket                    ScaleTicket?    @relation("ScaleTicket_shipment")
+  units                     InventoryUnit[] @relation("InventoryUnit_shipment")
+  lines                     Json?           @default("[]")
+  shippedWeight             Decimal         @default("0") @postgresql.Decimal(14, 2)
+  receivedWeight            Decimal?        @postgresql.Decimal(14, 2)
+  receivedGradeNote         String          @default("")
+  freightCents              Int             @default(0)
+  invoice                   Invoice?        @relation("Shipment_invoice", fields: [invoiceId], references: [id])
+  invoiceId                 String?         @map("invoice")
+  job                       DispatchJob?    @relation("Shipment_job", fields: [jobId], references: [id])
+  jobId                     String?         @map("job")
+  releasedAt                DateTime?
+  deliveredAt               DateTime?
+  createdAt                 DateTime        @default(now())
+  updatedAt                 DateTime        @default(now()) @updatedAt
+  from_Invoice_shipment     Invoice[]       @relation("Invoice_shipment")
+  from_Claim_shipment       Claim[]         @relation("Claim_shipment")
+  from_DispatchJob_shipment DispatchJob[]   @relation("DispatchJob_shipment")
+
+  @@unique([number], map: "Shipment_number_key")
+  @@index([orderId])
+  @@index([status])
+  @@index([invoiceId])
+  @@index([jobId])
+}
+
+model Invoice {
+  id                          String           @id @default(cuid())
+  number                      Int?
+  account                     Account?         @relation("Invoice_account", fields: [accountId], references: [id])
+  accountId                   String?          @map("account")
+  seller                      Seller?          @relation("Invoice_seller", fields: [sellerId], references: [id])
+  sellerId                    String?          @map("seller")
+  kind                        String           @default("sale")
+  status                      String           @default("open")
+  lines                       InvoiceLine[]    @relation("InvoiceLine_invoice")
+  subtotalCents               Int              @default(0)
+  taxCents                    Int              @default(0)
+  totalCents                  Int              @default(0)
+  paidCents                   Int              @default(0)
+  refundedCents               Int              @default(0)
+  dueOn                       DateTime?
+  shipment                    Shipment?        @relation("Invoice_shipment", fields: [shipmentId], references: [id])
+  shipmentId                  String?          @map("shipment")
+  settlement                  Settlement?      @relation("Invoice_settlement", fields: [settlementId], references: [id])
+  settlementId                String?          @map("settlement")
+  serviceRequest              ServiceRequest?  @relation("Invoice_serviceRequest", fields: [serviceRequestId], references: [id])
+  serviceRequestId            String?          @map("serviceRequest")
+  ticket                      ScaleTicket?     @relation("Invoice_ticket", fields: [ticketId], references: [id])
+  ticketId                    String?          @map("ticket")
+  payments                    Payment[]        @relation("Payment_invoice")
+  voidReason                  String           @default("")
+  createdAt                   DateTime         @default(now())
+  updatedAt                   DateTime         @default(now()) @updatedAt
+  from_Settlement_invoice     Settlement[]     @relation("Settlement_invoice")
+  from_Shipment_invoice       Shipment[]       @relation("Shipment_invoice")
+  from_PaymentSession_invoice PaymentSession[] @relation("PaymentSession_invoice")
+  from_ServiceRequest_invoice ServiceRequest[] @relation("ServiceRequest_invoice")
+
+  @@unique([number], map: "Invoice_number_key")
+  @@index([accountId])
+  @@index([sellerId])
+  @@index([status])
+  @@index([shipmentId])
+  @@index([settlementId])
+  @@index([serviceRequestId])
+  @@index([ticketId])
+}
+
+model InvoiceLine {
+  id                             String          @id @default(cuid())
+  invoice                        Invoice?        @relation("InvoiceLine_invoice", fields: [invoiceId], references: [id])
+  invoiceId                      String?         @map("invoice")
+  description                    String          @default("")
+  material                       Material?       @relation("InvoiceLine_material", fields: [materialId], references: [id])
+  materialId                     String?         @map("material")
+  weight                         Decimal?        @postgresql.Decimal(14, 2)
+  unit                           String?
+  unitPrice                      Decimal?        @postgresql.Decimal(14, 5)
+  amountCents                    Int             @default(0)
+  kind                           String          @default("material")
+  claim                          Claim?          @relation("InvoiceLine_claim", fields: [claimId], references: [id])
+  claimId                        String?         @map("claim")
+  createdAt                      DateTime        @default(now())
+  updatedAt                      DateTime        @default(now()) @updatedAt
+  from_AccountCharge_invoiceLine AccountCharge[] @relation("AccountCharge_invoiceLine")
+
+  @@index([invoiceId])
+  @@index([materialId])
+  @@index([claimId])
+}
+
+model Claim {
+  id                     String        @id @default(cuid())
+  shipment               Shipment?     @relation("Claim_shipment", fields: [shipmentId], references: [id])
+  shipmentId             String?       @map("shipment")
+  account                Account?      @relation("Claim_account", fields: [accountId], references: [id])
+  accountId              String?       @map("account")
+  openedBy               User?         @relation("Claim_openedBy", fields: [openedById], references: [id])
+  openedById             String?       @map("openedBy")
+  kind                   String        @default("other")
+  description            String        @default("")
+  photos                 Json?         @default("[]")
+  claimedCents           Int           @default(0)
+  status                 String        @default("open")
+  creditCents            Int           @default(0)
+  decisionReason         String        @default("")
+  decidedBy              User?         @relation("Claim_decidedBy", fields: [decidedById], references: [id])
+  decidedById            String?       @map("decidedBy")
+  decidedAt              DateTime?
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @default(now()) @updatedAt
+  from_InvoiceLine_claim InvoiceLine[] @relation("InvoiceLine_claim")
+  from_Refund_claim      Refund[]      @relation("Refund_claim")
+
+  @@index([shipmentId])
+  @@index([accountId])
+  @@index([openedById])
+  @@index([status])
+  @@index([decidedById])
+}
+
+model PaymentProvider {
+  id                           String           @id @default(cuid())
+  name                         String           @default("")
+  code                         String           @unique @default("")
+  isInstalled                  Boolean          @default(true)
+  credentials                  Json?
+  metadata                     Json?
+  createdAt                    DateTime         @default(now())
+  updatedAt                    DateTime         @default(now()) @updatedAt
+  from_PaymentSession_provider PaymentSession[] @relation("PaymentSession_provider")
+}
+
+model PaymentSession {
+  id                   String           @id @default(cuid())
+  provider             PaymentProvider? @relation("PaymentSession_provider", fields: [providerId], references: [id])
+  providerId           String?          @map("provider")
+  invoice              Invoice?         @relation("PaymentSession_invoice", fields: [invoiceId], references: [id])
+  invoiceId            String?          @map("invoice")
+  serviceRequest       ServiceRequest?  @relation("PaymentSession_serviceRequest", fields: [serviceRequestId], references: [id])
+  serviceRequestId     String?          @unique @map("serviceRequest")
+  ticket               ScaleTicket?     @relation("PaymentSession_ticket", fields: [ticketId], references: [id])
+  ticketId             String?          @map("ticket")
+  payer                User?            @relation("PaymentSession_payer", fields: [payerId], references: [id])
+  payerId              String?          @map("payer")
+  amountCents          Int              @default(0)
+  currencyCode         String           @default("USD")
+  status               String           @default("pending")
+  providerPaymentId    String           @unique @default("")
+  clientSecret         String           @default("")
+  idempotencyKeyHash   String           @unique @default("")
+  capturedAt           DateTime?
+  capturedCents        Int              @default(0)
+  refundedCents        Int              @default(0)
+  expiresAt            DateTime?
+  metadata             Json?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @default(now()) @updatedAt
+  from_Payment_session Payment[]        @relation("Payment_session")
+  from_Refund_session  Refund[]         @relation("Refund_session")
+
+  @@index([providerId])
+  @@index([invoiceId])
+  @@index([ticketId])
+  @@index([payerId])
+  @@index([status])
+}
+
+model Payment {
+  id                  String          @id @default(cuid())
+  invoice             Invoice?        @relation("Payment_invoice", fields: [invoiceId], references: [id])
+  invoiceId           String?         @map("invoice")
+  session             PaymentSession? @relation("Payment_session", fields: [sessionId], references: [id])
+  sessionId           String?         @map("session")
+  method              String          @default("card")
+  amountCents         Int             @default(0)
+  reference           String          @default("")
+  referenceKey        String          @unique @default("")
+  receivedAt          DateTime?       @default(now())
+  recordedBy          User?           @relation("Payment_recordedBy", fields: [recordedById], references: [id])
+  recordedById        String?         @map("recordedBy")
+  status              String          @default("succeeded")
+  refundedCents       Int             @default(0)
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @default(now()) @updatedAt
+  from_Refund_payment Refund[]        @relation("Refund_payment")
+
+  @@index([invoiceId])
+  @@index([sessionId])
+  @@index([recordedById])
+  @@index([status])
+}
+
+model Refund {
+  id                 String          @id @default(cuid())
+  payment            Payment?        @relation("Refund_payment", fields: [paymentId], references: [id])
+  paymentId          String?         @map("payment")
+  session            PaymentSession? @relation("Refund_session", fields: [sessionId], references: [id])
+  sessionId          String?         @map("session")
+  amountCents        Int             @default(0)
+  reason             String          @default("")
+  status             String          @default("pending")
+  providerRefundId   String          @unique @default("")
+  failureMessage     String          @default("")
+  claim              Claim?          @relation("Refund_claim", fields: [claimId], references: [id])
+  claimId            String?         @map("claim")
+  serviceRequest     ServiceRequest? @relation("Refund_serviceRequest", fields: [serviceRequestId], references: [id])
+  serviceRequestId   String?         @map("serviceRequest")
+  createdBy          User?           @relation("Refund_createdBy", fields: [createdById], references: [id])
+  createdById        String?         @map("createdBy")
+  idempotencyKeyHash String          @unique @default("")
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @default(now()) @updatedAt
+
+  @@index([paymentId])
+  @@index([sessionId])
+  @@index([status])
+  @@index([claimId])
+  @@index([serviceRequestId])
+  @@index([createdById])
+}
+
+model PaymentWebhookEvent {
+  id              String    @id @default(cuid())
+  provider        String    @default("")
+  providerEventId String    @unique @default("")
+  type            String    @default("")
+  payloadHash     String    @default("")
+  processedAt     DateTime?
+  result          Json?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @default(now()) @updatedAt
+}
+
+model ContainerType {
+  id                                String           @id @default(cuid())
+  name                              String           @default("")
+  slug                              String           @unique @default("")
+  kind                              String           @default("roll_off")
+  capacityLabel                     String           @default("")
+  dimensions                        String           @default("")
+  description                       String           @default("")
+  image_id                          String?
+  image_filesize                    Int?
+  image_width                       Int?
+  image_height                      Int?
+  image_extension                   String?
+  suitableFor                       String           @default("")
+  deliveryFeeCents                  Int              @default(0)
+  haulFeeCents                      Int              @default(0)
+  rentalFeePerDayCents              Int              @default(0)
+  freeRentalDays                    Int              @default(0)
+  dryRunFeeCents                    Int              @default(0)
+  isPublic                          Boolean          @default(true)
+  createdAt                         DateTime         @default(now())
+  updatedAt                         DateTime         @default(now()) @updatedAt
+  from_Container_type               Container[]      @relation("Container_type")
+  from_ServiceRequest_containerType ServiceRequest[] @relation("ServiceRequest_containerType")
+}
+
+model Container {
+  id                             String           @id @default(cuid())
+  number                         String           @unique @default("")
+  type                           ContainerType?   @relation("Container_type", fields: [typeId], references: [id])
+  typeId                         String?          @map("type")
+  homeYard                       Yard?            @relation("Container_homeYard", fields: [homeYardId], references: [id])
+  homeYardId                     String?          @map("homeYard")
+  status                         String           @default("in_yard")
+  tareWeight                     Decimal?         @postgresql.Decimal(14, 2)
+  site                           ServiceSite?     @relation("Container_site", fields: [siteId], references: [id])
+  siteId                         String?          @map("site")
+  account                        Account?         @relation("Container_account", fields: [accountId], references: [id])
+  accountId                      String?          @map("account")
+  placedOn                       DateTime?
+  rentalChargedThrough           DateTime?
+  currentMaterial                Material?        @relation("Container_currentMaterial", fields: [currentMaterialId], references: [id])
+  currentMaterialId              String?          @map("currentMaterial")
+  notes                          String           @default("")
+  createdAt                      DateTime         @default(now())
+  updatedAt                      DateTime         @default(now()) @updatedAt
+  from_ScaleTicket_container     ScaleTicket[]    @relation("ScaleTicket_container")
+  from_AccountCharge_container   AccountCharge[]  @relation("AccountCharge_container")
+  from_ServiceRequest_container  ServiceRequest[] @relation("ServiceRequest_container")
+  from_DispatchJob_dropContainer DispatchJob[]    @relation("DispatchJob_dropContainer")
+  from_DispatchJob_pickContainer DispatchJob[]    @relation("DispatchJob_pickContainer")
+
+  @@index([typeId])
+  @@index([homeYardId])
+  @@index([status])
+  @@index([siteId])
+  @@index([accountId])
+  @@index([currentMaterialId])
+}
+
+model ServiceRequest {
+  id                          String          @id @default(cuid())
+  number                      Int?
+  yard                        Yard?           @relation("ServiceRequest_yard", fields: [yardId], references: [id])
+  yardId                      String?         @map("yard")
+  account                     Account?        @relation("ServiceRequest_account", fields: [accountId], references: [id])
+  accountId                   String?         @map("account")
+  seller                      Seller?         @relation("ServiceRequest_seller", fields: [sellerId], references: [id])
+  sellerId                    String?         @map("seller")
+  requestedBy                 User?           @relation("ServiceRequest_requestedBy", fields: [requestedById], references: [id])
+  requestedById               String?         @map("requestedBy")
+  site                        ServiceSite?    @relation("ServiceRequest_site", fields: [siteId], references: [id])
+  siteId                      String?         @map("site")
+  kind                        String          @default("deliver")
+  containerType               ContainerType?  @relation("ServiceRequest_containerType", fields: [containerTypeId], references: [id])
+  containerTypeId             String?         @map("containerType")
+  container                   Container?      @relation("ServiceRequest_container", fields: [containerId], references: [id])
+  containerId                 String?         @map("container")
+  material                    Material?       @relation("ServiceRequest_material", fields: [materialId], references: [id])
+  materialId                  String?         @map("material")
+  itemsDescription            String          @default("")
+  photos                      Json?           @default("[]")
+  preferredDate               DateTime?
+  preferredWindow             String          @default("any")
+  accessNotes                 String          @default("")
+  status                      String          @default("requested")
+  feeCents                    Int             @default(0)
+  quoteNote                   String          @default("")
+  quoteAcceptedAt             DateTime?
+  chargeToAccount             Boolean         @default(false)
+  paymentSession              PaymentSession? @relation("PaymentSession_serviceRequest")
+  invoice                     Invoice?        @relation("ServiceRequest_invoice", fields: [invoiceId], references: [id])
+  invoiceId                   String?         @map("invoice")
+  decisionReason              String          @default("")
+  job                         DispatchJob?    @relation("DispatchJob_request")
+  createdAt                   DateTime        @default(now())
+  updatedAt                   DateTime        @default(now()) @updatedAt
+  from_Invoice_serviceRequest Invoice[]       @relation("Invoice_serviceRequest")
+  from_Refund_serviceRequest  Refund[]        @relation("Refund_serviceRequest")
+
+  @@unique([number], map: "ServiceRequest_number_key")
+  @@index([yardId])
+  @@index([accountId])
+  @@index([sellerId])
+  @@index([requestedById])
+  @@index([siteId])
+  @@index([containerTypeId])
+  @@index([containerId])
+  @@index([materialId])
+  @@index([status])
+  @@index([invoiceId])
+}
+
+model Truck {
+  id                     String        @id @default(cuid())
+  name                   String        @default("")
+  plate                  String        @default("")
+  kind                   String        @default("roll_off")
+  yard                   Yard?         @relation("Truck_yard", fields: [yardId], references: [id])
+  yardId                 String?       @map("yard")
+  isActive               Boolean       @default(true)
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @default(now()) @updatedAt
+  from_DispatchJob_truck DispatchJob[] @relation("DispatchJob_truck")
+
+  @@index([yardId])
+}
+
+model DispatchJob {
+  id                     String          @id @default(cuid())
+  number                 Int?
+  yard                   Yard?           @relation("DispatchJob_yard", fields: [yardId], references: [id])
+  yardId                 String?         @map("yard")
+  request                ServiceRequest? @relation("DispatchJob_request", fields: [requestId], references: [id])
+  requestId              String?         @unique @map("request")
+  shipment               Shipment?       @relation("DispatchJob_shipment", fields: [shipmentId], references: [id])
+  shipmentId             String?         @map("shipment")
+  kind                   String          @default("deliver")
+  status                 String          @default("planned")
+  scheduledDate          DateTime?
+  sequence               Int?            @default(0)
+  driver                 User?           @relation("DispatchJob_driver", fields: [driverId], references: [id])
+  driverId               String?         @map("driver")
+  truck                  Truck?          @relation("DispatchJob_truck", fields: [truckId], references: [id])
+  truckId                String?         @map("truck")
+  dropContainer          Container?      @relation("DispatchJob_dropContainer", fields: [dropContainerId], references: [id])
+  dropContainerId        String?         @map("dropContainer")
+  pickContainer          Container?      @relation("DispatchJob_pickContainer", fields: [pickContainerId], references: [id])
+  pickContainerId        String?         @map("pickContainer")
+  site                   ServiceSite?    @relation("DispatchJob_site", fields: [siteId], references: [id])
+  siteId                 String?         @map("site")
+  startedAt              DateTime?
+  arrivedAt              DateTime?
+  completedAt            DateTime?
+  photos                 Json?           @default("[]")
+  signedName             String          @default("")
+  failureReason          String          @default("")
+  driverNotes            String          @default("")
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @default(now()) @updatedAt
+  from_ScaleTicket_job   ScaleTicket[]   @relation("ScaleTicket_job")
+  from_AccountCharge_job AccountCharge[] @relation("AccountCharge_job")
+  from_Shipment_job      Shipment[]      @relation("Shipment_job")
+
+  @@unique([number], map: "DispatchJob_number_key")
+  @@index([yardId])
+  @@index([shipmentId])
+  @@index([status])
+  @@index([driverId])
+  @@index([truckId])
+  @@index([dropContainerId])
+  @@index([pickContainerId])
+  @@index([siteId])
+}
+
+model DonationCampaign {
+  id                        String        @id @default(cuid())
+  account                   Account?      @relation("DonationCampaign_account", fields: [accountId], references: [id])
+  accountId                 String?       @map("account")
+  name                      String        @default("")
+  slug                      String        @unique @default("")
+  description               String        @default("")
+  image_id                  String?
+  image_filesize            Int?
+  image_width               Int?
+  image_height              Int?
+  image_extension           String?
+  goalWeight                Decimal?      @postgresql.Decimal(14, 2)
+  goalCents                 Int?
+  startsOn                  DateTime?
+  endsOn                    DateTime?
+  isPublic                  Boolean       @default(true)
+  status                    String        @default("draft")
+  createdAt                 DateTime      @default(now())
+  updatedAt                 DateTime      @default(now()) @updatedAt
+  from_Visit_campaign       Visit[]       @relation("Visit_campaign")
+  from_ScaleTicket_campaign ScaleTicket[] @relation("ScaleTicket_campaign")
+  from_Donation_campaign    Donation[]    @relation("Donation_campaign")
+
+  @@index([accountId])
+}
+
+model Donation {
+  id                      String            @id @default(cuid())
+  ticket                  ScaleTicket?      @relation("Donation_ticket", fields: [ticketId], references: [id])
+  ticketId                String?           @map("ticket")
+  seller                  Seller?           @relation("Donation_seller", fields: [sellerId], references: [id])
+  sellerId                String?           @map("seller")
+  account                 Account?          @relation("Donation_account", fields: [accountId], references: [id])
+  accountId               String?           @map("account")
+  campaign                DonationCampaign? @relation("Donation_campaign", fields: [campaignId], references: [id])
+  campaignId              String?           @map("campaign")
+  amountCents             Int               @default(0)
+  weight                  Decimal?          @postgresql.Decimal(14, 2)
+  itemsSummary            Json?             @default("[]")
+  kind                    String            @default("payout_donation")
+  status                  String            @default("pledged")
+  receiptNumber           String            @unique @default("")
+  receiptIssuedAt         DateTime?
+  goodsOrServicesProvided Boolean           @default(false)
+  showDonorName           Boolean           @default(false)
+  settlement              Settlement?       @relation("Donation_settlement", fields: [settlementId], references: [id])
+  settlementId            String?           @map("settlement")
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @default(now()) @updatedAt
+
+  @@index([ticketId])
+  @@index([sellerId])
+  @@index([accountId])
+  @@index([campaignId])
+  @@index([status])
+  @@index([settlementId])
+}
+
+model RulesProfile {
+  id                      String                @id @default(cuid())
+  name                    String                @default("")
+  region                  String                @default("")
+  template                String                @default("general")
+  requireGovernmentId     Boolean               @default(true)
+  requireIdPhoto          Boolean               @default(true)
+  requireSellerPhoto      Boolean               @default(false)
+  requireMaterialPhoto    Boolean               @default(true)
+  requireVehiclePlate     Boolean               @default(true)
+  requireSignature        Boolean               @default(true)
+  requireThumbprint       Boolean               @default(false)
+  minimumSellerAge        Int                   @default(18)
+  cashLimitPerTicketCents Int?
+  cashLimitPerDayCents    Int?
+  cashRounding            String                @default("none")
+  defaultPaymentHoldDays  Int                   @default(0)
+  defaultMaterialHoldDays Int                   @default(0)
+  allowEarlyRelease       Boolean               @default(false)
+  retentionDays           Int                   @default(730)
+  dailyReport             Boolean               @default(false)
+  reportDueTime           String                @default("")
+  reportOmitsPrice        Boolean               @default(false)
+  ownershipStatement      String                @default("I am the lawful owner of the material sold on this ticket, or I am authorised by the owner to sell it.")
+  restrictions            MaterialRestriction[] @relation("MaterialRestriction_profile")
+  createdAt               DateTime              @default(now())
+  updatedAt               DateTime              @default(now()) @updatedAt
+  from_Yard_rulesProfile  Yard[]                @relation("Yard_rulesProfile")
+}
+
+model MaterialRestriction {
+  id                          String            @id @default(cuid())
+  profile                     RulesProfile?     @relation("MaterialRestriction_profile", fields: [profileId], references: [id])
+  profileId                   String?           @map("profile")
+  material                    Material?         @relation("MaterialRestriction_material", fields: [materialId], references: [id])
+  materialId                  String?           @map("material")
+  category                    MaterialCategory? @relation("MaterialRestriction_category", fields: [categoryId], references: [id])
+  categoryId                  String?           @map("category")
+  label                       String            @default("")
+  kind                        String            @default("payment_rule")
+  requiredDocuments           Json?             @default("[]")
+  forbidCash                  Boolean           @default(false)
+  allowedMethods              Json?
+  paymentHoldDays             Int?              @default(0)
+  materialHoldDays            Int?              @default(0)
+  mailCheckOnly               Boolean           @default(false)
+  publicNote                  String            @default("")
+  createdAt                   DateTime          @default(now())
+  updatedAt                   DateTime          @default(now()) @updatedAt
+  from_TicketLine_restriction TicketLine[]      @relation("TicketLine_restriction")
+
+  @@index([profileId])
+  @@index([materialId])
+  @@index([categoryId])
+}
+
+model HoldTag {
+  id            String       @id @default(cuid())
+  ticket        ScaleTicket? @relation("HoldTag_ticket", fields: [ticketId], references: [id])
+  ticketId      String?      @map("ticket")
+  line          TicketLine?  @relation("HoldTag_line", fields: [lineId], references: [id])
+  lineId        String?      @map("line")
+  yard          Yard?        @relation("HoldTag_yard", fields: [yardId], references: [id])
+  yardId        String?      @map("yard")
+  material      Material?    @relation("HoldTag_material", fields: [materialId], references: [id])
+  materialId    String?      @map("material")
+  weight        Decimal      @default("0") @postgresql.Decimal(14, 2)
+  kind          String       @default("material")
+  status        String       @default("held")
+  releaseAt     DateTime?
+  releasedBy    User?        @relation("HoldTag_releasedBy", fields: [releasedById], references: [id])
+  releasedById  String?      @map("releasedBy")
+  releasedAt    DateTime?
+  releaseReason String       @default("")
+  caseNumber    String       @default("")
+  agency        String       @default("")
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @default(now()) @updatedAt
+
+  @@index([ticketId])
+  @@index([lineId])
+  @@index([yardId])
+  @@index([materialId])
+  @@index([status])
+  @@index([releasedById])
+}
+
+model DoNotBuyEntry {
+  id                 String    @id @default(cuid())
+  firstName          String    @default("")
+  lastName           String    @default("")
+  nameNormalized     String    @default("")
+  dateOfBirth        DateTime?
+  idNumber           String    @default("")
+  idNumberNormalized String    @default("")
+  plate              String    @default("")
+  plateNormalized    String    @default("")
+  source             String    @default("yard")
+  reason             String    @default("")
+  expiresOn          DateTime?
+  isActive           Boolean   @default(true)
+  seller             Seller?   @relation("DoNotBuyEntry_seller", fields: [sellerId], references: [id])
+  sellerId           String?   @map("seller")
+  addedBy            User?     @relation("DoNotBuyEntry_addedBy", fields: [addedById], references: [id])
+  addedById          String?   @map("addedBy")
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @default(now()) @updatedAt
+
+  @@index([nameNormalized])
+  @@index([idNumberNormalized])
+  @@index([plateNormalized])
+  @@index([sellerId])
+  @@index([addedById])
+}
+
+model TheftAlert {
+  id          String     @id @default(cuid())
+  title       String     @default("")
+  description String     @default("")
+  materials   Material[] @relation("TheftAlert_materials")
+  keywords    String     @default("")
+  reportedOn  DateTime?  @default(now())
+  agency      String     @default("")
+  contact     String     @default("")
+  sourceUrl   String     @default("")
+  expiresOn   DateTime?
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @default(now()) @updatedAt
+}
+
+model ComplianceReport {
+  id             String    @id @default(cuid())
+  yard           Yard?     @relation("ComplianceReport_yard", fields: [yardId], references: [id])
+  yardId         String?   @map("yard")
+  reportDate     String    @default("")
+  status         String    @default("generated")
+  ticketCount    Int?      @default(0)
+  file_filesize  Int?
+  file_filename  String?
+  csv            String    @default("")
+  fileHash       String    @default("")
+  generatedBy    User?     @relation("ComplianceReport_generatedBy", fields: [generatedById], references: [id])
+  generatedById  String?   @map("generatedBy")
+  submittedBy    User?     @relation("ComplianceReport_submittedBy", fields: [submittedById], references: [id])
+  submittedById  String?   @map("submittedBy")
+  submittedAt    DateTime?
+  submissionNote String    @default("")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @default(now()) @updatedAt
+
+  @@unique([yardId, reportDate], map: "ComplianceReport_yard_date_key")
+  @@index([yardId])
+  @@index([status])
+  @@index([generatedById])
+  @@index([submittedById])
+}
+
+model AuditEvent {
+  id            String    @id @default(cuid())
+  eventKey      String    @unique @default("")
+  eventType     String    @default("")
+  aggregateType String    @default("")
+  aggregateId   String    @default("")
+  yard          Yard?     @relation("AuditEvent_yard", fields: [yardId], references: [id])
+  yardId        String?   @map("yard")
+  actor         User?     @relation("AuditEvent_actor", fields: [actorId], references: [id])
+  actorId       String?   @map("actor")
+  before        Json?
+  after         Json?
+  reason        String    @default("")
+  occurredAt    DateTime? @default(now())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @default(now()) @updatedAt
+
+  @@index([eventType])
+  @@index([aggregateId])
+  @@index([yardId])
+  @@index([actorId])
+}
+
+model CommandReceipt {
+  id            String    @id @default(cuid())
+  eventKey      String    @unique @default("")
+  eventType     String    @default("")
+  aggregateType String    @default("")
+  aggregateId   String    @default("")
+  payloadHash   String    @default("")
+  result        Json?
+  actorId       String    @default("")
+  occurredAt    DateTime? @default(now())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @default(now()) @updatedAt
 }
 
 model OAuthApp {
