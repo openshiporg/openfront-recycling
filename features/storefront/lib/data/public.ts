@@ -154,6 +154,12 @@ export const getYards = cache(async (): Promise<GqlResult<Yard[]>> => {
   return { ok: true, data: r.data.yards.map((y) => ({ ...y, payoutMethods: Array.isArray(y.payoutMethods) ? y.payoutMethods : [], closures: (y.closures || []).filter((c) => new Date(c.date).getTime() >= cutoff) })) };
 });
 
+/** Yards that take walk-in sellers: the ones the public price, calculator and rules pages offer. */
+export const getPublicYards = cache(async (): Promise<GqlResult<Yard[]>> => {
+  const r = await getYards();
+  return r.ok ? { ok: true, data: r.data.filter((y) => y.acceptsPublic !== false) } : r;
+});
+
 export const getYard = cache(async (slug: string): Promise<GqlResult<Yard | null>> => {
   const r = await getYards();
   if (!r.ok) return r;

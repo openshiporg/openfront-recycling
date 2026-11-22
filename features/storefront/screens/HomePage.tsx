@@ -20,7 +20,7 @@ export default async function HomePage() {
   if (!business && yards.length === 0) return <NotOpenYet />;
 
   const board = boardR.ok ? boardR.data : null;
-  const mainYard = yards.find((y) => y.slug === board?.yard.slug) || yards[0] || null;
+  const mainYard = yards.find((y) => y.slug === board?.yard.slug) || yards.find((y) => y.acceptsPublic !== false) || yards[0] || null;
   const rulesR = mainYard ? await getYardRules(mainYard.slug) : null;
   const rules = rulesR?.ok ? rulesR.data : null;
   const currency = board?.currencyCode || business?.currencyCode || 'USD';

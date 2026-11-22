@@ -35,7 +35,7 @@ export function Brand({ business, fallbackName }: { business: Business | null; f
 }
 
 function primaryContact(business: Business | null, yards: Yard[]) {
-  const main = yards[0] || null;
+  const main = yards.find((y) => y.acceptsPublic !== false) || yards[0] || null;
   return {
     phone: business?.supportPhone || main?.phone || null,
     email: business?.supportEmail || main?.email || null,

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { getMaterial, getPriceBoard, getPriceHistory, getYardRules, getYards, type PricePoint } from '../lib/data/public';
+import { getMaterial, getPriceBoard, getPriceHistory, getYardRules, getPublicYards, type PricePoint } from '../lib/data/public';
 import { dateTime, label, list, methodsText, perUnit, shortDate, unitPriceText, weight, zoneName } from '../lib/format';
 import { LoadError, PageHead, StateCard } from '../components/ui';
 import { priceText } from './PricesPage';
@@ -39,7 +39,7 @@ function HistoryChart({ points, currency, tz }: { points: PricePoint[]; currency
 }
 
 export default async function MaterialPage({ slug, yard }: { slug: string; yard?: string | null }) {
-  const [matR, yardsR] = await Promise.all([getMaterial(slug), getYards()]);
+  const [matR, yardsR] = await Promise.all([getMaterial(slug), getPublicYards()]);
   if (!matR.ok) return (<><PageHead title="Material" /><LoadError what="this material" /></>);
   const m = matR.data;
   if (!m) return (<><PageHead title="Not found" /><StateCard title="We don’t list that material" action={<Link className="sf-btn sf-btn-sm" href="/materials">All materials</Link>}>It may have been renamed. Search the materials list, or call the yard.</StateCard></>);

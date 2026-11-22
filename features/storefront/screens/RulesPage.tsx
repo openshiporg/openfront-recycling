@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { getYardRules, getYards, type YardRules } from '../lib/data/public';
+import { getYardRules, getPublicYards, type YardRules } from '../lib/data/public';
 import { label, list, methodsText, money } from '../lib/format';
 import { LoadError, NotOpenYet, PageHead, StateCard } from '../components/ui';
 
@@ -28,7 +28,7 @@ export function PaymentFacts({ rules, currency = 'USD' }: { rules: YardRules; cu
 }
 
 export default async function RulesPage({ yard }: { yard?: string | null }) {
-  const yardsR = await getYards();
+  const yardsR = await getPublicYards();
   if (!yardsR.ok) return (<><PageHead title="Selling rules" /><LoadError what="the selling rules" /></>);
   const yards = yardsR.data;
   if (!yards.length) return <NotOpenYet />;

@@ -1,11 +1,11 @@
 import Link from 'next/link';
-import { getPriceBoard, getYards } from '../lib/data/public';
+import { getPriceBoard, getPublicYards } from '../lib/data/public';
 import { dateTime, zoneName } from '../lib/format';
 import { LoadError, PageHead, StateCard } from '../components/ui';
 import { Calculator } from '../components/Calculator';
 
 export default async function CalculatorPage({ yard }: { yard?: string | null }) {
-  const [boardR, yardsR] = await Promise.all([getPriceBoard(yard || null), getYards()]);
+  const [boardR, yardsR] = await Promise.all([getPriceBoard(yard || null), getPublicYards()]);
   const head = <PageHead title="Scrap calculator" crumbs={[{ href: '/', label: 'Home' }, { label: 'Calculator' }]} lead="Pick a material, enter the weight, and see what today’s price comes to." />;
   if (!boardR.ok) return (<>{head}<LoadError what="today’s prices" /></>);
   const board = boardR.data;

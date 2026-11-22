@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { getBusiness, getPriceBoard, getYards, type PriceRow } from '../lib/data/public';
+import { getBusiness, getPriceBoard, getPublicYards, type PriceRow } from '../lib/data/public';
 import { dateTime, perUnit, unitPriceText, zoneName } from '../lib/format';
 import { LoadError, NotOpenYet, PageHead, StateCard } from '../components/ui';
 
@@ -18,7 +18,7 @@ export function priceText(r: PriceRow, currency: string) {
 }
 
 export default async function PricesPage({ yard }: { yard?: string | null }) {
-  const [boardR, yardsR, businessR] = await Promise.all([getPriceBoard(yard || null), getYards(), getBusiness()]);
+  const [boardR, yardsR, businessR] = await Promise.all([getPriceBoard(yard || null), getPublicYards(), getBusiness()]);
   const yards = yardsR.ok ? yardsR.data : [];
   if (!boardR.ok) return (<><PageHead title="Today’s prices" /><LoadError what="today’s prices" /></>);
   const board = boardR.data;
