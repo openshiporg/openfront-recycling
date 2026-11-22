@@ -87,6 +87,11 @@ function seesAllYards(session) {
 function sessionYardIds(session) {
   return (session?.data?.yards || []).map((yard) => yard.id);
 }
+function canActOnYard(session, yardId) {
+  if (!isStaff(session)) return false;
+  if (seesAllYards(session)) return true;
+  return Boolean(yardId) && sessionYardIds(session).includes(String(yardId));
+}
 function flag(name) {
   return ({ session }) => isStaff(session) && hasFlag(session, name);
 }
@@ -372,7 +377,7 @@ var Scale = (0, import_core2.list)({
     yard: (0, import_fields3.relationship)({ ref: "Yard.scales" }),
     name: (0, import_fields3.text)({ validation: { isRequired: true } }),
     kind: choice(["truck", "floor", "bench"], "truck"),
-    apiKeyHash: (0, import_fields3.text)({ ...serverOnlyField, isIndexed: "unique" }),
+    apiKeyHash: (0, import_fields3.text)({ ...serverOnlyField, isIndexed: "unique", db: { isNullable: true } }),
     lastReadingWeight: (0, import_fields3.decimal)({ precision: 14, scale: 2, ...commandOnlyFieldText }),
     lastReadingAt: (0, import_fields3.timestamp)({ ...commandOnlyFieldText }),
     lastReadingStable: (0, import_fields3.checkbox)({ defaultValue: false, ...commandOnlyFieldText }),
@@ -564,7 +569,7 @@ var Account = (0, import_core4.list)({
     name: (0, import_fields3.text)({ validation: { isRequired: true } }),
     legalName: (0, import_fields3.text)(),
     slug: (0, import_fields3.text)({ validation: { isRequired: true }, isIndexed: "unique" }),
-    accountNumber: (0, import_fields3.text)({ isIndexed: "unique", ...commandOnlyFieldText }),
+    accountNumber: (0, import_fields3.text)({ isIndexed: "unique", ...commandOnlyFieldText, db: { isNullable: true } }),
     status: status(["active", "suspended"], "active"),
     statusReason: (0, import_fields3.text)({ ...commandOnlyFieldText }),
     isSupplier: (0, import_fields3.checkbox)({ defaultValue: false }),
@@ -606,7 +611,7 @@ var AccountContact = (0, import_core4.list)({
     role: choice(["admin", "member", "billing", "driver"], "member"),
     status: status(["active", "invited", "removed"], "active"),
     inviteEmail: (0, import_fields3.text)(),
-    inviteTokenHash: (0, import_fields3.text)({ ...serverOnlyField, isIndexed: "unique" }),
+    inviteTokenHash: (0, import_fields3.text)({ ...serverOnlyField, isIndexed: "unique", db: { isNullable: true } }),
     ...trackingFields
   }
 });
@@ -643,7 +648,7 @@ var AccountDocument = (0, import_core4.list)({
     kind: choice(["w9", "licence", "insurance", "contract", "certificate", "other"], "other"),
     file: (0, import_fields3.file)({ storage: "private_files" }),
     title: (0, import_fields3.text)({ validation: { isRequired: true } }),
-    body: (0, import_fields3.text)({ ui: { displayMode: "textarea" }, ...commandOnlyFieldText }),
+    body: (0, import_fields3.text)({ ...commandOnlyFieldText, ui: { ...commandOnlyFieldText.ui, displayMode: "textarea" } }),
     visibleToAccount: (0, import_fields3.checkbox)({ defaultValue: true }),
     ...trackingFields
   }
@@ -681,7 +686,7 @@ var Visit = (0, import_core5.list)({
     donatePercent: (0, import_fields3.integer)({ defaultValue: 0, ...commandOnlyFieldText }),
     nonprofit: (0, import_fields3.relationship)({ ref: "Account", ...commandOnlyFieldText }),
     campaign: (0, import_fields3.relationship)({ ref: "DonationCampaign", ...commandOnlyFieldText }),
-    code: (0, import_fields3.text)({ isIndexed: "unique", ...commandOnlyFieldText }),
+    code: (0, import_fields3.text)({ isIndexed: "unique", ...commandOnlyFieldText, db: { isNullable: true } }),
     status: status(["booked", "arrived", "cancelled", "expired"], "booked"),
     ticket: (0, import_fields3.relationship)({ ref: "ScaleTicket.visit", ...commandOnlyFieldText }),
     ...trackingFields
@@ -709,7 +714,7 @@ var ScaleTicket = (0, import_core5.list)({
         type: import_core5.graphql.String,
         async resolve(item, _args, context) {
           const yard = item.yardId ? await context.sudo().db.Yard.findOne({ where: { id: item.yardId } }) : null;
-          return formatTicketNumber(yard?.code || "YARD", item.direction, item.number);
+          return formatTicketNumber(String(yard?.code || "YARD"), item.direction, item.number);
         }
       })
     }),
@@ -744,7 +749,7 @@ var ScaleTicket = (0, import_core5.list)({
     complianceSnapshot: commandJson(),
     overrideReason: (0, import_fields3.text)({ ...commandOnlyFieldText }),
     overrideBy: (0, import_fields3.relationship)({ ref: "User", ...commandOnlyFieldText }),
-    lookupCode: (0, import_fields3.text)({ isIndexed: "unique", ...commandOnlyFieldText }),
+    lookupCode: (0, import_fields3.text)({ isIndexed: "unique", ...commandOnlyFieldText, db: { isNullable: true } }),
     certificateRequested: (0, import_fields3.checkbox)({ defaultValue: false, ...commandOnlyFieldText }),
     openedBy: (0, import_fields3.relationship)({ ref: "User", ...commandOnlyFieldText }),
     completedBy: (0, import_fields3.relationship)({ ref: "User", ...commandOnlyFieldText }),
@@ -857,8 +862,8 @@ var Payout = (0, import_core6.list)({
     allowedMethods: commandJson({ defaultValue: ["cash", "check", "transfer"] }),
     method: choice(["cash", "check", "transfer"], void 0, commandOnlyFieldText),
     releaseAt: (0, import_fields3.timestamp)({ ...commandOnlyFieldText }),
-    checkNumber: (0, import_fields3.text)({ ...commandOnlyFieldText }),
-    bankAccountLabel: (0, import_fields3.text)({ ...commandOnlyFieldText }),
+    checkNumber: (0, import_fields3.text)({ ...commandOnlyFieldText, db: { isNullable: true } }),
+    bankAccountLabel: (0, import_fields3.text)({ ...commandOnlyFieldText, db: { isNullable: true } }),
     transferReference: (0, import_fields3.text)({ ...commandOnlyFieldText }),
     mailToAddress: (0, import_fields3.text)({ ...commandOnlyFieldText }),
     paidBy: (0, import_fields3.relationship)({ ref: "User", ...commandOnlyFieldText }),
@@ -867,7 +872,7 @@ var Payout = (0, import_core6.list)({
     replaces: (0, import_fields3.relationship)({ ref: "Payout", ...commandOnlyFieldText }),
     returnReason: (0, import_fields3.text)({ ...commandOnlyFieldText }),
     cancelReason: (0, import_fields3.text)({ ...commandOnlyFieldText }),
-    idempotencyKeyHash: (0, import_fields3.text)({ ...serverOnlyField, isIndexed: "unique" }),
+    idempotencyKeyHash: (0, import_fields3.text)({ ...serverOnlyField, isIndexed: "unique", db: { isNullable: true } }),
     ...trackingFields
   }
 });
@@ -923,7 +928,7 @@ var AccountCharge = (0, import_core6.list)({
     job: (0, import_fields3.relationship)({ ref: "DispatchJob", ...commandOnlyFieldText }),
     container: (0, import_fields3.relationship)({ ref: "Container", ...commandOnlyFieldText }),
     serviceDate: (0, import_fields3.timestamp)({ ...commandOnlyFieldText }),
-    referenceKey: (0, import_fields3.text)({ isIndexed: "unique", ...commandOnlyFieldText }),
+    referenceKey: (0, import_fields3.text)({ isIndexed: "unique", ...commandOnlyFieldText, db: { isNullable: true } }),
     settlement: (0, import_fields3.relationship)({ ref: "Settlement.charges", ...commandOnlyFieldText }),
     invoiceLine: (0, import_fields3.relationship)({ ref: "InvoiceLine", ...commandOnlyFieldText }),
     status: status(["open", "settled", "invoiced", "waived"], "open"),
@@ -1033,9 +1038,9 @@ var PaymentSession = (0, import_core6.list)({
     amountCents: commandCents(),
     currencyCode: (0, import_fields3.text)({ defaultValue: "USD", ...commandOnlyFieldText }),
     status: status(["pending", "requires_action", "authorized", "captured", "failed", "cancelled", "refunded", "partially_refunded"], "pending"),
-    providerPaymentId: (0, import_fields3.text)({ isIndexed: "unique", ...commandOnlyFieldText }),
+    providerPaymentId: (0, import_fields3.text)({ isIndexed: "unique", ...commandOnlyFieldText, db: { isNullable: true } }),
     clientSecret: (0, import_fields3.text)({ ...serverOnlyField }),
-    idempotencyKeyHash: (0, import_fields3.text)({ isIndexed: "unique", ...serverOnlyField }),
+    idempotencyKeyHash: (0, import_fields3.text)({ isIndexed: "unique", ...serverOnlyField, db: { isNullable: true } }),
     capturedAt: (0, import_fields3.timestamp)({ ...commandOnlyFieldText }),
     capturedCents: commandCents(),
     refundedCents: commandCents(),
@@ -1052,7 +1057,7 @@ var Payment = (0, import_core6.list)({
     method: choice(["card", "wire", "ach", "check", "cash"], "card", commandOnlyFieldText),
     amountCents: commandCents(),
     reference: (0, import_fields3.text)({ ...commandOnlyFieldText }),
-    referenceKey: (0, import_fields3.text)({ isIndexed: "unique", ...commandOnlyFieldText }),
+    referenceKey: (0, import_fields3.text)({ isIndexed: "unique", ...commandOnlyFieldText, db: { isNullable: true } }),
     receivedAt: (0, import_fields3.timestamp)({ defaultValue: { kind: "now" }, ...commandOnlyFieldText }),
     recordedBy: (0, import_fields3.relationship)({ ref: "User", ...commandOnlyFieldText }),
     status: status(["succeeded", "reversed"], "succeeded"),
@@ -1068,12 +1073,12 @@ var Refund = (0, import_core6.list)({
     amountCents: commandCents(),
     reason: (0, import_fields3.text)({ ...commandOnlyFieldText }),
     status: status(["pending", "succeeded", "failed"], "pending"),
-    providerRefundId: (0, import_fields3.text)({ isIndexed: "unique", ...commandOnlyFieldText }),
+    providerRefundId: (0, import_fields3.text)({ isIndexed: "unique", ...commandOnlyFieldText, db: { isNullable: true } }),
     failureMessage: (0, import_fields3.text)({ ...commandOnlyFieldText }),
     claim: (0, import_fields3.relationship)({ ref: "Claim", ...commandOnlyFieldText }),
     serviceRequest: (0, import_fields3.relationship)({ ref: "ServiceRequest", ...commandOnlyFieldText }),
     createdBy: (0, import_fields3.relationship)({ ref: "User", ...commandOnlyFieldText }),
-    idempotencyKeyHash: (0, import_fields3.text)({ isIndexed: "unique", ...serverOnlyField }),
+    idempotencyKeyHash: (0, import_fields3.text)({ isIndexed: "unique", ...serverOnlyField, db: { isNullable: true } }),
     ...trackingFields
   }
 });
@@ -1507,7 +1512,7 @@ var Donation = (0, import_core8.list)({
     itemsSummary: (0, import_fields3.json)({ defaultValue: [], ...commandOnlyFieldText }),
     kind: choice(["payout_donation", "goods_donation"], "payout_donation", commandOnlyFieldText),
     status: status(["pledged", "credited", "disbursed", "cancelled"], "pledged"),
-    receiptNumber: (0, import_fields3.text)({ isIndexed: "unique", ...commandOnlyFieldText }),
+    receiptNumber: (0, import_fields3.text)({ isIndexed: "unique", ...commandOnlyFieldText, db: { isNullable: true } }),
     receiptIssuedAt: (0, import_fields3.timestamp)({ ...commandOnlyFieldText }),
     goodsOrServicesProvided: (0, import_fields3.checkbox)({ defaultValue: false, ...commandOnlyFieldText }),
     showDonorName: (0, import_fields3.checkbox)({ defaultValue: false, ...commandOnlyFieldText }),
@@ -2066,21 +2071,1445 @@ async function redirectToInit(root, args, context) {
 }
 var redirectToInit_default = redirectToInit;
 
+// features/keystone/commands/tickets.ts
+var import_decimal6 = require("decimal.js");
+var import_node_crypto5 = require("node:crypto");
+
+// features/keystone/lib/command.ts
+var import_node_crypto2 = require("node:crypto");
+var import_graphql = require("graphql");
+var CommandError = class extends import_graphql.GraphQLError {
+  constructor(message, code = "COMMAND_REFUSED", extra = {}) {
+    super(message, { extensions: { code, ...extra } });
+  }
+};
+function refuse(message, extra = {}) {
+  throw new CommandError(message, "COMMAND_REFUSED", extra);
+}
+function canonicalize(value) {
+  if (Array.isArray(value)) return value.map(canonicalize);
+  if (value && typeof value === "object" && !(value instanceof Date)) {
+    return Object.fromEntries(
+      Object.entries(value).filter(([, child]) => child !== void 0).sort(([a], [b]) => a.localeCompare(b)).map(([key, child]) => [key, canonicalize(child)])
+    );
+  }
+  return value;
+}
+function canonicalJson(value) {
+  return JSON.stringify(canonicalize(value));
+}
+function hashInput(value) {
+  return (0, import_node_crypto2.createHash)("sha256").update(canonicalJson(value)).digest("hex");
+}
+function jsonSafe(value) {
+  return JSON.parse(JSON.stringify(value, (_k, v) => typeof v === "bigint" ? Number(v) : v));
+}
+async function nextSequence(tx, scopeKey, kind, yardId) {
+  const rows = await tx.$queryRawUnsafe(
+    `INSERT INTO "Sequence" ("id", "yard", "scopeKey", "kind", "next", "createdAt", "updatedAt")
+     VALUES ($1, $2, $3, $4, 2, NOW(), NOW())
+     ON CONFLICT ("scopeKey", "kind") DO UPDATE SET "next" = "Sequence"."next" + 1, "updatedAt" = NOW()
+     RETURNING "next" - 1 AS value`,
+    (0, import_node_crypto2.randomUUID)(),
+    yardId || null,
+    scopeKey,
+    kind
+  );
+  return Number(rows[0].value);
+}
+function requirePermission(session, permission) {
+  if (!permission) return;
+  const list12 = Array.isArray(permission) ? permission : [permission];
+  if (!isStaff(session) || !list12.some((flag2) => hasFlag(session, flag2))) {
+    throw new CommandError("You do not have permission to do this.", "FORBIDDEN");
+  }
+}
+function requireYard(session, yardId) {
+  if (!canActOnYard(session, yardId)) throw new CommandError("You do not work at this yard.", "FORBIDDEN");
+}
+function isRetryable(error) {
+  const code = error?.code;
+  return code === "P2034" || code === "40001" || code === "40P01" || /could not serialize|deadlock detected/i.test(String(error?.message || ""));
+}
+async function runCommand(context, options, body) {
+  const session = context.session || null;
+  requirePermission(session, options.permission);
+  if (options.requireSignIn && !session?.itemId) throw new CommandError("Sign in first.", "UNAUTHENTICATED");
+  const actorId = session?.itemId || null;
+  const key = options.idempotencyKey ? `${options.name}:${actorId || "public"}:${options.idempotencyKey}` : null;
+  const payloadHash = hashInput({ name: options.name, input: options.input });
+  const prisma = context.sudo().prisma;
+  for (let attempt = 1; ; attempt += 1) {
+    const after = [];
+    try {
+      const result = await prisma.$transaction(async (tx) => {
+        if (key) {
+          await tx.$executeRawUnsafe("SELECT pg_advisory_xact_lock(hashtext($1), hashtext($2))", "recycling-command", key);
+          const existing = await tx.commandReceipt.findUnique({ where: { eventKey: key } });
+          if (existing) {
+            if (existing.payloadHash !== payloadHash || existing.eventType !== options.name) {
+              throw new CommandError("This idempotency key was already used with different input.", "IDEMPOTENCY_CONFLICT");
+            }
+            return { replay: true, value: existing.result };
+          }
+        }
+        const now = /* @__PURE__ */ new Date();
+        let auditIndex = 0;
+        const ctx = {
+          tx,
+          session,
+          actorId,
+          now,
+          afterCommit: (fn) => after.push(fn),
+          sequence: (scopeKey, kind, yardId) => nextSequence(tx, scopeKey, kind, yardId),
+          audit: async (event) => {
+            auditIndex += 1;
+            await tx.auditEvent.create({
+              data: {
+                eventKey: event.key || `${options.name}:${event.aggregateId}:${key || (0, import_node_crypto2.randomUUID)()}:${auditIndex}`,
+                eventType: event.eventType,
+                aggregateType: event.aggregateType,
+                aggregateId: event.aggregateId,
+                yardId: event.yardId || null,
+                actorId,
+                before: event.before === void 0 ? void 0 : jsonSafe(event.before),
+                after: event.after === void 0 ? void 0 : jsonSafe(event.after),
+                reason: event.reason || "",
+                occurredAt: now
+              }
+            });
+          }
+        };
+        const value = await body(ctx);
+        if (key) {
+          await tx.commandReceipt.create({
+            data: {
+              eventKey: key,
+              eventType: options.name,
+              aggregateType: options.aggregateType || "",
+              aggregateId: String(value?.id || ""),
+              payloadHash,
+              result: jsonSafe(value) ?? null,
+              actorId: actorId || "",
+              occurredAt: now
+            }
+          });
+        }
+        return { replay: false, value };
+      }, { maxWait: 1e4, timeout: 3e4 });
+      if (!result.replay) {
+        for (const fn of after) {
+          try {
+            await fn();
+          } catch (error) {
+            console.error(`[${options.name}] after-commit step failed`, error);
+          }
+        }
+      }
+      return result.value;
+    } catch (error) {
+      if (attempt < 5 && isRetryable(error)) {
+        await new Promise((resolve) => setTimeout(resolve, 10 * attempt + Math.floor(Math.random() * 20)));
+        continue;
+      }
+      throw error;
+    }
+  }
+}
+async function compareAndSet(tx, model, id, expected, data, message) {
+  const statuses = Array.isArray(expected) ? expected : [expected];
+  const result = await tx[model].updateMany({ where: { id, status: { in: statuses } }, data });
+  if (result.count !== 1) refuse(message || `This ${model} is no longer ${statuses.join(" or ")}.`);
+}
+async function lockRow(tx, table, id) {
+  const rows = await tx.$queryRawUnsafe(`SELECT * FROM "${table}" WHERE "id" = $1 FOR UPDATE`, id);
+  return rows[0] || null;
+}
+function cleanKey(value) {
+  const text5 = String(value ?? "").trim();
+  if (!text5) return null;
+  if (text5.length > 200) refuse("The idempotency key is too long.");
+  return text5;
+}
+
+// features/keystone/lib/domain.ts
+var import_node_crypto4 = require("node:crypto");
+var import_decimal3 = require("decimal.js");
+
+// features/keystone/lib/inventory.ts
+var import_node_crypto3 = require("node:crypto");
+var import_decimal2 = require("decimal.js");
+async function lockBalance(tx, yardId, materialId) {
+  await tx.$executeRawUnsafe(
+    `INSERT INTO "InventoryBalance" ("id", "yard", "material", "onHandWeight", "reservedWeight", "heldWeight", "totalCostCents", "createdAt", "updatedAt")
+     VALUES ($1, $2, $3, 0, 0, 0, 0, NOW(), NOW()) ON CONFLICT ("yard", "material") DO NOTHING`,
+    (0, import_node_crypto3.randomUUID)(),
+    yardId,
+    materialId
+  );
+  const rows = await tx.$queryRawUnsafe(
+    `SELECT "id", "onHandWeight"::text AS "onHand", "reservedWeight"::text AS "reserved", "heldWeight"::text AS "held", "totalCostCents" AS "cost"
+     FROM "InventoryBalance" WHERE "yard" = $1 AND "material" = $2 FOR UPDATE`,
+    yardId,
+    materialId
+  );
+  const row = rows[0];
+  return { id: row.id, onHand: new import_decimal2.Decimal(row.onHand), reserved: new import_decimal2.Decimal(row.reserved), held: new import_decimal2.Decimal(row.held), cost: Number(row.cost) };
+}
+function averageCostCents(onHand, costCents, weight2) {
+  if (onHand.lte(0)) return 0;
+  return new import_decimal2.Decimal(costCents).times(weight2).div(onHand).toDecimalPlaces(0, import_decimal2.Decimal.ROUND_HALF_UP).toNumber();
+}
+async function postMovement(tx, input) {
+  const existing = await tx.inventoryMovement.findUnique({ where: { referenceKey: input.referenceKey } });
+  if (existing) return { id: existing.id, created: false, costDeltaCents: existing.costDeltaCents };
+  const balance = await lockBalance(tx, input.yardId, input.materialId);
+  const delta = new import_decimal2.Decimal(String(input.weightDelta));
+  const bucket = input.bucket || "onHand";
+  let adjusted = false;
+  if (bucket === "held" || bucket === "reserved") {
+    const field = bucket === "held" ? "heldWeight" : "reservedWeight";
+    const current = bucket === "held" ? balance.held : balance.reserved;
+    const next = import_decimal2.Decimal.max(0, current.plus(delta));
+    await tx.inventoryBalance.update({ where: { id: balance.id }, data: { [field]: next.toFixed(2) } });
+    const movement2 = await tx.inventoryMovement.create({
+      data: {
+        yardId: input.yardId,
+        materialId: input.materialId,
+        kind: input.kind,
+        weightDelta: delta.toFixed(2),
+        costDeltaCents: 0,
+        weightAfter: balance.onHand.toFixed(2),
+        ticketId: input.ticketId || null,
+        ticketLineId: input.ticketLineId || null,
+        unitId: input.unitId || null,
+        reason: input.reason || "",
+        referenceKey: input.referenceKey,
+        createdById: input.actorId || null
+      }
+    });
+    return { id: movement2.id, created: true, costDeltaCents: 0 };
+  }
+  let cost = input.costDeltaCents;
+  if (cost === void 0) cost = delta.isNegative() ? -averageCostCents(balance.onHand, balance.cost, delta.abs()) : 0;
+  let onHand = balance.onHand.plus(delta);
+  let totalCost = balance.cost + cost;
+  const movement = await tx.inventoryMovement.create({
+    data: {
+      yardId: input.yardId,
+      materialId: input.materialId,
+      kind: input.kind,
+      weightDelta: delta.toFixed(2),
+      costDeltaCents: cost,
+      weightAfter: onHand.toFixed(2),
+      ticketId: input.ticketId || null,
+      ticketLineId: input.ticketLineId || null,
+      processingRunId: input.processingRunId || null,
+      transferId: input.transferId || null,
+      unitId: input.unitId || null,
+      reason: input.reason || "",
+      referenceKey: input.referenceKey,
+      createdById: input.actorId || null
+    }
+  });
+  if (onHand.isNegative() && !input.allowNegative) {
+    const fix = onHand.abs();
+    await tx.inventoryMovement.create({
+      data: {
+        yardId: input.yardId,
+        materialId: input.materialId,
+        kind: "adjust",
+        weightDelta: fix.toFixed(2),
+        costDeltaCents: 0,
+        weightAfter: "0",
+        reason: `Brought to zero after ${input.kind} (${input.referenceKey})`,
+        needsReview: true,
+        referenceKey: `${input.referenceKey}:zero`,
+        ticketId: input.ticketId || null,
+        processingRunId: input.processingRunId || null,
+        transferId: input.transferId || null,
+        createdById: input.actorId || null
+      }
+    });
+    onHand = new import_decimal2.Decimal(0);
+    totalCost = 0;
+    adjusted = true;
+  }
+  if (onHand.isZero()) totalCost = 0;
+  if (totalCost < 0) totalCost = 0;
+  await tx.inventoryBalance.update({ where: { id: balance.id }, data: { onHandWeight: onHand.toFixed(2), totalCostCents: totalCost } });
+  return { id: movement.id, created: true, costDeltaCents: cost, adjusted };
+}
+
+// features/keystone/lib/domain.ts
+function randomCode(length = 8) {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const bytes = (0, import_node_crypto4.randomBytes)(length);
+  return Array.from(bytes, (b) => alphabet[b % alphabet.length]).join("");
+}
+function normalizeId(value) {
+  return String(value || "").replace(/[^a-z0-9]/gi, "").toUpperCase();
+}
+function normalizeName(first, last) {
+  return `${first || ""} ${last || ""}`.trim().toLowerCase().replace(/\s+/g, " ");
+}
+async function businessSettings(tx) {
+  return await tx.businessSettings.findFirst() || { weightUnit: "lb", currencyCode: "USD", timezone: "America/New_York", isNonprofit: false, name: "", legalName: "", ein: "" };
+}
+var GENERAL_PROFILE = {
+  requireGovernmentId: true,
+  requireIdPhoto: true,
+  requireSellerPhoto: false,
+  requireMaterialPhoto: true,
+  requireVehiclePlate: true,
+  requireSignature: true,
+  requireThumbprint: false,
+  minimumSellerAge: 18,
+  cashLimitPerTicketCents: null,
+  cashLimitPerDayCents: null,
+  cashRounding: "none",
+  defaultPaymentHoldDays: 0,
+  defaultMaterialHoldDays: 0
+};
+async function yardRules(tx, yardId) {
+  const yard = await tx.yard.findUnique({ where: { id: yardId }, include: { rulesProfile: { include: { restrictions: true } } } });
+  if (!yard) refuse("Yard not found.");
+  const profile = yard.rulesProfile;
+  if (!profile) return { profile: GENERAL_PROFILE, restrictions: [] };
+  return {
+    profile,
+    restrictions: profile.restrictions.map((r) => ({
+      ...r,
+      requiredDocuments: Array.isArray(r.requiredDocuments) ? r.requiredDocuments : [],
+      allowedMethods: Array.isArray(r.allowedMethods) && r.allowedMethods.length ? r.allowedMethods : null
+    }))
+  };
+}
+async function doNotBuyMatch(tx, input, now = /* @__PURE__ */ new Date()) {
+  const or = [];
+  if (input.sellerId) or.push({ sellerId: input.sellerId });
+  const name = normalizeName(input.firstName, input.lastName);
+  if (name && input.dateOfBirth) {
+    const day = new Date(input.dateOfBirth);
+    const start = new Date(Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate()));
+    or.push({ nameNormalized: name, dateOfBirth: { gte: start, lt: new Date(start.getTime() + 864e5) } });
+  }
+  for (const id of (input.idNumbers || []).map(normalizeId).filter(Boolean)) or.push({ idNumberNormalized: id });
+  const plate = normalizeId(input.plate);
+  if (plate) or.push({ plateNormalized: plate });
+  if (!or.length) return null;
+  return tx.doNotBuyEntry.findFirst({ where: { isActive: true, OR: or, AND: [{ OR: [{ expiresOn: null }, { expiresOn: { gt: now } }] }] } });
+}
+async function currentIdentity(tx, sellerId) {
+  return tx.identityDocument.findFirst({ where: { sellerId, isCurrent: true }, orderBy: [{ expiresOn: "desc" }, { createdAt: "desc" }] });
+}
+async function maybeSettleTicket(tx, ticketId, now = /* @__PURE__ */ new Date()) {
+  const ticket = await tx.scaleTicket.findUnique({ where: { id: ticketId }, include: { payouts: true, settlement: true } });
+  if (!ticket || ticket.status !== "completed") return false;
+  let settled = false;
+  if (ticket.paymentMode === "on_account") settled = ticket.settlement?.status === "paid";
+  else if (ticket.totalCents < 0) {
+    const invoice = await tx.invoice.findFirst({ where: { ticketId, kind: "fee_ticket", status: { not: "void" } } });
+    settled = invoice?.status === "paid" || ticket.collectedCents >= -ticket.totalCents;
+  } else {
+    const live = ticket.payouts.filter((p) => p.status !== "cancelled" && p.status !== "returned");
+    settled = live.every((p) => p.status === "paid");
+  }
+  if (!settled) return false;
+  const won = await tx.scaleTicket.updateMany({ where: { id: ticketId, status: "completed" }, data: { status: "settled", settledAt: now } });
+  return won.count === 1;
+}
+
+// features/keystone/lib/pricing.ts
+async function currentEntry(tx, priceListId, materialId, at) {
+  if (!priceListId) return null;
+  return tx.priceEntry.findFirst({
+    where: {
+      priceListId,
+      materialId,
+      effectiveFrom: { lte: at },
+      OR: [{ effectiveTo: null }, { effectiveTo: { gt: at } }]
+    },
+    orderBy: [{ effectiveFrom: "desc" }, { createdAt: "desc" }]
+  });
+}
+async function resolvePrice(tx, input) {
+  const at = input.at || /* @__PURE__ */ new Date();
+  const candidates = [];
+  if (input.accountId) {
+    const account = await tx.account.findUnique({ where: { id: input.accountId }, include: { priceList: true } });
+    if (account?.priceList?.isActive) candidates.push({ listId: account.priceList.id, source: account.priceList.kind === "contract" ? "contract" : "price_list" });
+  }
+  if (input.sellerId) {
+    const seller = await tx.seller.findUnique({ where: { id: input.sellerId }, include: { priceList: true } });
+    if (seller?.priceList?.isActive) candidates.push({ listId: seller.priceList.id, source: seller.priceList.kind === "contract" ? "contract" : "price_list" });
+  }
+  const yard = await tx.yard.findUnique({ where: { id: input.yardId } });
+  candidates.push({ listId: yard?.boardPriceListId || null, source: "board" });
+  candidates.sort((a, b) => (a.source === "contract" ? 0 : a.source === "price_list" ? 1 : 2) - (b.source === "contract" ? 0 : b.source === "price_list" ? 1 : 2));
+  for (const candidate of candidates) {
+    const entry = await currentEntry(tx, candidate.listId, input.materialId, at);
+    if (entry) return { unitPrice: String(entry.unitPrice), unit: entry.unit, source: candidate.source, priceEntryId: entry.id };
+  }
+  return null;
+}
+
+// features/recycling/ticketMath.ts
+var import_decimal4 = require("decimal.js");
+var LB_FACTORS = { lb: 1, cwt: 100, net_ton: 2e3, gross_ton: 2240, each: 1 };
+var KG_FACTORS = { kg: 1, metric_tonne: 1e3, each: 1 };
+var TicketMathError = class extends Error {
+};
+function unitFactor(unit, base = "lb") {
+  const factor = (base === "kg" ? KG_FACTORS : LB_FACTORS)[unit];
+  if (!factor) throw new TicketMathError(`The unit "${unit}" cannot be used when weights are kept in ${base}.`);
+  return factor;
+}
+function dec(value) {
+  if (value === null || value === void 0 || value === "") return new import_decimal4.Decimal(0);
+  if (import_decimal4.Decimal.isDecimal(value)) return value;
+  return new import_decimal4.Decimal(String(value));
+}
+function roundCents(value) {
+  const sign = value.isNegative() ? -1 : 1;
+  return sign * value.abs().toDecimalPlaces(0, import_decimal4.Decimal.ROUND_HALF_UP).toNumber();
+}
+function computeLine(line, base = "lb") {
+  const factor = unitFactor(line.unit, base);
+  const price = dec(line.unitPrice);
+  if (price.isNegative()) throw new TicketMathError("A unit price cannot be negative; use a charge material instead.");
+  if (line.unit === "each") {
+    const quantity = Number(line.quantity ?? 0);
+    if (!Number.isInteger(quantity) || quantity <= 0) throw new TicketMathError("An item priced each needs a whole quantity above zero.");
+    const gross2 = dec(line.grossWeight);
+    const tare2 = dec(line.tareWeight);
+    const net2 = gross2.gt(0) ? gross2.minus(tare2) : new import_decimal4.Decimal(0);
+    const amount2 = roundCents(price.times(quantity));
+    const signed2 = line.direction === "charge_customer" ? -amount2 : amount2;
+    return { netWeight: net2.toDecimalPlaces(2), deduction: new import_decimal4.Decimal(0), payWeight: new import_decimal4.Decimal(quantity), amountCents: amount2, signedAmountCents: signed2 };
+  }
+  const gross = dec(line.grossWeight);
+  const tare = dec(line.tareWeight);
+  const net = gross.minus(tare);
+  if (!net.gt(0)) throw new TicketMathError("Gross weight must be more than tare weight.");
+  let deduction;
+  if (line.deductionWeight !== null && line.deductionWeight !== void 0 && line.deductionWeight !== "") {
+    deduction = dec(line.deductionWeight);
+  } else if (line.deductionPercent !== null && line.deductionPercent !== void 0 && line.deductionPercent !== "") {
+    const pct = dec(line.deductionPercent);
+    if (pct.isNegative() || pct.gt(100)) throw new TicketMathError("A deduction percent must be between 0 and 100.");
+    deduction = net.times(pct).div(100).toDecimalPlaces(2, import_decimal4.Decimal.ROUND_HALF_UP);
+  } else {
+    deduction = new import_decimal4.Decimal(0);
+  }
+  if (deduction.isNegative()) throw new TicketMathError("A deduction cannot be negative.");
+  const payWeight = net.minus(deduction);
+  if (payWeight.isNegative()) throw new TicketMathError("The deduction is larger than the net weight.");
+  const amount = roundCents(payWeight.times(price).div(factor).times(100));
+  const signed = line.direction === "charge_customer" ? -amount : amount;
+  return { netWeight: net.toDecimalPlaces(2), deduction: deduction.toDecimalPlaces(2), payWeight: payWeight.toDecimalPlaces(2), amountCents: amount, signedAmountCents: signed };
+}
+function computeTicketTotals(lines, fees = [], feeTaxRatePercent = 0) {
+  const materialTotalCents = lines.reduce((sum, line) => sum + line.signedAmountCents, 0);
+  const feeTotalCents = fees.reduce((sum, fee) => sum + Math.trunc(Number(fee.amountCents) || 0), 0);
+  const chargeBase = lines.filter((l) => l.signedAmountCents < 0).reduce((s, l) => s - l.signedAmountCents, 0) + fees.filter((f) => f.amountCents < 0).reduce((s, f) => s - f.amountCents, 0);
+  const taxCents = roundCents(new import_decimal4.Decimal(chargeBase).times(dec(feeTaxRatePercent)).div(100));
+  return { materialTotalCents, feeTotalCents, taxCents, totalCents: materialTotalCents + feeTotalCents - taxCents };
+}
+function sequentialLineWeights(weights) {
+  if (weights.length < 2) throw new TicketMathError("Truck-scale weighing needs a full weight and at least one weight after unloading.");
+  const values = weights.map(dec);
+  const out = [];
+  for (let i = 1; i < values.length; i += 1) {
+    if (!values[i - 1].gt(values[i])) throw new TicketMathError(`Weight ${i + 1} must be lower than the weight before it.`);
+    out.push({ gross: values[i - 1], tare: values[i] });
+  }
+  return out;
+}
+
+// features/recycling/compliance.ts
+function ageOn(dob, now) {
+  let age = now.getUTCFullYear() - dob.getUTCFullYear();
+  const m = now.getUTCMonth() - dob.getUTCMonth();
+  if (m < 0 || m === 0 && now.getUTCDate() < dob.getUTCDate()) age -= 1;
+  return age;
+}
+function restrictionsForLine(line, restrictions) {
+  return restrictions.filter((r) => r.materialId && r.materialId === line.materialId || !r.materialId && r.categoryId && r.categoryId === line.categoryId);
+}
+function screenSeller(input) {
+  const now = input.now || /* @__PURE__ */ new Date();
+  const out = [];
+  const { seller, identity, profile } = input;
+  if (input.isCommercial) return out;
+  if (!seller) {
+    out.push({ code: "seller_required", message: "A seller is needed for a retail ticket.", overridable: false });
+    return out;
+  }
+  if (seller.status === "do_not_buy") out.push({ code: "do_not_buy", message: "This seller is on the do-not-buy list. The yard cannot buy from them.", overridable: false });
+  if (seller.doNotBuyMatch) out.push({ code: "do_not_buy_list", message: "This seller matches an entry on the do-not-buy list.", overridable: false });
+  if (profile.minimumSellerAge > 0) {
+    if (!seller.dateOfBirth) out.push({ code: "date_of_birth", message: "Date of birth is needed to check the minimum age.", overridable: true });
+    else if (ageOn(new Date(seller.dateOfBirth), now) < profile.minimumSellerAge) out.push({ code: "minimum_age", message: `The seller must be at least ${profile.minimumSellerAge}.`, overridable: false });
+  }
+  if (profile.requireGovernmentId) {
+    if (!identity) out.push({ code: "government_id", message: "A government ID must be on file.", overridable: true });
+    else if (identity.expiresOn && new Date(identity.expiresOn).getTime() < now.getTime()) out.push({ code: "id_expired", message: "The ID on file has expired.", overridable: true });
+  }
+  return out;
+}
+function validateTicketCompliance(ticket, profile, restrictions) {
+  const out = [];
+  const now = ticket.now || /* @__PURE__ */ new Date();
+  if (!ticket.lines.length) out.push({ code: "no_lines", message: "Add at least one line.", overridable: false });
+  for (const line of ticket.lines) {
+    if (!line.materialId) out.push({ code: "line_material", message: "Every line needs a material.", lineId: line.id, overridable: false });
+    if (!line.hasPrice) out.push({ code: "line_price", message: `${line.materialName || "A line"} has no price.`, lineId: line.id, overridable: false });
+  }
+  if (ticket.direction !== "inbound" || ticket.isAdjustment) return out;
+  if (!ticket.isCommercial) {
+    out.push(...screenSeller({ seller: ticket.seller, identity: ticket.identity, profile, isCommercial: false, now }));
+    if (profile.requireIdPhoto && ticket.identity && !ticket.identity.hasFrontImage) out.push({ code: "id_photo", message: "A photo of the ID is needed.", overridable: true });
+    const kinds = new Set(ticket.attachments.map((a) => a.kind));
+    if (profile.requireSellerPhoto && !kinds.has("seller_photo")) out.push({ code: "seller_photo", message: "Take a photo of the seller.", overridable: true });
+    if (profile.requireMaterialPhoto && !kinds.has("material_photo")) out.push({ code: "material_photo", message: "Take a photo of the material.", overridable: true });
+    if (profile.requireVehiclePlate && !String(ticket.vehiclePlate || "").trim()) out.push({ code: "vehicle_plate", message: "Record the vehicle plate.", overridable: true });
+    if (profile.requireSignature && !kinds.has("signature")) out.push({ code: "signature", message: "The seller must sign the ownership statement.", overridable: true });
+    if (profile.requireThumbprint && !kinds.has("thumbprint") && !ticket.identity?.hasThumbprint) out.push({ code: "thumbprint", message: "A thumbprint image is needed.", overridable: true });
+  }
+  for (const line of ticket.lines) {
+    for (const r of restrictionsForLine(line, restrictions)) {
+      if (r.kind === "prohibited") out.push({ code: "prohibited", message: `${r.label}: the yard does not buy this material.`, lineId: line.id, overridable: false });
+      if (r.kind === "commercial_only" && !ticket.isCommercial) out.push({ code: "commercial_only", message: `${r.label}: only bought from commercial accounts.`, lineId: line.id, overridable: false });
+      const needed = (r.requiredDocuments || []).filter(Boolean);
+      if (r.kind === "proof_of_ownership" && !needed.length) needed.push("proof_of_ownership");
+      const have = /* @__PURE__ */ new Set([...line.documents || [], ...ticket.attachments.filter((a) => a.kind === "ownership_document" && (!a.lineId || a.lineId === line.id)).map(() => "proof_of_ownership")]);
+      for (const doc of needed) {
+        if (!have.has(doc) && !(doc !== "proof_of_ownership" && (line.documents || []).includes(doc))) {
+          out.push({ code: `document_${doc}`, message: `${r.label}: ${doc.replace(/_/g, " ")} is needed.`, lineId: line.id, overridable: false });
+        }
+      }
+    }
+  }
+  return out;
+}
+function blockingItems(items, override) {
+  if (override?.reason && override.reason.trim().length >= 3) return items.filter((i) => !i.overridable);
+  return items;
+}
+function splitPayouts(input) {
+  const base = input.yardMethods.length ? input.yardMethods : ["cash", "check", "transfer"];
+  const groups = /* @__PURE__ */ new Map();
+  const defaultHold = Number(input.profile.defaultPaymentHoldDays || 0);
+  let adjust = Number(input.extraCents || 0);
+  for (const line of input.lines) {
+    if (line.signedAmountCents <= 0) {
+      adjust += line.signedAmountCents;
+      continue;
+    }
+    let methods = [...base];
+    let holdDays = defaultHold;
+    let mailCheckOnly = false;
+    for (const r of restrictionsForLine(line, input.restrictions)) {
+      if (r.forbidCash) methods = methods.filter((m) => m !== "cash");
+      if (r.allowedMethods?.length) methods = methods.filter((m) => r.allowedMethods.includes(m));
+      if (r.mailCheckOnly) {
+        mailCheckOnly = true;
+        methods = methods.filter((m) => m === "check" || m === "transfer");
+      }
+      holdDays = Math.max(holdDays, Number(r.paymentHoldDays || 0));
+    }
+    methods.sort();
+    const releaseAt = holdDays > 0 ? new Date(input.completedAt.getTime() + holdDays * 864e5) : null;
+    const key = `${methods.join(",")}|${releaseAt ? releaseAt.toISOString() : "now"}|${mailCheckOnly}`;
+    const group = groups.get(key) || { lineIds: [], amountCents: 0, allowedMethods: methods, releaseAt, mailCheckOnly };
+    group.lineIds.push(line.id);
+    group.amountCents += line.signedAmountCents;
+    groups.set(key, group);
+  }
+  const list12 = [...groups.values()].sort((a, b) => (a.releaseAt?.getTime() || 0) - (b.releaseAt?.getTime() || 0) || b.allowedMethods.length - a.allowedMethods.length);
+  for (const group of list12) {
+    if (adjust >= 0) break;
+    const take = Math.min(group.amountCents, -adjust);
+    group.amountCents -= take;
+    adjust += take;
+  }
+  if (adjust > 0 && list12.length) list12[0].amountCents += adjust;
+  return list12.filter((g) => g.amountCents > 0);
+}
+
+// features/keystone/lib/sales.ts
+var import_decimal5 = require("decimal.js");
+async function startShipmentLoading(ctx, shipmentId) {
+  const shipment = await lockRow(ctx.tx, "Shipment", shipmentId);
+  if (!shipment) refuse("Shipment not found.");
+  if (shipment.status !== "scheduled") refuse(`This shipment is ${shipment.status}; only a scheduled shipment can start loading.`);
+  await compareAndSet(ctx.tx, "shipment", shipmentId, "scheduled", { status: "loading" });
+  const order = await ctx.tx.salesOrder.findUnique({ where: { id: shipment.order } });
+  if (!order || !["confirmed", "in_fulfilment"].includes(order.status)) refuse("The sales order is not confirmed.");
+  return { shipment, order };
+}
+async function orderLinePrice(tx, shipmentId, materialId) {
+  const shipment = await tx.shipment.findUnique({ where: { id: shipmentId }, include: { order: { include: { lines: true } } } });
+  const line = shipment?.order?.lines.find((l) => l.materialId === materialId);
+  if (!line || line.unitPrice === null) return null;
+  return { unitPrice: new import_decimal5.Decimal(String(line.unitPrice)).toFixed(5), unit: line.unit, orderLineId: line.id };
+}
+function withinTolerance(shipped, ordered, tolerancePercent) {
+  return shipped.gte(ordered.times(new import_decimal5.Decimal(100).minus(tolerancePercent)).div(100));
+}
+async function loadShipmentFromTicket(ctx, ticket, totals) {
+  const { tx, now } = ctx;
+  if (!ticket.shipmentId) refuse("An outbound ticket must be for a shipment.");
+  const shipment = await lockRow(tx, "Shipment", ticket.shipmentId);
+  if (!shipment || shipment.status !== "loading") refuse("The shipment is not loading.");
+  const order = await tx.salesOrder.findUnique({ where: { id: shipment.order }, include: { lines: true, account: true } });
+  if (!order) refuse("Sales order not found.");
+  const settings = await tx.businessSettings.findFirst() || { weightUnit: "lb" };
+  const base = settings.weightUnit === "kg" ? "kg" : "lb";
+  const units = await tx.inventoryUnit.findMany({ where: { shipmentId: shipment.id } });
+  const byMaterial = /* @__PURE__ */ new Map();
+  for (const line of ticket.lines) byMaterial.set(line.materialId, (byMaterial.get(line.materialId) || new import_decimal5.Decimal(0)).plus(String(line.payWeight)));
+  for (const unit of units) if (!byMaterial.has(unit.materialId)) byMaterial.set(unit.materialId, new import_decimal5.Decimal(0));
+  for (const unit of units) {
+    if (!ticket.lines.some((l) => l.materialId === unit.materialId)) byMaterial.set(unit.materialId, byMaterial.get(unit.materialId).plus(String(unit.weight)));
+  }
+  if (!byMaterial.size) refuse("Nothing was loaded.");
+  const invoiceLines = [];
+  let shippedTotal = new import_decimal5.Decimal(0);
+  for (const [materialId, weight2] of byMaterial) {
+    const orderLine = order.lines.find((l) => l.materialId === materialId);
+    if (!orderLine) refuse("A loaded material is not on the sales order.");
+    shippedTotal = shippedTotal.plus(weight2);
+    await postMovement(tx, { yardId: ticket.yardId, materialId, kind: "ship", weightDelta: weight2.negated(), referenceKey: `shipment:${shipment.id}:material:${materialId}:ship`, ticketId: ticket.id, actorId: ctx.actorId, reason: `Shipment ${shipment.number}` });
+    const release2 = import_decimal5.Decimal.min(new import_decimal5.Decimal(String(orderLine.reservedWeight)), weight2);
+    if (release2.gt(0)) await postMovement(tx, { yardId: ticket.yardId, materialId, kind: "release", weightDelta: release2.negated(), bucket: "reserved", referenceKey: `shipment:${shipment.id}:material:${materialId}:unreserve`, ticketId: ticket.id, actorId: ctx.actorId });
+    await tx.salesOrderLine.update({ where: { id: orderLine.id }, data: { shippedWeight: new import_decimal5.Decimal(String(orderLine.shippedWeight)).plus(weight2).toFixed(2), reservedWeight: new import_decimal5.Decimal(String(orderLine.reservedWeight)).minus(release2).toFixed(2) } });
+    const amountCents = roundCents(weight2.times(String(orderLine.unitPrice ?? 0)).div(unitFactor(orderLine.unit, base)).times(100));
+    invoiceLines.push({ description: orderLine.materialName, materialId, weight: weight2.toFixed(2), unit: orderLine.unit, unitPrice: String(orderLine.unitPrice ?? 0), amountCents, kind: "material" });
+  }
+  for (const unit of units) {
+    const won = await tx.inventoryUnit.updateMany({ where: { id: unit.id, status: "allocated", shipmentId: shipment.id }, data: { status: "shipped" } });
+    if (won.count !== 1) refuse(`Unit ${unit.tagNumber} is no longer allocated to this shipment.`);
+  }
+  if (shipment.freightCents) invoiceLines.push({ description: "Freight", amountCents: shipment.freightCents, kind: "freight" });
+  const subtotal = invoiceLines.reduce((s, l) => s + l.amountCents, 0);
+  const number = await ctx.sequence("business", "invoice");
+  const invoice = await tx.invoice.create({
+    data: {
+      number,
+      accountId: order.accountId,
+      kind: "sale",
+      status: subtotal > 0 ? "open" : "paid",
+      subtotalCents: subtotal,
+      taxCents: 0,
+      totalCents: subtotal,
+      dueOn: order.paymentTerms === "prepay" ? now : new Date(now.getTime() + Number(order.netDays || 0) * 864e5),
+      shipmentId: shipment.id,
+      lines: { create: invoiceLines }
+    }
+  });
+  const release = order.paymentTerms !== "prepay" || subtotal <= 0;
+  await compareAndSet(tx, "shipment", shipment.id, "loading", {
+    status: release ? "released" : "loaded",
+    shippedWeight: shippedTotal.toFixed(2),
+    invoiceId: invoice.id,
+    releasedAt: release ? now : null,
+    lines: [...byMaterial].map(([materialId, weight2]) => ({ materialId, weight: weight2.toFixed(2) }))
+  });
+  if (order.status === "confirmed") await compareAndSet(tx, "salesOrder", order.id, "confirmed", { status: "in_fulfilment" });
+  await maybeFulfilOrder(tx, order.id);
+  await ctx.audit({ eventType: "shipment.loaded", aggregateType: "Shipment", aggregateId: shipment.id, after: { shippedWeight: shippedTotal.toFixed(2), invoiceId: invoice.id, released: release, totalCents: totals.totalCents } });
+  return { invoiceId: invoice.id };
+}
+async function maybeFulfilOrder(tx, orderId) {
+  const order = await tx.salesOrder.findUnique({ where: { id: orderId }, include: { lines: true } });
+  if (!order || order.status !== "in_fulfilment") return false;
+  const done = order.lines.every((l) => withinTolerance(new import_decimal5.Decimal(String(l.shippedWeight)), new import_decimal5.Decimal(String(l.weight)), new import_decimal5.Decimal(String(l.tolerancePercent ?? 5))));
+  if (!done) return false;
+  const won = await tx.salesOrder.updateMany({ where: { id: orderId, status: "in_fulfilment" }, data: { status: "fulfilled" } });
+  return won.count === 1;
+}
+
+// features/keystone/commands/tickets.ts
+var TICKET_USERS = ["canManageTickets", "canGradeTickets"];
+var MANAGER = "canApproveVariances";
+async function lockOpenTicket(tx, ctx, ticketId) {
+  const row = await lockRow(tx, "ScaleTicket", ticketId);
+  if (!row) refuse("Ticket not found.");
+  requireYard(ctx.session, row.yard);
+  if (row.status !== "open") refuse("This ticket is not open. Lines, weights and prices change only while a ticket is open.");
+  return row;
+}
+function mathGuard(fn) {
+  try {
+    return fn();
+  } catch (error) {
+    if (error instanceof TicketMathError) refuse(error.message);
+    throw error;
+  }
+}
+function visitExpiresAt(plannedDate) {
+  const day = new Date(Date.UTC(plannedDate.getUTCFullYear(), plannedDate.getUTCMonth(), plannedDate.getUTCDate()));
+  return new Date(day.getTime() + 2 * 864e5);
+}
+async function openTicketTx(ctx, input) {
+  const { tx } = ctx;
+  requireYard(ctx.session, input.yardId);
+  const yard = await tx.yard.findUnique({ where: { id: input.yardId } });
+  if (!yard || yard.status !== "active") refuse("This yard is not active.");
+  const direction = input.direction === "outbound" ? "outbound" : "inbound";
+  let sellerId = input.sellerId || null;
+  let vehicleId = input.vehicleId || null;
+  let donatePercent = Math.max(0, Math.min(100, Math.trunc(Number(input.donatePercent || 0))));
+  let nonprofitId = input.nonprofitId || null;
+  let campaignId = input.campaignId || null;
+  let visitId = null;
+  if (input.visitCode) {
+    const visit = await tx.visit.findUnique({ where: { code: String(input.visitCode).trim().toUpperCase() } });
+    if (!visit) refuse("No visit has that code.");
+    if (visit.yardId !== input.yardId) refuse("That visit is booked at another yard.");
+    if (visit.status !== "booked") refuse(`That visit is ${visit.status}.`);
+    if (visitExpiresAt(visit.plannedDate).getTime() <= ctx.now.getTime()) {
+      await tx.visit.updateMany({ where: { id: visit.id, status: "booked" }, data: { status: "expired" } });
+      refuse("That visit has expired.");
+    }
+    await compareAndSet(tx, "visit", visit.id, "booked", { status: "arrived" }, "That visit was already used.");
+    visitId = visit.id;
+    sellerId = sellerId || visit.sellerId;
+    vehicleId = vehicleId || visit.vehicleId;
+    if (!input.donatePercent && visit.donatePercent) donatePercent = visit.donatePercent;
+    nonprofitId = nonprofitId || visit.nonprofitId;
+    campaignId = campaignId || visit.campaignId;
+  }
+  let paymentMode = input.paymentMode || "pay_now";
+  let account = null;
+  if (input.accountId) {
+    account = await tx.account.findUnique({ where: { id: input.accountId } });
+    if (!account) refuse("Account not found.");
+    if (account.status !== "active") refuse("This account is suspended and cannot open tickets.");
+    if (!input.paymentMode) paymentMode = account.paymentTerms === "on_account" ? "on_account" : "pay_now";
+  }
+  if (!["pay_now", "on_account", "donation_only", "customer_pays"].includes(paymentMode)) refuse("Payment mode is not valid.");
+  if (paymentMode === "on_account" && !account) refuse("Only a commercial account can be put on account.");
+  let vehicle = null;
+  if (vehicleId) {
+    vehicle = await tx.vehicle.findUnique({ where: { id: vehicleId } });
+    if (!vehicle || vehicle.isRemoved) refuse("Vehicle not found.");
+  }
+  const plate = String(input.vehiclePlate ?? vehicle?.plate ?? "").replace(/\s+/g, "").toUpperCase();
+  let screening = [];
+  if (direction === "inbound" && !account) {
+    if (!sellerId) refuse("Find or add the seller first.");
+    const seller = await tx.seller.findUnique({ where: { id: sellerId } });
+    if (!seller) refuse("Seller not found.");
+    const identity = await currentIdentity(tx, seller.id);
+    const listMatch = await doNotBuyMatch(tx, { sellerId: seller.id, firstName: seller.firstName, lastName: seller.lastName, dateOfBirth: seller.dateOfBirth, idNumbers: identity ? [identity.number] : [], plate }, ctx.now);
+    const { profile } = await yardRules(tx, input.yardId);
+    screening = screenSeller({
+      seller: { status: seller.status, dateOfBirth: seller.dateOfBirth, doNotBuyMatch: Boolean(listMatch) },
+      identity: identity ? { expiresOn: identity.expiresOn, hasFrontImage: Boolean(identity.frontImage_id) } : null,
+      profile,
+      isCommercial: false,
+      now: ctx.now
+    });
+    const blocking = screening.filter((item) => !item.overridable);
+    if (blocking.length) throw new CommandError(blocking.map((b) => b.message).join(" "), "SCREENING_BLOCKED", { items: blocking });
+    if (screening.length) {
+      if (!input.overrideReason || input.overrideReason.trim().length < 3 || !hasFlag(ctx.session, MANAGER)) {
+        throw new CommandError(`${screening.map((s) => s.message).join(" ")} A manager may override with a written reason.`, "SCREENING_NEEDS_OVERRIDE", { items: screening });
+      }
+    }
+  }
+  if (nonprofitId) {
+    const np = await tx.account.findUnique({ where: { id: nonprofitId } });
+    if (!np?.isNonprofit || np.status !== "active") refuse("Donations go only to an active partner nonprofit.");
+  }
+  if (campaignId) {
+    const campaign = await tx.donationCampaign.findUnique({ where: { id: campaignId } });
+    if (!campaign || campaign.status !== "active") refuse("That campaign is not active.");
+    nonprofitId = nonprofitId || campaign.accountId;
+  }
+  if (donatePercent > 0 && !nonprofitId) {
+    const settings = await businessSettings(tx);
+    if (!settings.isNonprofit) refuse("Choose the nonprofit or campaign that receives the donation.");
+  }
+  if (direction === "outbound") {
+    if (!input.shipmentId) refuse("An outbound ticket is opened for a shipment.");
+    const { order } = await startShipmentLoading(ctx, input.shipmentId);
+    if (order.yardId !== input.yardId) refuse("That shipment ships from another yard.");
+    account = await tx.account.findUnique({ where: { id: order.accountId } });
+    paymentMode = "customer_pays";
+  }
+  const number = await ctx.sequence(`yard:${input.yardId}`, `${direction}_ticket`, input.yardId);
+  const ticket = await tx.scaleTicket.create({
+    data: {
+      yardId: input.yardId,
+      direction,
+      number,
+      status: "open",
+      sellerId,
+      accountId: account?.id || null,
+      siteId: input.siteId || null,
+      vehicleId,
+      vehiclePlate: plate,
+      vehiclePlateRegion: String(input.vehiclePlateRegion ?? vehicle?.plateRegion ?? ""),
+      vehicleDescription: String(input.vehicleDescription ?? (vehicle ? [vehicle.color, vehicle.make, vehicle.model].filter(Boolean).join(" ") : "")),
+      visitId,
+      jobId: input.jobId || null,
+      containerId: input.containerId || null,
+      shipmentId: input.shipmentId || null,
+      paymentMode,
+      donatePercent,
+      nonprofitId,
+      campaignId,
+      lookupCode: randomCode(8),
+      overrideReason: screening.length ? String(input.overrideReason) : "",
+      overrideById: screening.length ? ctx.actorId : null,
+      openedById: ctx.actorId,
+      notes: input.notes || "",
+      fees: []
+    }
+  });
+  await ctx.audit({ eventType: "ticket.opened", aggregateType: "ScaleTicket", aggregateId: ticket.id, yardId: input.yardId, after: { number, direction, sellerId, accountId: account?.id || null }, reason: screening.length ? `Screening override: ${input.overrideReason}` : void 0 });
+  if (screening.length) await ctx.audit({ eventType: "ticket.screening_override", aggregateType: "ScaleTicket", aggregateId: ticket.id, yardId: input.yardId, after: { items: screening }, reason: String(input.overrideReason) });
+  return ticket;
+}
+async function readStableScale(tx, scaleId, yardId, now) {
+  const scale = await tx.scale.findUnique({ where: { id: scaleId } });
+  if (!scale || scale.yardId !== yardId || !scale.isActive) refuse("That scale is not at this yard.");
+  if (!scale.lastReadingAt || !scale.lastReadingStable || now.getTime() - new Date(scale.lastReadingAt).getTime() > 1e4 || scale.lastReadingWeight === null) {
+    refuse("The scale has no stable reading from the last 10 seconds. Type the weight instead.");
+  }
+  return { scale, weight: new import_decimal6.Decimal(String(scale.lastReadingWeight)) };
+}
+async function priceLine(ctx, ticket, material, input) {
+  if (input.unitPrice !== void 0 && input.unitPrice !== null && input.unitPrice !== "") {
+    if (!hasFlag(ctx.session, "canOverridePrices")) refuse("Changing a price needs the price override permission.");
+    if (!input.overrideReason || input.overrideReason.trim().length < 3) refuse("Give a reason for the price override.");
+    const price = dec(input.unitPrice);
+    if (price.isNegative()) refuse("A unit price cannot be negative.");
+    return { unitPrice: price.toFixed(5), unit: material.defaultUnit, source: "override", priceEntryId: null, overrideById: ctx.actorId, overrideReason: input.overrideReason.trim() };
+  }
+  if (ticket.direction === "outbound") {
+    if (!ticket.shipment) refuse("An outbound ticket must be for a shipment.");
+    const sale = await orderLinePrice(ctx.tx, ticket.shipment, material.id);
+    if (!sale) refuse("This material is not on the sales order for the shipment.");
+    return { unitPrice: sale.unitPrice, unit: sale.unit, source: "price_list", priceEntryId: null, overrideById: null, overrideReason: "" };
+  }
+  const snap = await resolvePrice(ctx.tx, { yardId: ticket.yard, materialId: material.id, accountId: ticket.account, sellerId: ticket.seller, at: ctx.now });
+  if (!snap) return { unitPrice: null, unit: material.defaultUnit, source: null, priceEntryId: null, overrideById: null, overrideReason: "" };
+  return { unitPrice: new import_decimal6.Decimal(snap.unitPrice).toFixed(5), unit: snap.unit, source: snap.source, priceEntryId: snap.priceEntryId, overrideById: null, overrideReason: "" };
+}
+function lineDirection(ticket, material, requested) {
+  if (ticket.isAdjustment && (requested === "pay_seller" || requested === "charge_customer")) return requested;
+  return material.direction === "charge_customer" ? "charge_customer" : "pay_seller";
+}
+async function addTicketLineTx(ctx, input) {
+  const { tx } = ctx;
+  const ticket = await lockOpenTicket(tx, ctx, input.ticketId);
+  const material = await tx.material.findUnique({ where: { id: input.materialId } });
+  if (!material || !material.isActive) refuse("Material not found.");
+  const settings = await businessSettings(tx);
+  const base = settings.weightUnit === "kg" ? "kg" : "lb";
+  let gross = input.grossWeight;
+  let tare = input.tareWeight;
+  const events = [];
+  if (input.grossFromScale || input.tareFromScale) {
+    if (!input.scaleId) refuse("Pick the scale to read.");
+    const reading = await readStableScale(tx, input.scaleId, ticket.yard, ctx.now);
+    if (input.grossFromScale) gross = reading.weight.toFixed(2);
+    else tare = reading.weight.toFixed(2);
+  }
+  if (input.tareWeight === void 0 && !input.tareFromScale && material.standardContainerTare !== null && material.standardContainerTare !== void 0) tare = String(material.standardContainerTare);
+  if (gross !== null && gross !== void 0 && gross !== "") events.push({ kind: "gross", weight: dec(gross).toFixed(2), method: input.grossFromScale ? "scale" : "manual", scaleId: input.scaleId || null });
+  if (tare !== null && tare !== void 0 && tare !== "") events.push({ kind: "tare", weight: dec(tare).toFixed(2), method: input.tareFromScale ? "scale" : "manual", scaleId: input.scaleId || null });
+  const price = await priceLine(ctx, ticket, material, input);
+  const direction = lineDirection(ticket, material, input.direction);
+  const unit = price.unit || material.defaultUnit;
+  const math = mathGuard(() => computeLine({ grossWeight: gross, tareWeight: tare, deductionWeight: input.deductionWeight, deductionPercent: input.deductionPercent, quantity: input.quantity, unit, unitPrice: price.unitPrice ?? 0, direction }, base));
+  const count = await tx.ticketLine.count({ where: { ticketId: ticket.id } });
+  const line = await tx.ticketLine.create({
+    data: {
+      ticketId: ticket.id,
+      sortOrder: count + 1,
+      materialId: material.id,
+      materialName: material.name,
+      direction,
+      grossWeight: dec(gross).toFixed(2),
+      tareWeight: dec(tare).toFixed(2),
+      netWeight: math.netWeight.toFixed(2),
+      deductionWeight: input.deductionWeight === void 0 || input.deductionWeight === null || input.deductionWeight === "" ? null : dec(input.deductionWeight).toFixed(2),
+      deductionPercent: input.deductionPercent === void 0 || input.deductionPercent === null || input.deductionPercent === "" ? null : dec(input.deductionPercent).toFixed(2),
+      deductionReason: input.deductionReason || null,
+      payWeight: math.payWeight.toFixed(2),
+      quantity: input.quantity ?? null,
+      unit,
+      unitPrice: price.unitPrice,
+      priceSource: price.source,
+      priceEntryId: price.priceEntryId,
+      overrideById: price.overrideById,
+      overrideReason: price.overrideReason,
+      amountCents: price.unitPrice === null ? 0 : math.signedAmountCents,
+      documents: input.documents || []
+    }
+  });
+  for (const event of events) {
+    await tx.weighEvent.create({ data: { ticketId: ticket.id, lineId: line.id, scaleId: event.scaleId, kind: event.kind, weight: event.weight, captureMethod: event.method, capturedById: ctx.actorId, capturedAt: ctx.now } });
+  }
+  if (price.source === "override") await ctx.audit({ eventType: "ticket.price_override", aggregateType: "TicketLine", aggregateId: line.id, yardId: ticket.yard, after: { unitPrice: price.unitPrice }, reason: price.overrideReason });
+  await recomputeOpenTotals(tx, ticket.id, base);
+  return line;
+}
+async function recordTruckWeightTx(ctx, input) {
+  const { tx } = ctx;
+  const ticket = await lockOpenTicket(tx, ctx, input.ticketId);
+  let weight2;
+  let method = "manual";
+  if (input.fromScale) {
+    if (!input.scaleId) refuse("Pick the scale to read.");
+    weight2 = (await readStableScale(tx, input.scaleId, ticket.yard, ctx.now)).weight;
+    method = "scale";
+  } else {
+    if (input.weight === void 0 || input.weight === null || input.weight === "") refuse("Enter the weight.");
+    weight2 = dec(input.weight);
+  }
+  if (!weight2.gt(0)) refuse("A truck weight must be above zero.");
+  const previous = await tx.weighEvent.findFirst({ where: { ticketId: ticket.id, kind: "sequential" }, orderBy: [{ capturedAt: "desc" }, { createdAt: "desc" }] });
+  if (input.materialId && !previous) refuse("Weigh the full truck first, then unload.");
+  if (input.materialId && previous) mathGuard(() => sequentialLineWeights([String(previous.weight), weight2.toFixed(2)]));
+  const event = await tx.weighEvent.create({ data: { ticketId: ticket.id, scaleId: input.scaleId || null, kind: "sequential", weight: weight2.toFixed(2), captureMethod: method, capturedById: ctx.actorId, capturedAt: ctx.now } });
+  if (!input.materialId) return { weighEventId: event.id, lineId: null };
+  const line = await addTicketLineTx(ctx, {
+    ticketId: ticket.id,
+    materialId: input.materialId,
+    grossWeight: String(previous.weight),
+    tareWeight: weight2.toFixed(2),
+    deductionWeight: input.deductionWeight,
+    deductionPercent: input.deductionPercent,
+    deductionReason: input.deductionReason,
+    documents: input.documents
+  });
+  return { weighEventId: event.id, lineId: line.id };
+}
+async function gradeTicketLineTx(ctx, input) {
+  const { tx } = ctx;
+  const line = await tx.ticketLine.findUnique({ where: { id: input.lineId } });
+  if (!line) refuse("Line not found.");
+  const ticket = await lockOpenTicket(tx, ctx, line.ticketId);
+  const settings = await businessSettings(tx);
+  const base = settings.weightUnit === "kg" ? "kg" : "lb";
+  const materialChanged = Boolean(input.materialId && input.materialId !== line.materialId);
+  const material = await tx.material.findUnique({ where: { id: input.materialId || line.materialId } });
+  if (!material || !material.isActive) refuse("Material not found.");
+  let price = { unitPrice: line.unitPrice === null ? null : String(line.unitPrice), unit: line.unit, source: line.priceSource, priceEntryId: line.priceEntryId, overrideById: line.overrideById, overrideReason: line.overrideReason };
+  if (materialChanged || input.reprice || input.unitPrice !== void 0 && input.unitPrice !== null && input.unitPrice !== "") {
+    if (input.reprice && !materialChanged && !input.unitPrice && !hasFlag(ctx.session, "canOverridePrices")) refuse("Repricing an open ticket needs the price override permission.");
+    price = await priceLine(ctx, ticket, material, input);
+  }
+  const has = (v) => v !== void 0;
+  const deductionWeight = has(input.deductionWeight) ? input.deductionWeight : line.deductionWeight === null ? null : String(line.deductionWeight);
+  const deductionPercent = has(input.deductionPercent) ? input.deductionPercent : line.deductionPercent === null ? null : String(line.deductionPercent);
+  const quantity = has(input.quantity) ? input.quantity : line.quantity;
+  const direction = lineDirection(ticket, material, line.direction);
+  const math = mathGuard(() => computeLine({ grossWeight: String(line.grossWeight), tareWeight: String(line.tareWeight), deductionWeight: has(input.deductionWeight) && input.deductionWeight !== null ? deductionWeight : has(input.deductionPercent) ? null : deductionWeight, deductionPercent, quantity, unit: price.unit, unitPrice: price.unitPrice ?? 0, direction }, base));
+  const before = { materialId: line.materialId, unitPrice: line.unitPrice === null ? null : String(line.unitPrice), deductionWeight: line.deductionWeight === null ? null : String(line.deductionWeight), deductionPercent: line.deductionPercent === null ? null : String(line.deductionPercent) };
+  const updated = await tx.ticketLine.update({
+    where: { id: line.id },
+    data: {
+      materialId: material.id,
+      materialName: material.name,
+      direction,
+      deductionWeight: has(input.deductionWeight) && input.deductionWeight !== null && input.deductionWeight !== "" ? dec(input.deductionWeight).toFixed(2) : has(input.deductionPercent) ? null : line.deductionWeight,
+      deductionPercent: deductionPercent === null || deductionPercent === void 0 || deductionPercent === "" ? null : dec(deductionPercent).toFixed(2),
+      deductionReason: has(input.deductionReason) ? input.deductionReason || null : line.deductionReason,
+      netWeight: math.netWeight.toFixed(2),
+      payWeight: math.payWeight.toFixed(2),
+      quantity: quantity ?? null,
+      unit: price.unit,
+      unitPrice: price.unitPrice,
+      priceSource: price.source,
+      priceEntryId: price.priceEntryId,
+      overrideById: price.overrideById,
+      overrideReason: price.overrideReason || "",
+      amountCents: price.unitPrice === null ? 0 : math.signedAmountCents,
+      documents: input.documents ?? line.documents ?? []
+    }
+  });
+  await ctx.audit({ eventType: price.source === "override" && price.overrideReason !== line.overrideReason ? "ticket.price_override" : "ticket.line_graded", aggregateType: "TicketLine", aggregateId: line.id, yardId: ticket.yard, before, after: { materialId: material.id, unitPrice: price.unitPrice, deductionWeight: updated.deductionWeight === null ? null : String(updated.deductionWeight), deductionPercent: updated.deductionPercent === null ? null : String(updated.deductionPercent) }, reason: price.overrideReason || void 0 });
+  await recomputeOpenTotals(tx, ticket.id, base);
+  return updated;
+}
+async function splitTicketLineTx(ctx, input) {
+  const { tx } = ctx;
+  const line = await tx.ticketLine.findUnique({ where: { id: input.lineId } });
+  if (!line) refuse("Line not found.");
+  const ticket = await lockOpenTicket(tx, ctx, line.ticketId);
+  const take = dec(input.weight);
+  const net = new import_decimal6.Decimal(String(line.netWeight));
+  if (!take.gt(0) || !take.lt(net)) refuse("The split weight must be above zero and less than the net weight of the line.");
+  const settings = await businessSettings(tx);
+  const base = settings.weightUnit === "kg" ? "kg" : "lb";
+  const newTare = new import_decimal6.Decimal(String(line.tareWeight)).plus(take);
+  const math = mathGuard(() => computeLine({ grossWeight: String(line.grossWeight), tareWeight: newTare, deductionWeight: line.deductionWeight === null ? null : import_decimal6.Decimal.min(String(line.deductionWeight), net.minus(take)), deductionPercent: line.deductionPercent === null ? null : String(line.deductionPercent), unit: line.unit, unitPrice: line.unitPrice === null ? 0 : String(line.unitPrice), direction: line.direction }, base));
+  await tx.ticketLine.update({ where: { id: line.id }, data: { tareWeight: newTare.toFixed(2), netWeight: math.netWeight.toFixed(2), payWeight: math.payWeight.toFixed(2), amountCents: line.unitPrice === null ? 0 : math.signedAmountCents, ...line.deductionWeight !== null ? { deductionWeight: import_decimal6.Decimal.min(String(line.deductionWeight), net.minus(take)).toFixed(2) } : {} } });
+  const created = await addTicketLineTx(ctx, { ticketId: ticket.id, materialId: input.materialId, grossWeight: take.toFixed(2), tareWeight: "0" });
+  await ctx.audit({ eventType: "ticket.line_split", aggregateType: "TicketLine", aggregateId: line.id, yardId: ticket.yard, after: { newLineId: created.id, weight: take.toFixed(2) } });
+  return created;
+}
+async function removeTicketLineTx(ctx, input) {
+  const { tx } = ctx;
+  const line = await tx.ticketLine.findUnique({ where: { id: input.lineId } });
+  if (!line) refuse("Line not found.");
+  const ticket = await lockOpenTicket(tx, ctx, line.ticketId);
+  await tx.ticketLine.delete({ where: { id: line.id } });
+  await ctx.audit({ eventType: "ticket.line_removed", aggregateType: "TicketLine", aggregateId: line.id, yardId: ticket.yard, before: { materialId: line.materialId, payWeight: String(line.payWeight), amountCents: line.amountCents }, reason: input.reason || void 0 });
+  const settings = await businessSettings(tx);
+  await recomputeOpenTotals(tx, ticket.id, settings.weightUnit === "kg" ? "kg" : "lb");
+  return { id: ticket.id };
+}
+async function updateTicketDetailsTx(ctx, input) {
+  const { tx } = ctx;
+  const ticket = await lockOpenTicket(tx, ctx, input.ticketId);
+  const data = {};
+  if (input.vehiclePlate !== void 0) data.vehiclePlate = String(input.vehiclePlate || "").replace(/\s+/g, "").toUpperCase();
+  if (input.vehiclePlateRegion !== void 0) data.vehiclePlateRegion = input.vehiclePlateRegion || "";
+  if (input.vehicleDescription !== void 0) data.vehicleDescription = input.vehicleDescription || "";
+  if (input.vehicleId !== void 0) data.vehicleId = input.vehicleId || null;
+  if (input.siteId !== void 0) data.siteId = input.siteId || null;
+  if (input.containerId !== void 0) data.containerId = input.containerId || null;
+  if (input.jobId !== void 0) data.jobId = input.jobId || null;
+  if (input.notes !== void 0) data.notes = input.notes || "";
+  if (input.donatePercent !== void 0) {
+    const pct = Math.trunc(Number(input.donatePercent || 0));
+    if (pct < 0 || pct > 100) refuse("Donation percent must be between 0 and 100.");
+    data.donatePercent = pct;
+  }
+  if (input.campaignId !== void 0) {
+    data.campaignId = input.campaignId || null;
+    if (input.campaignId) {
+      const campaign = await tx.donationCampaign.findUnique({ where: { id: input.campaignId } });
+      if (!campaign || campaign.status !== "active") refuse("That campaign is not active.");
+      data.nonprofitId = campaign.accountId;
+    }
+  }
+  if (input.nonprofitId !== void 0 && input.campaignId === void 0) {
+    if (input.nonprofitId) {
+      const np = await tx.account.findUnique({ where: { id: input.nonprofitId } });
+      if (!np?.isNonprofit || np.status !== "active") refuse("Donations go only to an active partner nonprofit.");
+    }
+    data.nonprofitId = input.nonprofitId || null;
+  }
+  if (input.paymentMode !== void 0 && input.paymentMode) {
+    if (!["pay_now", "on_account", "donation_only", "customer_pays"].includes(input.paymentMode)) refuse("Payment mode is not valid.");
+    if (input.paymentMode === "on_account" && !ticket.account) refuse("Only a commercial account can be put on account.");
+    data.paymentMode = input.paymentMode;
+  }
+  if (input.fees !== void 0) {
+    const fees = (input.fees || []).map((fee) => ({ label: String(fee.label || "").slice(0, 120), amountCents: Math.trunc(Number(fee.amountCents)) }));
+    if (fees.some((fee) => !fee.label || !Number.isSafeInteger(fee.amountCents))) refuse("Each fee needs a label and an amount in cents.");
+    data.fees = fees;
+  }
+  const updated = await tx.scaleTicket.update({ where: { id: ticket.id }, data });
+  const settings = await businessSettings(tx);
+  await recomputeOpenTotals(tx, ticket.id, settings.weightUnit === "kg" ? "kg" : "lb");
+  return updated;
+}
+async function recomputeOpenTotals(tx, ticketId, _base) {
+  const ticket = await tx.scaleTicket.findUnique({ where: { id: ticketId }, include: { lines: true, yard: true } });
+  const totals = computeTicketTotals(ticket.lines.map((l) => ({ signedAmountCents: l.amountCents })), Array.isArray(ticket.fees) ? ticket.fees : [], String(ticket.yard?.feeTaxRatePercent ?? 0));
+  await tx.scaleTicket.update({ where: { id: ticketId }, data: totals });
+  return totals;
+}
+async function ticketComplianceChecklist(tx, ticketId, now = /* @__PURE__ */ new Date()) {
+  const ticket = await tx.scaleTicket.findUnique({ where: { id: ticketId }, include: { lines: { include: { material: true } }, attachments: true, seller: true } });
+  if (!ticket) refuse("Ticket not found.");
+  const { profile, restrictions } = await yardRules(tx, ticket.yardId);
+  const identity = ticket.sellerId ? await currentIdentity(tx, ticket.sellerId) : null;
+  const listMatch = ticket.seller ? await doNotBuyMatch(tx, { sellerId: ticket.sellerId, firstName: ticket.seller.firstName, lastName: ticket.seller.lastName, dateOfBirth: ticket.seller.dateOfBirth, idNumbers: identity ? [identity.number] : [], plate: ticket.vehiclePlate }, now) : null;
+  const items = validateTicketCompliance({
+    direction: ticket.direction,
+    isCommercial: Boolean(ticket.accountId),
+    isAdjustment: ticket.isAdjustment,
+    now,
+    seller: ticket.seller ? { status: ticket.seller.status, dateOfBirth: ticket.seller.dateOfBirth, doNotBuyMatch: Boolean(listMatch) } : null,
+    identity: identity ? { expiresOn: identity.expiresOn, hasFrontImage: Boolean(identity.frontImage_id), hasThumbprint: Boolean(identity.thumbprintImage_id) } : null,
+    vehiclePlate: ticket.vehiclePlate,
+    attachments: ticket.attachments.map((a) => ({ kind: a.kind, lineId: a.lineId })),
+    lines: ticket.lines.map((l) => ({ id: l.id, materialId: l.materialId, categoryId: l.material?.categoryId, materialName: l.materialName, hasPrice: l.unitPrice !== null, documents: Array.isArray(l.documents) ? l.documents : [] }))
+  }, profile, restrictions);
+  return { ticket, profile, restrictions, items, identity };
+}
+async function completeTicketTx(ctx, input) {
+  const { tx, now } = ctx;
+  const row = await lockOpenTicket(tx, ctx, input.ticketId);
+  const settings = await businessSettings(tx);
+  const base = settings.weightUnit === "kg" ? "kg" : "lb";
+  const { ticket, profile, restrictions, items } = await ticketComplianceChecklist(tx, row.id, now);
+  for (const line of ticket.lines) {
+    if (line.unitPrice === null) continue;
+    const math = mathGuard(() => computeLine({ grossWeight: String(line.grossWeight), tareWeight: String(line.tareWeight), deductionWeight: line.deductionWeight === null ? null : String(line.deductionWeight), deductionPercent: line.deductionPercent === null ? null : String(line.deductionPercent), quantity: line.quantity, unit: line.unit, unitPrice: String(line.unitPrice), direction: line.direction }, base));
+    if (math.signedAmountCents !== line.amountCents) await tx.ticketLine.update({ where: { id: line.id }, data: { amountCents: math.signedAmountCents, payWeight: math.payWeight.toFixed(2), netWeight: math.netWeight.toFixed(2) } });
+    line.amountCents = math.signedAmountCents;
+    line.payWeight = math.payWeight.toFixed(2);
+  }
+  const override = input.overrideReason ? { reason: input.overrideReason } : null;
+  if (override && !hasFlag(ctx.session, MANAGER)) refuse("Only a manager may override a compliance item.");
+  const blocking = blockingItems(items, override);
+  if (blocking.length) throw new CommandError(`The ticket cannot be completed yet: ${blocking.map((i) => i.message).join(" ")}`, "COMPLIANCE_INCOMPLETE", { items: blocking });
+  const overridden = override ? items.filter((i) => i.overridable) : [];
+  const totals = computeTicketTotals(ticket.lines.map((l) => ({ signedAmountCents: l.amountCents })), Array.isArray(ticket.fees) ? ticket.fees : [], String((await tx.yard.findUnique({ where: { id: ticket.yardId } }))?.feeTaxRatePercent ?? 0));
+  if (ticket.direction === "outbound") {
+    await loadShipmentFromTicket(ctx, ticket, totals);
+  } else {
+    await postInboundEffects(ctx, ticket, totals, profile, restrictions, settings);
+  }
+  await compareAndSet(tx, "scaleTicket", ticket.id, "open", {
+    status: "completed",
+    ...totals,
+    completedById: ctx.actorId,
+    completedAt: now,
+    complianceSnapshot: { checkedAt: now.toISOString(), items, overridden: overridden.map((i) => i.code), profile },
+    ...overridden.length ? { overrideReason: String(input.overrideReason), overrideById: ctx.actorId } : {}
+  }, "This ticket was already completed.");
+  if (ticket.containerId) await tx.container.updateMany({ where: { id: ticket.containerId, status: "in_transit" }, data: { status: "in_yard", siteId: null, accountId: null, placedOn: null } });
+  await ctx.audit({ eventType: "ticket.completed", aggregateType: "ScaleTicket", aggregateId: ticket.id, yardId: ticket.yardId, after: { ...totals, lines: ticket.lines.length }, reason: overridden.length ? `Compliance override: ${input.overrideReason}` : void 0 });
+  await maybeSettleTicket(tx, ticket.id, now);
+  return tx.scaleTicket.findUnique({ where: { id: ticket.id } });
+}
+async function postInboundEffects(ctx, ticket, totals, profile, restrictions, settings) {
+  const { tx, now } = ctx;
+  for (const line of ticket.lines) {
+    const weight2 = new import_decimal6.Decimal(String(line.payWeight));
+    if (weight2.isZero()) continue;
+    const sign = ticket.isAdjustment && line.direction === "charge_customer" ? -1 : 1;
+    const costDeltaCents = ticket.isAdjustment ? sign * Math.abs(line.amountCents) : Math.max(0, line.amountCents);
+    await postMovement(tx, {
+      yardId: ticket.yardId,
+      materialId: line.materialId,
+      kind: "receive",
+      weightDelta: weight2.times(sign),
+      costDeltaCents,
+      referenceKey: `ticket:${ticket.id}:line:${line.id}:receive`,
+      ticketId: ticket.id,
+      ticketLineId: line.id,
+      actorId: ctx.actorId,
+      allowNegative: false
+    });
+    const lineRestrictions = restrictionsForLine({ materialId: line.materialId, categoryId: line.material?.categoryId }, restrictions);
+    const holdDays = Math.max(Number(profile.defaultMaterialHoldDays || 0), ...lineRestrictions.map((r) => Number(r.materialHoldDays || 0)));
+    if (holdDays > 0 && sign > 0) {
+      const tag = await tx.holdTag.create({ data: { ticketId: ticket.id, lineId: line.id, yardId: ticket.yardId, materialId: line.materialId, weight: weight2.toFixed(2), kind: "material", status: "held", releaseAt: new Date(now.getTime() + holdDays * 864e5) } });
+      await postMovement(tx, { yardId: ticket.yardId, materialId: line.materialId, kind: "hold", weightDelta: weight2, bucket: "held", referenceKey: `hold:${tag.id}:place`, ticketId: ticket.id, ticketLineId: line.id, actorId: ctx.actorId });
+    }
+  }
+  let donationCents = 0;
+  if (ticket.donatePercent > 0 && totals.totalCents > 0) {
+    donationCents = new import_decimal6.Decimal(totals.totalCents).times(ticket.donatePercent).div(100).toDecimalPlaces(0, import_decimal6.Decimal.ROUND_HALF_UP).toNumber();
+  }
+  const goodsDonation = settings.isNonprofit && (ticket.paymentMode === "donation_only" || ticket.donatePercent === 100 && !ticket.nonprofitId);
+  if (donationCents > 0 || goodsDonation) {
+    const receiptNo = await ctx.sequence("business", "donation_receipt");
+    const receiptNumber = `D-${now.getUTCFullYear()}-${String(receiptNo).padStart(6, "0")}`;
+    await tx.donation.create({
+      data: {
+        ticketId: ticket.id,
+        sellerId: ticket.sellerId,
+        accountId: goodsDonation ? null : ticket.nonprofitId,
+        campaignId: ticket.campaignId,
+        amountCents: goodsDonation ? 0 : donationCents,
+        weight: ticket.lines.reduce((s, l) => s.plus(String(l.payWeight)), new import_decimal6.Decimal(0)).toFixed(2),
+        itemsSummary: ticket.lines.map((l) => ({ material: l.materialName, weight: String(l.payWeight), unit: settings.weightUnit })),
+        kind: goodsDonation ? "goods_donation" : "payout_donation",
+        status: "credited",
+        receiptNumber,
+        receiptIssuedAt: now,
+        goodsOrServicesProvided: false
+      }
+    });
+    if (goodsDonation) donationCents = Math.max(0, totals.totalCents);
+  }
+  if (ticket.paymentMode === "on_account") return;
+  if (totals.totalCents < 0) {
+    const number = await ctx.sequence("business", "invoice");
+    await tx.invoice.create({
+      data: {
+        number,
+        sellerId: ticket.sellerId,
+        accountId: ticket.accountId,
+        ticketId: ticket.id,
+        kind: "fee_ticket",
+        status: "open",
+        subtotalCents: -totals.totalCents - totals.taxCents,
+        taxCents: totals.taxCents,
+        totalCents: -totals.totalCents,
+        dueOn: now,
+        lines: { create: [
+          ...ticket.lines.filter((l) => l.amountCents < 0).map((l) => ({ description: l.materialName, materialId: l.materialId, weight: String(l.payWeight), unit: l.unit, unitPrice: String(l.unitPrice), amountCents: -l.amountCents, kind: "fee" })),
+          ...ticket.lines.filter((l) => l.amountCents > 0).map((l) => ({ description: `Less ${l.materialName}`, materialId: l.materialId, weight: String(l.payWeight), unit: l.unit, unitPrice: String(l.unitPrice), amountCents: -l.amountCents, kind: "credit" })),
+          ...(Array.isArray(ticket.fees) ? ticket.fees : []).filter((f) => f.amountCents !== 0).map((f) => ({ description: f.label, amountCents: -f.amountCents, kind: "fee" })),
+          ...totals.taxCents ? [{ description: "Tax on fees", amountCents: totals.taxCents, kind: "fee" }] : []
+        ] }
+      }
+    });
+    return;
+  }
+  const payable = totals.totalCents - donationCents;
+  if (payable <= 0 || ticket.paymentMode === "donation_only") return;
+  const yard = await tx.yard.findUnique({ where: { id: ticket.yardId } });
+  const groups = splitPayouts({
+    lines: ticket.lines.map((l) => ({ id: l.id, signedAmountCents: l.amountCents, materialId: l.materialId, categoryId: l.material?.categoryId })),
+    restrictions,
+    yardMethods: Array.isArray(yard?.payoutMethods) ? yard.payoutMethods : ["cash", "check", "transfer"],
+    profile,
+    completedAt: now,
+    extraCents: totals.feeTotalCents - totals.taxCents - donationCents
+  });
+  const seller = ticket.sellerId ? await tx.seller.findUnique({ where: { id: ticket.sellerId } }) : null;
+  for (const group of groups) {
+    const held = Boolean(group.releaseAt && group.releaseAt.getTime() > now.getTime());
+    const payout = await tx.payout.create({
+      data: {
+        ticketId: ticket.id,
+        sellerId: ticket.sellerId,
+        accountId: ticket.accountId,
+        amountCents: group.amountCents,
+        status: held ? "held" : "ready",
+        allowedMethods: group.allowedMethods,
+        releaseAt: group.releaseAt,
+        mailToAddress: group.mailCheckOnly && seller ? [seller.addressLine1, seller.addressLine2, seller.city, seller.region, seller.postalCode].filter(Boolean).join(", ") : "",
+        lines: { connect: group.lineIds.map((id) => ({ id })) }
+      }
+    });
+    await ctx.audit({ eventType: "payout.created", aggregateType: "Payout", aggregateId: payout.id, yardId: ticket.yardId, after: { amountCents: group.amountCents, status: payout.status, allowedMethods: group.allowedMethods, releaseAt: group.releaseAt } });
+  }
+}
+async function voidTicketTx(ctx, input) {
+  const { tx, now } = ctx;
+  const reason = String(input.reason || "").trim();
+  if (reason.length < 3) refuse("Give a reason for the void.");
+  const row = await lockRow(tx, "ScaleTicket", input.ticketId);
+  if (!row) refuse("Ticket not found.");
+  requireYard(ctx.session, row.yard);
+  if (row.status === "open") {
+    if (!hasFlag(ctx.session, "canManageTickets") && !hasFlag(ctx.session, "canVoidTickets")) refuse("You cannot void tickets.");
+    await compareAndSet(tx, "scaleTicket", row.id, "open", { status: "voided", voidReason: reason, voidedById: ctx.actorId, voidedAt: now });
+    if (row.visit) await tx.visit.updateMany({ where: { id: row.visit, status: "arrived" }, data: { status: "booked" } });
+    await ctx.audit({ eventType: "ticket.voided", aggregateType: "ScaleTicket", aggregateId: row.id, yardId: row.yard, before: { status: "open" }, after: { status: "voided" }, reason });
+    return tx.scaleTicket.findUnique({ where: { id: row.id } });
+  }
+  if (row.status !== "completed") refuse(row.status === "settled" ? "A settled ticket never changes. Issue an adjustment ticket." : "This ticket is already void.");
+  if (!hasFlag(ctx.session, "canVoidTickets")) refuse("Only a manager may void a completed ticket.");
+  if (row.direction === "outbound") refuse("An outbound ticket with a loaded shipment cannot be voided; cancel or adjust the shipment instead.");
+  const payouts = await tx.payout.findMany({ where: { ticketId: row.id } });
+  if (payouts.some((p) => p.status === "paid" || p.status === "returned")) refuse("A payout on this ticket is paid. Issue an adjustment ticket instead.");
+  if (row.settlement) {
+    const settlement = await tx.settlement.findUnique({ where: { id: row.settlement } });
+    if (settlement && settlement.status !== "draft" && settlement.status !== "void") refuse("This ticket is on an approved settlement.");
+  }
+  const invoice = await tx.invoice.findFirst({ where: { ticketId: row.id, kind: "fee_ticket", status: { not: "void" } } });
+  if (invoice && invoice.paidCents > 0) refuse("A fee on this ticket has been paid. Issue an adjustment ticket instead.");
+  if (row.collectedCents > 0) refuse("Cash was collected on this ticket. Issue an adjustment ticket instead.");
+  const movements = await tx.inventoryMovement.findMany({ where: { ticketId: row.id, kind: { in: ["receive", "hold"] } } });
+  for (const movement of movements.filter((m) => m.kind === "receive")) {
+    await postMovement(tx, { yardId: movement.yardId, materialId: movement.materialId, kind: "reverse", weightDelta: new import_decimal6.Decimal(String(movement.weightDelta)).negated(), costDeltaCents: -movement.costDeltaCents, referenceKey: `${movement.referenceKey}:reverse`, ticketId: row.id, ticketLineId: movement.ticketLineId, actorId: ctx.actorId, reason });
+  }
+  const tags = await tx.holdTag.findMany({ where: { ticketId: row.id, status: { in: ["held", "police_hold"] } } });
+  for (const tag of tags) {
+    await compareAndSet(tx, "holdTag", tag.id, ["held", "police_hold"], { status: "cancelled", releasedAt: now, releasedById: ctx.actorId, releaseReason: `Ticket voided: ${reason}` });
+    await postMovement(tx, { yardId: tag.yardId, materialId: tag.materialId, kind: "release", weightDelta: new import_decimal6.Decimal(String(tag.weight)).negated(), bucket: "held", referenceKey: `hold:${tag.id}:release`, ticketId: row.id, actorId: ctx.actorId, reason });
+  }
+  for (const payout of payouts.filter((p) => p.status === "ready" || p.status === "held" || p.status === "pending")) {
+    await compareAndSet(tx, "payout", payout.id, ["ready", "held", "pending"], { status: "cancelled", cancelReason: `Ticket voided: ${reason}` }, "A payout on this ticket changed while voiding. Try again.");
+  }
+  await tx.donation.updateMany({ where: { ticketId: row.id, status: { in: ["pledged", "credited"] } }, data: { status: "cancelled" } });
+  if (invoice) await compareAndSet(tx, "invoice", invoice.id, ["open"], { status: "void", voidReason: `Ticket voided: ${reason}` });
+  if (row.settlement) await tx.scaleTicket.update({ where: { id: row.id }, data: { settlementId: null } });
+  await compareAndSet(tx, "scaleTicket", row.id, "completed", { status: "voided", voidReason: reason, voidedById: ctx.actorId, voidedAt: now });
+  await ctx.audit({ eventType: "ticket.voided", aggregateType: "ScaleTicket", aggregateId: row.id, yardId: row.yard, before: { status: "completed", totalCents: row.totalCents }, after: { status: "voided", reversedMovements: movements.length, cancelledPayouts: payouts.length }, reason });
+  return tx.scaleTicket.findUnique({ where: { id: row.id } });
+}
+async function createAdjustmentTicketTx(ctx, input) {
+  const { tx } = ctx;
+  if (!hasFlag(ctx.session, MANAGER)) refuse("Only a manager may issue an adjustment ticket.");
+  const reason = String(input.reason || "").trim();
+  if (reason.length < 3) refuse("Give a reason for the adjustment.");
+  const original = await tx.scaleTicket.findUnique({ where: { id: input.ticketId } });
+  if (!original) refuse("Ticket not found.");
+  requireYard(ctx.session, original.yardId);
+  if (!["completed", "settled"].includes(original.status)) refuse("Only a completed or settled ticket can be adjusted.");
+  if (original.isAdjustment) refuse("Adjust the original ticket, not an adjustment.");
+  const number = await ctx.sequence(`yard:${original.yardId}`, `${original.direction}_ticket`, original.yardId);
+  const ticket = await tx.scaleTicket.create({
+    data: {
+      yardId: original.yardId,
+      direction: original.direction,
+      number,
+      status: "open",
+      sellerId: original.sellerId,
+      accountId: original.accountId,
+      siteId: original.siteId,
+      vehiclePlate: original.vehiclePlate,
+      vehiclePlateRegion: original.vehiclePlateRegion,
+      vehicleDescription: original.vehicleDescription,
+      adjustsId: original.id,
+      isAdjustment: true,
+      paymentMode: original.paymentMode === "on_account" ? "on_account" : "pay_now",
+      lookupCode: randomCode(8),
+      openedById: ctx.actorId,
+      notes: reason,
+      fees: []
+    }
+  });
+  await ctx.audit({ eventType: "ticket.adjustment_opened", aggregateType: "ScaleTicket", aggregateId: ticket.id, yardId: original.yardId, after: { adjusts: original.id, number }, reason });
+  return ticket;
+}
+function hashScaleKey(key) {
+  return (0, import_node_crypto5.createHash)("sha256").update(`recycling-scale:${key}`).digest("hex");
+}
+async function issueScaleKeyTx(ctx, input) {
+  const scale = await ctx.tx.scale.findUnique({ where: { id: input.scaleId } });
+  if (!scale) refuse("Scale not found.");
+  requireYard(ctx.session, scale.yardId);
+  const key = `sk_${randomCode(32)}`;
+  await ctx.tx.scale.update({ where: { id: scale.id }, data: { apiKeyHash: hashScaleKey(key) } });
+  await ctx.audit({ eventType: "scale.key_issued", aggregateType: "Scale", aggregateId: scale.id, yardId: scale.yardId });
+  return { id: scale.id, key };
+}
+var refetch = (context, id) => context.db.ScaleTicket.findOne({ where: { id } });
+var ticketTypeDefs = `
+  input TicketFeeInput { label: String!, amountCents: Int! }
+  input OpenTicketInput {
+    yardId: ID!, direction: String, sellerId: ID, accountId: ID, siteId: ID, vehicleId: ID, vehiclePlate: String, vehiclePlateRegion: String,
+    vehicleDescription: String, visitCode: String, jobId: ID, containerId: ID, shipmentId: ID, paymentMode: String, donatePercent: Int,
+    nonprofitId: ID, campaignId: ID, overrideReason: String, notes: String
+  }
+  input TicketLineInput {
+    ticketId: ID!, materialId: ID!, grossWeight: String, tareWeight: String, quantity: Int, deductionWeight: String, deductionPercent: String,
+    deductionReason: String, unitPrice: String, overrideReason: String, documents: [String!], direction: String, scaleId: ID,
+    grossFromScale: Boolean, tareFromScale: Boolean
+  }
+  input GradeTicketLineInput {
+    lineId: ID!, materialId: ID, deductionWeight: String, deductionPercent: String, deductionReason: String, unitPrice: String,
+    overrideReason: String, documents: [String!], reprice: Boolean, quantity: Int
+  }
+  input TruckWeightInput {
+    ticketId: ID!, weight: String, scaleId: ID, fromScale: Boolean, materialId: ID, deductionWeight: String, deductionPercent: String,
+    deductionReason: String, documents: [String!]
+  }
+  input TicketDetailsInput {
+    ticketId: ID!, vehiclePlate: String, vehiclePlateRegion: String, vehicleDescription: String, vehicleId: ID, donatePercent: Int,
+    nonprofitId: ID, campaignId: ID, paymentMode: String, fees: [TicketFeeInput!], notes: String, siteId: ID, containerId: ID, jobId: ID
+  }
+  type TruckWeightResult { weighEventId: ID!, line: TicketLine }
+  type ScaleKeyResult { id: ID!, key: String! }
+  type ComplianceItem { code: String!, message: String!, lineId: ID, overridable: Boolean! }
+`;
+var ticketMutationDefs = `
+  openTicket(data: OpenTicketInput!, idempotencyKey: String): ScaleTicket
+  addTicketLine(data: TicketLineInput!, idempotencyKey: String): TicketLine
+  recordTruckWeight(data: TruckWeightInput!, idempotencyKey: String): TruckWeightResult
+  gradeTicketLine(data: GradeTicketLineInput!, idempotencyKey: String): TicketLine
+  splitTicketLine(lineId: ID!, weight: String!, materialId: ID!, idempotencyKey: String): TicketLine
+  removeTicketLine(lineId: ID!, reason: String, idempotencyKey: String): ScaleTicket
+  updateTicketDetails(data: TicketDetailsInput!, idempotencyKey: String): ScaleTicket
+  completeTicket(ticketId: ID!, overrideReason: String, idempotencyKey: String): ScaleTicket
+  voidTicket(ticketId: ID!, reason: String!, idempotencyKey: String): ScaleTicket
+  createAdjustmentTicket(ticketId: ID!, reason: String!, idempotencyKey: String): ScaleTicket
+  issueScaleKey(scaleId: ID!): ScaleKeyResult
+`;
+var ticketQueryDefs = `
+  ticketComplianceChecklist(ticketId: ID!): [ComplianceItem!]
+`;
+var ticketResolvers = {
+  Mutation: {
+    openTicket: async (_, { data, idempotencyKey }, context) => {
+      const r = await runCommand(context, { name: "openTicket", input: data, idempotencyKey: cleanKey(idempotencyKey), permission: "canManageTickets", aggregateType: "ScaleTicket" }, (ctx) => openTicketTx(ctx, data));
+      return refetch(context, r.id);
+    },
+    addTicketLine: async (_, { data, idempotencyKey }, context) => {
+      const r = await runCommand(context, { name: "addTicketLine", input: data, idempotencyKey: cleanKey(idempotencyKey), permission: [...TICKET_USERS], aggregateType: "TicketLine" }, (ctx) => addTicketLineTx(ctx, data));
+      return context.db.TicketLine.findOne({ where: { id: r.id } });
+    },
+    recordTruckWeight: async (_, { data, idempotencyKey }, context) => {
+      const r = await runCommand(context, { name: "recordTruckWeight", input: data, idempotencyKey: cleanKey(idempotencyKey), permission: [...TICKET_USERS] }, (ctx) => recordTruckWeightTx(ctx, data));
+      return { weighEventId: r.weighEventId, line: r.lineId ? await context.db.TicketLine.findOne({ where: { id: r.lineId } }) : null };
+    },
+    gradeTicketLine: async (_, { data, idempotencyKey }, context) => {
+      const r = await runCommand(context, { name: "gradeTicketLine", input: data, idempotencyKey: cleanKey(idempotencyKey), permission: [...TICKET_USERS], aggregateType: "TicketLine" }, (ctx) => gradeTicketLineTx(ctx, data));
+      return context.db.TicketLine.findOne({ where: { id: r.id } });
+    },
+    splitTicketLine: async (_, args, context) => {
+      const r = await runCommand(context, { name: "splitTicketLine", input: { lineId: args.lineId, weight: args.weight, materialId: args.materialId }, idempotencyKey: cleanKey(args.idempotencyKey), permission: [...TICKET_USERS] }, (ctx) => splitTicketLineTx(ctx, args));
+      return context.db.TicketLine.findOne({ where: { id: r.id } });
+    },
+    removeTicketLine: async (_, args, context) => {
+      const r = await runCommand(context, { name: "removeTicketLine", input: { lineId: args.lineId, reason: args.reason }, idempotencyKey: cleanKey(args.idempotencyKey), permission: [...TICKET_USERS] }, (ctx) => removeTicketLineTx(ctx, args));
+      return refetch(context, r.id);
+    },
+    updateTicketDetails: async (_, { data, idempotencyKey }, context) => {
+      const r = await runCommand(context, { name: "updateTicketDetails", input: data, idempotencyKey: cleanKey(idempotencyKey), permission: [...TICKET_USERS] }, (ctx) => updateTicketDetailsTx(ctx, data));
+      return refetch(context, r.id);
+    },
+    completeTicket: async (_, args, context) => {
+      const r = await runCommand(context, { name: "completeTicket", input: { ticketId: args.ticketId, overrideReason: args.overrideReason }, idempotencyKey: cleanKey(args.idempotencyKey), permission: [...TICKET_USERS], aggregateType: "ScaleTicket" }, (ctx) => completeTicketTx(ctx, args));
+      return refetch(context, r.id);
+    },
+    voidTicket: async (_, args, context) => {
+      const r = await runCommand(context, { name: "voidTicket", input: { ticketId: args.ticketId, reason: args.reason }, idempotencyKey: cleanKey(args.idempotencyKey), permission: ["canManageTickets", "canVoidTickets"], aggregateType: "ScaleTicket" }, (ctx) => voidTicketTx(ctx, args));
+      return refetch(context, r.id);
+    },
+    createAdjustmentTicket: async (_, args, context) => {
+      const r = await runCommand(context, { name: "createAdjustmentTicket", input: { ticketId: args.ticketId, reason: args.reason }, idempotencyKey: cleanKey(args.idempotencyKey), permission: MANAGER, aggregateType: "ScaleTicket" }, (ctx) => createAdjustmentTicketTx(ctx, args));
+      return refetch(context, r.id);
+    },
+    issueScaleKey: async (_, args, context) => runCommand(context, { name: "issueScaleKey", input: args, permission: "canManageSettings" }, (ctx) => issueScaleKeyTx(ctx, args))
+  },
+  Query: {
+    ticketComplianceChecklist: async (_, { ticketId }, context) => {
+      if (!hasFlag(context.session, "canAccessDashboard")) throw new CommandError("Staff only.", "FORBIDDEN");
+      const ticket = await context.sudo().prisma.scaleTicket.findUnique({ where: { id: ticketId } });
+      if (!ticket) refuse("Ticket not found.");
+      requireYard(context.session, ticket.yardId);
+      const { items } = await ticketComplianceChecklist(context.sudo().prisma, ticketId);
+      return items;
+    }
+  }
+};
+
+// features/keystone/commands/index.ts
+var commandModules = [
+  { typeDefs: ticketTypeDefs, mutationDefs: ticketMutationDefs, queryDefs: ticketQueryDefs, resolvers: ticketResolvers }
+];
+
 // features/keystone/mutations/index.ts
 var graphql4 = String.raw;
 function extendGraphqlSchema(baseSchema) {
+  const typeDefs = commandModules.map((m) => m.typeDefs || "").join("\n");
+  const mutations = commandModules.map((m) => m.mutationDefs || "").join("\n");
+  const queries = commandModules.map((m) => m.queryDefs || "").join("\n");
+  const resolvers = { Query: { redirectToInit: redirectToInit_default }, Mutation: {} };
+  for (const m of commandModules) {
+    Object.assign(resolvers.Query, m.resolvers.Query || {});
+    Object.assign(resolvers.Mutation, m.resolvers.Mutation || {});
+    for (const [type, fields] of Object.entries(m.resolvers)) {
+      if (type === "Query" || type === "Mutation") continue;
+      resolvers[type] = { ...resolvers[type] || {}, ...fields };
+    }
+  }
   return (0, import_schema.mergeSchemas)({
     schemas: [baseSchema],
     typeDefs: graphql4`
+      ${typeDefs}
       type Query {
         redirectToInit: Boolean
+        ${queries}
+      }
+      type Mutation {
+        ${mutations}
       }
     `,
-    resolvers: {
-      Query: {
-        redirectToInit: redirectToInit_default
-      }
-    }
+    resolvers
   });
 }
 

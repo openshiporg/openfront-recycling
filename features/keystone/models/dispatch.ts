@@ -207,7 +207,7 @@ export const Donation = list({
     itemsSummary: json({ defaultValue: [], ...cmd }),
     kind: choice(['payout_donation', 'goods_donation'], 'payout_donation', cmd),
     status: status(['pledged', 'credited', 'disbursed', 'cancelled'], 'pledged'),
-    receiptNumber: text({ isIndexed: 'unique', ...cmd }),
+    receiptNumber: text({ isIndexed: 'unique', ...cmd , db: { isNullable: true } }),
     receiptIssuedAt: timestamp({ ...cmd }),
     goodsOrServicesProvided: checkbox({ defaultValue: false, ...cmd }),
     showDonorName: checkbox({ defaultValue: false, ...cmd }),

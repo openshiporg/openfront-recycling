@@ -131,7 +131,7 @@ CREATE TABLE "Scale" (
     "yard" TEXT,
     "name" TEXT NOT NULL DEFAULT '',
     "kind" TEXT NOT NULL DEFAULT 'truck',
-    "apiKeyHash" TEXT NOT NULL DEFAULT '',
+    "apiKeyHash" TEXT,
     "lastReadingWeight" DECIMAL(14,2),
     "lastReadingAt" TIMESTAMP(3),
     "lastReadingStable" BOOLEAN NOT NULL DEFAULT false,
@@ -322,7 +322,7 @@ CREATE TABLE "Account" (
     "name" TEXT NOT NULL DEFAULT '',
     "legalName" TEXT NOT NULL DEFAULT '',
     "slug" TEXT NOT NULL DEFAULT '',
-    "accountNumber" TEXT NOT NULL DEFAULT '',
+    "accountNumber" TEXT,
     "status" TEXT NOT NULL DEFAULT 'active',
     "statusReason" TEXT NOT NULL DEFAULT '',
     "isSupplier" BOOLEAN NOT NULL DEFAULT false,
@@ -367,7 +367,7 @@ CREATE TABLE "AccountContact" (
     "role" TEXT NOT NULL DEFAULT 'member',
     "status" TEXT NOT NULL DEFAULT 'active',
     "inviteEmail" TEXT NOT NULL DEFAULT '',
-    "inviteTokenHash" TEXT NOT NULL DEFAULT '',
+    "inviteTokenHash" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -459,7 +459,7 @@ CREATE TABLE "Visit" (
     "donatePercent" INTEGER DEFAULT 0,
     "nonprofit" TEXT,
     "campaign" TEXT,
-    "code" TEXT NOT NULL DEFAULT '',
+    "code" TEXT,
     "status" TEXT NOT NULL DEFAULT 'booked',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -500,7 +500,7 @@ CREATE TABLE "ScaleTicket" (
     "complianceSnapshot" JSONB,
     "overrideReason" TEXT NOT NULL DEFAULT '',
     "overrideBy" TEXT,
-    "lookupCode" TEXT NOT NULL DEFAULT '',
+    "lookupCode" TEXT,
     "certificateRequested" BOOLEAN NOT NULL DEFAULT false,
     "openedBy" TEXT,
     "completedBy" TEXT,
@@ -606,8 +606,8 @@ CREATE TABLE "Payout" (
     "allowedMethods" JSONB DEFAULT '["cash","check","transfer"]',
     "method" TEXT,
     "releaseAt" TIMESTAMP(3),
-    "checkNumber" TEXT NOT NULL DEFAULT '',
-    "bankAccountLabel" TEXT NOT NULL DEFAULT '',
+    "checkNumber" TEXT,
+    "bankAccountLabel" TEXT,
     "transferReference" TEXT NOT NULL DEFAULT '',
     "mailToAddress" TEXT NOT NULL DEFAULT '',
     "paidBy" TEXT,
@@ -616,7 +616,7 @@ CREATE TABLE "Payout" (
     "replaces" TEXT,
     "returnReason" TEXT NOT NULL DEFAULT '',
     "cancelReason" TEXT NOT NULL DEFAULT '',
-    "idempotencyKeyHash" TEXT NOT NULL DEFAULT '',
+    "idempotencyKeyHash" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -682,7 +682,7 @@ CREATE TABLE "AccountCharge" (
     "job" TEXT,
     "container" TEXT,
     "serviceDate" TIMESTAMP(3),
-    "referenceKey" TEXT NOT NULL DEFAULT '',
+    "referenceKey" TEXT,
     "settlement" TEXT,
     "invoiceLine" TEXT,
     "status" TEXT NOT NULL DEFAULT 'open',
@@ -1031,9 +1031,9 @@ CREATE TABLE "PaymentSession" (
     "amountCents" INTEGER NOT NULL DEFAULT 0,
     "currencyCode" TEXT NOT NULL DEFAULT 'USD',
     "status" TEXT NOT NULL DEFAULT 'pending',
-    "providerPaymentId" TEXT NOT NULL DEFAULT '',
+    "providerPaymentId" TEXT,
     "clientSecret" TEXT NOT NULL DEFAULT '',
-    "idempotencyKeyHash" TEXT NOT NULL DEFAULT '',
+    "idempotencyKeyHash" TEXT,
     "capturedAt" TIMESTAMP(3),
     "capturedCents" INTEGER NOT NULL DEFAULT 0,
     "refundedCents" INTEGER NOT NULL DEFAULT 0,
@@ -1053,7 +1053,7 @@ CREATE TABLE "Payment" (
     "method" TEXT NOT NULL DEFAULT 'card',
     "amountCents" INTEGER NOT NULL DEFAULT 0,
     "reference" TEXT NOT NULL DEFAULT '',
-    "referenceKey" TEXT NOT NULL DEFAULT '',
+    "referenceKey" TEXT,
     "receivedAt" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP,
     "recordedBy" TEXT,
     "status" TEXT NOT NULL DEFAULT 'succeeded',
@@ -1072,12 +1072,12 @@ CREATE TABLE "Refund" (
     "amountCents" INTEGER NOT NULL DEFAULT 0,
     "reason" TEXT NOT NULL DEFAULT '',
     "status" TEXT NOT NULL DEFAULT 'pending',
-    "providerRefundId" TEXT NOT NULL DEFAULT '',
+    "providerRefundId" TEXT,
     "failureMessage" TEXT NOT NULL DEFAULT '',
     "claim" TEXT,
     "serviceRequest" TEXT,
     "createdBy" TEXT,
-    "idempotencyKeyHash" TEXT NOT NULL DEFAULT '',
+    "idempotencyKeyHash" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -1256,7 +1256,7 @@ CREATE TABLE "Donation" (
     "itemsSummary" JSONB DEFAULT '[]',
     "kind" TEXT NOT NULL DEFAULT 'payout_donation',
     "status" TEXT NOT NULL DEFAULT 'pledged',
-    "receiptNumber" TEXT NOT NULL DEFAULT '',
+    "receiptNumber" TEXT,
     "receiptIssuedAt" TIMESTAMP(3),
     "goodsOrServicesProvided" BOOLEAN NOT NULL DEFAULT false,
     "showDonorName" BOOLEAN NOT NULL DEFAULT false,
@@ -1491,13 +1491,17 @@ CREATE TABLE "OAuthToken" (
 -- CreateTable
 CREATE TABLE "_User_yards" (
     "A" TEXT NOT NULL,
-    "B" TEXT NOT NULL
+    "B" TEXT NOT NULL,
+
+    CONSTRAINT "_User_yards_AB_pkey" PRIMARY KEY ("A","B")
 );
 
 -- CreateTable
 CREATE TABLE "_TheftAlert_materials" (
     "A" TEXT NOT NULL,
-    "B" TEXT NOT NULL
+    "B" TEXT NOT NULL,
+
+    CONSTRAINT "_TheftAlert_materials_AB_pkey" PRIMARY KEY ("A","B")
 );
 
 -- CreateIndex
@@ -2356,13 +2360,7 @@ CREATE INDEX "OAuthToken_clientId_idx" ON "OAuthToken"("clientId");
 CREATE INDEX "OAuthToken_user_idx" ON "OAuthToken"("user");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "_User_yards_AB_unique" ON "_User_yards"("A", "B");
-
--- CreateIndex
 CREATE INDEX "_User_yards_B_index" ON "_User_yards"("B");
-
--- CreateIndex
-CREATE UNIQUE INDEX "_TheftAlert_materials_AB_unique" ON "_TheftAlert_materials"("A", "B");
 
 -- CreateIndex
 CREATE INDEX "_TheftAlert_materials_B_index" ON "_TheftAlert_materials"("B");
@@ -2969,3 +2967,4 @@ ALTER TABLE "_TheftAlert_materials" ADD CONSTRAINT "_TheftAlert_materials_A_fkey
 
 -- AddForeignKey
 ALTER TABLE "_TheftAlert_materials" ADD CONSTRAINT "_TheftAlert_materials_B_fkey" FOREIGN KEY ("B") REFERENCES "TheftAlert"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+

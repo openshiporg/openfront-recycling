@@ -95,7 +95,7 @@ export const Scale = list({
     yard: relationship({ ref: 'Yard.scales' }),
     name: text({ validation: { isRequired: true } }),
     kind: choice(['truck', 'floor', 'bench'], 'truck'),
-    apiKeyHash: text({ ...serverOnlyField, isIndexed: 'unique' }),
+    apiKeyHash: text({ ...serverOnlyField, isIndexed: 'unique' , db: { isNullable: true } }),
     lastReadingWeight: decimal({ precision: 14, scale: 2, ...commandOnlyFieldText }),
     lastReadingAt: timestamp({ ...commandOnlyFieldText }),
     lastReadingStable: checkbox({ defaultValue: false, ...commandOnlyFieldText }),

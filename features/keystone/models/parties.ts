@@ -105,7 +105,7 @@ export const Account = list({
     name: text({ validation: { isRequired: true } }),
     legalName: text(),
     slug: text({ validation: { isRequired: true }, isIndexed: 'unique' }),
-    accountNumber: text({ isIndexed: 'unique', ...commandOnlyFieldText }),
+    accountNumber: text({ isIndexed: 'unique', ...commandOnlyFieldText , db: { isNullable: true } }),
     status: status(['active', 'suspended'], 'active'),
     statusReason: text({ ...commandOnlyFieldText }),
     isSupplier: checkbox({ defaultValue: false }),
@@ -149,7 +149,7 @@ export const AccountContact = list({
     role: choice(['admin', 'member', 'billing', 'driver'], 'member'),
     status: status(['active', 'invited', 'removed'], 'active'),
     inviteEmail: text(),
-    inviteTokenHash: text({ ...serverOnlyField, isIndexed: 'unique' }),
+    inviteTokenHash: text({ ...serverOnlyField, isIndexed: 'unique' , db: { isNullable: true } }),
     ...trackingFields,
   },
 })

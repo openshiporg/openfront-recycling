@@ -203,7 +203,7 @@ model Scale {
   yardId                String?      @map("yard")
   name                  String       @default("")
   kind                  String       @default("truck")
-  apiKeyHash            String       @unique @default("")
+  apiKeyHash            String?      @unique
   lastReadingWeight     Decimal?     @postgresql.Decimal(14, 2)
   lastReadingAt         DateTime?
   lastReadingStable     Boolean      @default(false)
@@ -442,7 +442,7 @@ model Account {
   name                            String               @default("")
   legalName                       String               @default("")
   slug                            String               @unique @default("")
-  accountNumber                   String               @unique @default("")
+  accountNumber                   String?              @unique
   status                          String               @default("active")
   statusReason                    String               @default("")
   isSupplier                      Boolean              @default(false)
@@ -510,7 +510,7 @@ model AccountContact {
   role            String   @default("member")
   status          String   @default("active")
   inviteEmail     String   @default("")
-  inviteTokenHash String   @unique @default("")
+  inviteTokenHash String?  @unique
   createdAt       DateTime @default(now())
   updatedAt       DateTime @default(now()) @updatedAt
 
@@ -622,7 +622,7 @@ model Visit {
   nonprofitId   String?           @map("nonprofit")
   campaign      DonationCampaign? @relation("Visit_campaign", fields: [campaignId], references: [id])
   campaignId    String?           @map("campaign")
-  code          String            @unique @default("")
+  code          String?           @unique
   status        String            @default("booked")
   ticket        ScaleTicket?      @relation("ScaleTicket_visit")
   createdAt     DateTime          @default(now())
@@ -685,7 +685,7 @@ model ScaleTicket {
   overrideReason                String              @default("")
   overrideBy                    User?               @relation("ScaleTicket_overrideBy", fields: [overrideById], references: [id])
   overrideById                  String?             @map("overrideBy")
-  lookupCode                    String              @unique @default("")
+  lookupCode                    String?             @unique
   certificateRequested          Boolean             @default(false)
   openedBy                      User?               @relation("ScaleTicket_openedBy", fields: [openedById], references: [id])
   openedById                    String?             @map("openedBy")
@@ -851,8 +851,8 @@ model Payout {
   allowedMethods              Json?              @default("[\"cash\",\"check\",\"transfer\"]")
   method                      String?
   releaseAt                   DateTime?
-  checkNumber                 String             @default("")
-  bankAccountLabel            String             @default("")
+  checkNumber                 String?
+  bankAccountLabel            String?
   transferReference           String             @default("")
   mailToAddress               String             @default("")
   paidBy                      User?              @relation("Payout_paidBy", fields: [paidById], references: [id])
@@ -864,7 +864,7 @@ model Payout {
   replacesId                  String?            @map("replaces")
   returnReason                String             @default("")
   cancelReason                String             @default("")
-  idempotencyKeyHash          String             @unique @default("")
+  idempotencyKeyHash          String?            @unique
   createdAt                   DateTime           @default(now())
   updatedAt                   DateTime           @default(now()) @updatedAt
   from_Payout_replaces        Payout[]           @relation("Payout_replaces")
@@ -958,7 +958,7 @@ model AccountCharge {
   container     Container?   @relation("AccountCharge_container", fields: [containerId], references: [id])
   containerId   String?      @map("container")
   serviceDate   DateTime?
-  referenceKey  String       @unique @default("")
+  referenceKey  String?      @unique
   settlement    Settlement?  @relation("AccountCharge_settlement", fields: [settlementId], references: [id])
   settlementId  String?      @map("settlement")
   invoiceLine   InvoiceLine? @relation("AccountCharge_invoiceLine", fields: [invoiceLineId], references: [id])
@@ -1444,9 +1444,9 @@ model PaymentSession {
   amountCents          Int              @default(0)
   currencyCode         String           @default("USD")
   status               String           @default("pending")
-  providerPaymentId    String           @unique @default("")
+  providerPaymentId    String?          @unique
   clientSecret         String           @default("")
-  idempotencyKeyHash   String           @unique @default("")
+  idempotencyKeyHash   String?          @unique
   capturedAt           DateTime?
   capturedCents        Int              @default(0)
   refundedCents        Int              @default(0)
@@ -1473,7 +1473,7 @@ model Payment {
   method              String          @default("card")
   amountCents         Int             @default(0)
   reference           String          @default("")
-  referenceKey        String          @unique @default("")
+  referenceKey        String?         @unique
   receivedAt          DateTime?       @default(now())
   recordedBy          User?           @relation("Payment_recordedBy", fields: [recordedById], references: [id])
   recordedById        String?         @map("recordedBy")
@@ -1498,7 +1498,7 @@ model Refund {
   amountCents        Int             @default(0)
   reason             String          @default("")
   status             String          @default("pending")
-  providerRefundId   String          @unique @default("")
+  providerRefundId   String?         @unique
   failureMessage     String          @default("")
   claim              Claim?          @relation("Refund_claim", fields: [claimId], references: [id])
   claimId            String?         @map("claim")
@@ -1506,7 +1506,7 @@ model Refund {
   serviceRequestId   String?         @map("serviceRequest")
   createdBy          User?           @relation("Refund_createdBy", fields: [createdById], references: [id])
   createdById        String?         @map("createdBy")
-  idempotencyKeyHash String          @unique @default("")
+  idempotencyKeyHash String?         @unique
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @default(now()) @updatedAt
 
@@ -1747,7 +1747,7 @@ model Donation {
   itemsSummary            Json?             @default("[]")
   kind                    String            @default("payout_donation")
   status                  String            @default("pledged")
-  receiptNumber           String            @unique @default("")
+  receiptNumber           String?           @unique
   receiptIssuedAt         DateTime?
   goodsOrServicesProvided Boolean           @default(false)
   showDonorName           Boolean           @default(false)

@@ -939,13 +939,28 @@ input ScaleWhereInput {
   yard: YardWhereInput
   name: StringFilter
   kind: StringFilter
-  apiKeyHash: StringFilter
+  apiKeyHash: StringNullableFilter
   lastReadingWeight: DecimalNullableFilter
   lastReadingAt: DateTimeNullableFilter
   lastReadingStable: BooleanFilter
   isActive: BooleanFilter
   createdAt: DateTimeFilter
   updatedAt: DateTimeFilter
+}
+
+input StringNullableFilter {
+  equals: String
+  in: [String!]
+  notIn: [String!]
+  lt: String
+  lte: String
+  gt: String
+  gte: String
+  contains: String
+  startsWith: String
+  endsWith: String
+  mode: QueryMode
+  not: StringNullableFilter
 }
 
 input ScaleOrderByInput {
@@ -1963,7 +1978,7 @@ input AccountWhereInput {
   name: StringFilter
   legalName: StringFilter
   slug: StringFilter
-  accountNumber: StringFilter
+  accountNumber: StringNullableFilter
   status: StringFilter
   statusReason: StringFilter
   isSupplier: BooleanFilter
@@ -2177,7 +2192,7 @@ input AccountContactWhereInput {
   role: StringFilter
   status: StringFilter
   inviteEmail: StringFilter
-  inviteTokenHash: StringFilter
+  inviteTokenHash: StringNullableFilter
   createdAt: DateTimeFilter
   updatedAt: DateTimeFilter
 }
@@ -2607,7 +2622,7 @@ input VisitWhereInput {
   donatePercent: IntNullableFilter
   nonprofit: AccountWhereInput
   campaign: DonationCampaignWhereInput
-  code: StringFilter
+  code: StringNullableFilter
   status: StringFilter
   ticket: ScaleTicketWhereInput
   createdAt: DateTimeFilter
@@ -2787,7 +2802,7 @@ input ScaleTicketWhereInput {
   campaign: DonationCampaignWhereInput
   overrideReason: StringFilter
   overrideBy: UserWhereInput
-  lookupCode: StringFilter
+  lookupCode: StringNullableFilter
   certificateRequested: BooleanFilter
   openedBy: UserWhereInput
   completedBy: UserWhereInput
@@ -3163,21 +3178,6 @@ input TicketLineWhereInput {
   updatedAt: DateTimeFilter
 }
 
-input StringNullableFilter {
-  equals: String
-  in: [String!]
-  notIn: [String!]
-  lt: String
-  lte: String
-  gt: String
-  gte: String
-  contains: String
-  startsWith: String
-  endsWith: String
-  mode: QueryMode
-  not: StringNullableFilter
-}
-
 input TicketLineOrderByInput {
   id: OrderDirection
   sortOrder: OrderDirection
@@ -3528,8 +3528,8 @@ input PayoutWhereInput {
   status: StringFilter
   method: StringNullableFilter
   releaseAt: DateTimeNullableFilter
-  checkNumber: StringFilter
-  bankAccountLabel: StringFilter
+  checkNumber: StringNullableFilter
+  bankAccountLabel: StringNullableFilter
   transferReference: StringFilter
   mailToAddress: StringFilter
   paidBy: UserWhereInput
@@ -3538,7 +3538,7 @@ input PayoutWhereInput {
   replaces: PayoutWhereInput
   returnReason: StringFilter
   cancelReason: StringFilter
-  idempotencyKeyHash: StringFilter
+  idempotencyKeyHash: StringNullableFilter
   createdAt: DateTimeFilter
   updatedAt: DateTimeFilter
 }
@@ -3943,7 +3943,7 @@ input AccountChargeWhereInput {
   job: DispatchJobWhereInput
   container: ContainerWhereInput
   serviceDate: DateTimeNullableFilter
-  referenceKey: StringFilter
+  referenceKey: StringNullableFilter
   settlement: SettlementWhereInput
   invoiceLine: InvoiceLineWhereInput
   status: StringFilter
@@ -5827,9 +5827,9 @@ input PaymentSessionWhereInput {
   amountCents: IntFilter
   currencyCode: StringFilter
   status: StringFilter
-  providerPaymentId: StringFilter
+  providerPaymentId: StringNullableFilter
   clientSecret: StringFilter
-  idempotencyKeyHash: StringFilter
+  idempotencyKeyHash: StringNullableFilter
   capturedAt: DateTimeNullableFilter
   capturedCents: IntFilter
   refundedCents: IntFilter
@@ -5943,7 +5943,7 @@ input PaymentWhereInput {
   method: StringFilter
   amountCents: IntFilter
   reference: StringFilter
-  referenceKey: StringFilter
+  referenceKey: StringNullableFilter
   receivedAt: DateTimeNullableFilter
   recordedBy: UserWhereInput
   status: StringFilter
@@ -6044,12 +6044,12 @@ input RefundWhereInput {
   amountCents: IntFilter
   reason: StringFilter
   status: StringFilter
-  providerRefundId: StringFilter
+  providerRefundId: StringNullableFilter
   failureMessage: StringFilter
   claim: ClaimWhereInput
   serviceRequest: ServiceRequestWhereInput
   createdBy: UserWhereInput
-  idempotencyKeyHash: StringFilter
+  idempotencyKeyHash: StringNullableFilter
   createdAt: DateTimeFilter
   updatedAt: DateTimeFilter
 }
@@ -6884,7 +6884,7 @@ input DonationWhereInput {
   weight: DecimalNullableFilter
   kind: StringFilter
   status: StringFilter
-  receiptNumber: StringFilter
+  receiptNumber: StringNullableFilter
   receiptIssuedAt: DateTimeNullableFilter
   goodsOrServicesProvided: BooleanFilter
   showDonorName: BooleanFilter
@@ -8397,6 +8397,17 @@ type Mutation {
   createInitialUser(data: CreateInitialUserInput!): UserAuthenticationWithPasswordSuccess!
   sendUserPasswordResetLink(email: String!): Boolean!
   redeemUserPasswordResetToken(email: String!, token: String!, password: String!): RedeemUserPasswordResetTokenResult
+  openTicket(data: OpenTicketInput!, idempotencyKey: String): ScaleTicket
+  addTicketLine(data: TicketLineInput!, idempotencyKey: String): TicketLine
+  recordTruckWeight(data: TruckWeightInput!, idempotencyKey: String): TruckWeightResult
+  gradeTicketLine(data: GradeTicketLineInput!, idempotencyKey: String): TicketLine
+  splitTicketLine(lineId: ID!, weight: String!, materialId: ID!, idempotencyKey: String): TicketLine
+  removeTicketLine(lineId: ID!, reason: String, idempotencyKey: String): ScaleTicket
+  updateTicketDetails(data: TicketDetailsInput!, idempotencyKey: String): ScaleTicket
+  completeTicket(ticketId: ID!, overrideReason: String, idempotencyKey: String): ScaleTicket
+  voidTicket(ticketId: ID!, reason: String!, idempotencyKey: String): ScaleTicket
+  createAdjustmentTicket(ticketId: ID!, reason: String!, idempotencyKey: String): ScaleTicket
+  issueScaleKey(scaleId: ID!): ScaleKeyResult
 }
 
 union UserAuthenticationWithPasswordResult = UserAuthenticationWithPasswordSuccess | UserAuthenticationWithPasswordFailure
@@ -8627,6 +8638,7 @@ type Query {
   authenticatedItem: AuthenticatedItem
   validateUserPasswordResetToken(email: String!, token: String!): ValidateUserPasswordResetTokenResult
   redirectToInit: Boolean
+  ticketComplianceChecklist(ticketId: ID!): [ComplianceItem!]
 }
 
 union AuthenticatedItem = User
@@ -8765,4 +8777,108 @@ type KeystoneAdminUISort {
 enum KeystoneAdminUISortDirection {
   ASC
   DESC
+}
+
+input TicketFeeInput {
+  label: String!
+  amountCents: Int!
+}
+
+input OpenTicketInput {
+  yardId: ID!
+  direction: String
+  sellerId: ID
+  accountId: ID
+  siteId: ID
+  vehicleId: ID
+  vehiclePlate: String
+  vehiclePlateRegion: String
+  vehicleDescription: String
+  visitCode: String
+  jobId: ID
+  containerId: ID
+  shipmentId: ID
+  paymentMode: String
+  donatePercent: Int
+  nonprofitId: ID
+  campaignId: ID
+  overrideReason: String
+  notes: String
+}
+
+input TicketLineInput {
+  ticketId: ID!
+  materialId: ID!
+  grossWeight: String
+  tareWeight: String
+  quantity: Int
+  deductionWeight: String
+  deductionPercent: String
+  deductionReason: String
+  unitPrice: String
+  overrideReason: String
+  documents: [String!]
+  direction: String
+  scaleId: ID
+  grossFromScale: Boolean
+  tareFromScale: Boolean
+}
+
+input GradeTicketLineInput {
+  lineId: ID!
+  materialId: ID
+  deductionWeight: String
+  deductionPercent: String
+  deductionReason: String
+  unitPrice: String
+  overrideReason: String
+  documents: [String!]
+  reprice: Boolean
+  quantity: Int
+}
+
+input TruckWeightInput {
+  ticketId: ID!
+  weight: String
+  scaleId: ID
+  fromScale: Boolean
+  materialId: ID
+  deductionWeight: String
+  deductionPercent: String
+  deductionReason: String
+  documents: [String!]
+}
+
+input TicketDetailsInput {
+  ticketId: ID!
+  vehiclePlate: String
+  vehiclePlateRegion: String
+  vehicleDescription: String
+  vehicleId: ID
+  donatePercent: Int
+  nonprofitId: ID
+  campaignId: ID
+  paymentMode: String
+  fees: [TicketFeeInput!]
+  notes: String
+  siteId: ID
+  containerId: ID
+  jobId: ID
+}
+
+type TruckWeightResult {
+  weighEventId: ID!
+  line: TicketLine
+}
+
+type ScaleKeyResult {
+  id: ID!
+  key: String!
+}
+
+type ComplianceItem {
+  code: String!
+  message: String!
+  lineId: ID
+  overridable: Boolean!
 }
