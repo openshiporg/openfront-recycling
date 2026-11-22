@@ -63,6 +63,13 @@ export async function servePrivateUpload(context: any, folder: string, name: str
   const prisma = context.sudo().prisma
   const holders = folder === 'private-images' ? PRIVATE_IMAGES : PRIVATE_FILES
   const id = n.replace(/\.[^.]+$/, '')
+  if (folder === 'private-files') {
+    // Company portal (C12): an active contact of the account gets the documents shared with it, as accountDocuments lists them.
+    const doc = await prisma.accountDocument.findFirst({ where: { file_filename: n, visibleToAccount: true, accountId: { not: null } }, select: { accountId: true } })
+    if (doc && (await prisma.accountContact.findFirst({ where: { accountId: doc.accountId, userId: context.session.itemId, status: 'active' }, select: { id: true } }))) {
+      return send(folder, n, 'private, max-age=300')
+    }
+  }
   for (const h of holders) {
     const where: Record<string, string> = folder === 'private-images' ? { [`${h.field}_id`]: id } : { [`${h.field}_filename`]: n }
     const rows: Array<{ id: string }> = await prisma[h.prisma].findMany({ where, select: { id: true }, take: 5 })

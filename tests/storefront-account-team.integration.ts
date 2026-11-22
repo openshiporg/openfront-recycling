@@ -11,6 +11,8 @@ import { Readable } from 'node:stream'
 import Upload from 'graphql-upload/Upload.js'
 import { keystoneContext } from '../features/keystone/context'
 import { ROLE_FLAGS } from '../features/keystone/access'
+import { servePrivateUpload } from '../features/keystone/lib/serve-upload'
+import { s3Configured } from '../features/keystone/lib/storage'
 
 const run = randomUUID().slice(0, 6).toUpperCase()
 const prisma: any = (keystoneContext as any).prisma
@@ -105,6 +107,11 @@ test('C12 to C14: documents and certificate requests, team, vehicles; each only 
   assert.ok(cert.fileName?.endsWith('.pdf'))
   assert.ok(cert.fileUrl)
   assert.equal(d.certificatesRequested.length, 0, 'an issued certificate leaves the request list')
+  if (!s3Configured()) {
+    const name = cert.fileUrl.split('/').pop()
+    assert.equal((await servePrivateUpload(as(member), 'private-files', name)).status, 200, 'the contact downloads the certificate')
+    assert.equal((await servePrivateUpload(as(outsider), 'private-files', name)).status, 404)
+  }
   assert.equal((await gql(as(member), DOCS, { s: acct.slug, k: 'w9' })).accountDocuments.documents.length, 0)
   await assert.rejects(gql(as(member), DOCS, { s: acct.slug, k: 'passport' }), /kind/)
   await assert.rejects(gql(as(outsider), DOCS, { s: acct.slug }), /NOT_FOUND/)
