@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { businessOrDefaults, getBusiness, getCatalog, getYards } from '../lib/data/public';
 import { getViewer } from '../lib/data/seller';
 import { getApplications, getPickup, getPickups } from '../lib/data/requests';
-import { dateTime, label, money, shortDate, todayIn } from '../lib/format';
+import { calendarDate, dateTime, label, money, shortDate, todayIn } from '../lib/format';
 import { LoadError, NotOpenYet, PageHead, SignInNeeded, StateCard } from '../components/ui';
 import { AcceptQuoteButton, CancelRequestButton, PayByCardButton, PickupForm, WithdrawApplicationButton } from '../components/forms/RequestForms';
 import { AccountTitle } from './account/AccountLayout';
@@ -90,9 +90,9 @@ export async function PickupDetailPage({ id, isNew, paid }: { id: string; isNew?
         <dl className="sf-grid sf-grid-2" style={{ margin: 0, gap: 12 }}>
           <div><dt className="sf-small sf-muted">Address</dt><dd style={{ margin: 0 }}>{p.site?.addressLine1}{p.site?.city ? `, ${p.site.city}` : ''}</dd></div>
           <div><dt className="sf-small sf-muted">Yard</dt><dd style={{ margin: 0 }}>{p.yard?.name}{p.yard?.phone ? ` · ${p.yard.phone}` : ''}</dd></div>
-          <div><dt className="sf-small sf-muted">Preferred</dt><dd style={{ margin: 0 }}>{p.preferredDate ? shortDate(p.preferredDate, tz, true) : 'Any day'}, {label('window', p.preferredWindow || 'any').toLowerCase()}</dd></div>
+          <div><dt className="sf-small sf-muted">Preferred</dt><dd style={{ margin: 0 }}>{p.preferredDate ? calendarDate(p.preferredDate, true) : 'Any day'}, {label('window', p.preferredWindow || 'any').toLowerCase()}</dd></div>
           <div><dt className="sf-small sf-muted">Fee</dt><dd style={{ margin: 0 }}>{p.feeCents > 0 ? money(p.feeCents, cur) : p.quoteAcceptedAt || p.status !== 'requested' ? 'No fee' : 'Waiting for our quote'}</dd></div>
-          {p.job ? <div><dt className="sf-small sf-muted">Truck</dt><dd style={{ margin: 0 }}>{label('job', p.job.status)}{p.job.scheduledDate ? `, ${shortDate(p.job.scheduledDate, tz, true)}` : ''}</dd></div> : null}
+          {p.job ? <div><dt className="sf-small sf-muted">Truck</dt><dd style={{ margin: 0 }}>{label('job', p.job.status)}{p.job.scheduledDate ? `, ${calendarDate(p.job.scheduledDate, true)}` : ''}</dd></div> : null}
           {p.job?.driverNotes ? <div><dt className="sf-small sf-muted">Driver’s note</dt><dd style={{ margin: 0 }}>{p.job.driverNotes}</dd></div> : null}
         </dl>
         {p.quoteNote ? <p className="sf-note" style={{ margin: 0 }}><strong>Our quote:</strong> {p.quoteNote}</p> : null}

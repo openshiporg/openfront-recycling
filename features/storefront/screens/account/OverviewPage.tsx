@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { getOverview } from '../../lib/data/seller';
-import { label, money, shortDate, weight } from '../../lib/format';
+import { calendarDate, label, money, shortDate, weight } from '../../lib/format';
 import { LoadError } from '../../components/ui';
 import { AccountTitle } from './AccountLayout';
 
@@ -38,7 +38,7 @@ export default async function OverviewPage() {
         <section className="sf-card sf-between">
           <div>
             <span className="sf-muted sf-small">Your next visit</span>
-            <div className="sf-h3">{o.nextVisit.yard?.name} · {shortDate(o.nextVisit.plannedDate, o.nextVisit.yard?.timezone)}</div>
+            <div className="sf-h3">{o.nextVisit.yard?.name} · {calendarDate(o.nextVisit.plannedDate)}</div>
             <span className="sf-mono" style={{ fontSize: 22, letterSpacing: '0.1em' }}>{o.nextVisit.code}</span>
           </div>
           <Link className="sf-btn sf-btn-sm" href={`/account/visits/${o.nextVisit.id}`}>Show my pass</Link>

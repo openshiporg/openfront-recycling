@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import type { ReactNode } from 'react';
 import { getAccountContainers, getAccountInvoice, getAccountInvoices, getAccountOverview, getAccountPrices, getAccountRequest, getAccountRequests, getAccountSites, getAccountStatements, getAccountTicket, getAccountTickets, getDiversionReport, getMyAccounts } from '../../lib/data/company';
 import { getBusiness, getContainerTypes, getYards, businessOrDefaults } from '../../lib/data/public';
-import { dateTime, label, money, perUnit, shortDate, todayIn, unitPriceText, weight } from '../../lib/format';
+import { calendarDate, dateTime, label, money, perUnit, shortDate, todayIn, unitPriceText, weight } from '../../lib/format';
 import { LoadError, StateCard } from '../../components/ui';
 import { ReceiptView } from '../../components/ReceiptView';
 import { CompanyNav } from '../../components/CompanyNav';
@@ -269,7 +269,7 @@ export async function CompanyRequestsPage({ slug }: { slug: string }) {
             <Link key={q.id} href={`${base(slug)}/requests/${q.id}`} className="sf-card sf-between" style={{ textDecoration: 'none', color: 'inherit' }}>
               <div>
                 <strong>{label('requestKind', q.kind)}{q.number ? ` · no. ${q.number}` : ''}</strong>
-                <div className="sf-small sf-muted">{q.site?.name || q.site?.addressLine1} · {q.job?.scheduledDate ? `booked ${shortDate(q.job.scheduledDate, q.yard?.timezone, true)}` : `asked ${shortDate(q.createdAt, q.yard?.timezone)}`}</div>
+                <div className="sf-small sf-muted">{q.site?.name || q.site?.addressLine1} · {q.job?.scheduledDate ? `booked ${calendarDate(q.job.scheduledDate, true)}` : `asked ${shortDate(q.createdAt, q.yard?.timezone)}`}</div>
               </div>
               <span className={`sf-badge ${q.status === 'awaiting_payment' ? 'sf-badge-warn' : q.status === 'declined' || q.status === 'cancelled' ? 'sf-badge-alert' : q.status === 'completed' ? 'sf-badge-ok' : ''}`}>{label('request', q.status)}</span>
             </Link>
@@ -299,8 +299,8 @@ export async function CompanyRequestPage({ slug, id, isNew, paid }: { slug: stri
       </div>
       <dl className="sf-grid sf-grid-2" style={{ margin: 0, gap: 12 }}>
         <div><dt className="sf-small sf-muted">Site</dt><dd style={{ margin: 0 }}>{q.site?.name}{q.site?.addressLine1 ? `, ${q.site.addressLine1}` : ''}</dd></div>
-        <div><dt className="sf-small sf-muted">Preferred</dt><dd style={{ margin: 0 }}>{q.preferredDate ? shortDate(q.preferredDate, tz, true) : 'Any day'}, {label('window', q.preferredWindow || 'any').toLowerCase()}</dd></div>
-        <div><dt className="sf-small sf-muted">Truck</dt><dd style={{ margin: 0 }}>{q.job ? `${label('job', q.job.status)}${q.job.scheduledDate ? `, ${shortDate(q.job.scheduledDate, tz, true)}` : ''}` : 'Not booked yet'}</dd></div>
+        <div><dt className="sf-small sf-muted">Preferred</dt><dd style={{ margin: 0 }}>{q.preferredDate ? calendarDate(q.preferredDate, true) : 'Any day'}, {label('window', q.preferredWindow || 'any').toLowerCase()}</dd></div>
+        <div><dt className="sf-small sf-muted">Truck</dt><dd style={{ margin: 0 }}>{q.job ? `${label('job', q.job.status)}${q.job.scheduledDate ? `, ${calendarDate(q.job.scheduledDate, true)}` : ''}` : 'Not booked yet'}</dd></div>
         <div><dt className="sf-small sf-muted">Fee</dt><dd style={{ margin: 0 }}>{q.feeCents ? money(q.feeCents, cur) : 'None'}</dd></div>
         {q.job?.driverNotes ? <div><dt className="sf-small sf-muted">Driver’s note</dt><dd style={{ margin: 0 }}>{q.job.driverNotes}</dd></div> : null}
         {q.accessNotes ? <div><dt className="sf-small sf-muted">Access notes</dt><dd style={{ margin: 0 }}>{q.accessNotes}</dd></div> : null}
@@ -329,7 +329,7 @@ export async function CompanyStatementsPage({ slug }: { slug: string }) {
             <tbody>
               {settlements.map((s) => (
                 <tr key={s.id}>
-                  <td>{shortDate(s.periodStart, null, true)} to {shortDate(s.periodEnd, null, true)}<div className="sf-small sf-muted">No. {s.number}</div></td>
+                  <td>{calendarDate(s.periodStart, true)} to {calendarDate(s.periodEnd, true)}<div className="sf-small sf-muted">No. {s.number}</div></td>
                   <td className="r sf-num">{money(s.ticketTotalCents, cur)}</td>
                   <td className="r sf-num">−{money(s.chargeTotalCents, cur)}{s.donationTotalCents ? <div className="sf-small sf-muted">−{money(s.donationTotalCents, cur)} donated</div> : null}</td>
                   <td className="r sf-num"><strong>{s.netCents < 0 ? '−' : ''}{money(Math.abs(s.netCents), cur)}</strong></td>
@@ -347,7 +347,7 @@ export async function CompanyStatementsPage({ slug }: { slug: string }) {
             <thead><tr><th scope="col">Date</th><th scope="col">Charge</th><th scope="col" className="r">Amount</th></tr></thead>
             <tbody>
               {charges.map((c) => (
-                <tr key={c.id}><td>{shortDate(c.serviceDate, null, true)}</td><td>{label('chargeKind', c.kind)}{c.containerNumber ? `, container ${c.containerNumber}` : ''}{c.description ? <div className="sf-small sf-muted">{c.description}</div> : null}</td><td className="r sf-num">{money(c.amountCents, cur)}</td></tr>
+                <tr key={c.id}><td>{calendarDate(c.serviceDate, true)}</td><td>{label('chargeKind', c.kind)}{c.containerNumber ? `, container ${c.containerNumber}` : ''}{c.description ? <div className="sf-small sf-muted">{c.description}</div> : null}</td><td className="r sf-num">{money(c.amountCents, cur)}</td></tr>
               ))}
             </tbody>
           </table>
@@ -372,7 +372,7 @@ export async function CompanyInvoicesPage({ slug }: { slug: string }) {
             <tr key={i.id}>
               <td><Link className="sf-link" href={`${base(slug)}/invoices/${i.id}`}>No. {i.number}</Link><div className="sf-small sf-muted">{label('invoiceKind', i.kind)}</div></td>
               <td>{shortDate(i.createdAt, null, true)}</td>
-              <td>{i.dueOn ? shortDate(i.dueOn, null, true) : '—'}</td>
+              <td>{i.dueOn ? calendarDate(i.dueOn, true) : '—'}</td>
               <td className="r sf-num">{money(i.totalCents, cur)}</td>
               <td className="r sf-num">{money(Math.max(0, i.totalCents - i.paidCents), cur)}</td>
               <td>{label('invoice', i.status)}</td>
@@ -395,7 +395,7 @@ export async function CompanyInvoicePage({ slug, id, paid }: { slug: string; id:
     <section className="sf-card sf-stack">
       {paid ? <p className="sf-note sf-note-ok" role="status" style={{ margin: 0 }}>Thanks. The payment shows here once the card provider confirms it.</p> : null}
       <div className="sf-between">
-        <div><h2 className="sf-h3" style={{ margin: 0 }}>Invoice no. {i.number}</h2><div className="sf-small sf-muted">{label('invoiceKind', i.kind)} · {shortDate(i.createdAt, null, true)}{i.dueOn ? ` · due ${shortDate(i.dueOn, null, true)}` : ''}</div></div>
+        <div><h2 className="sf-h3" style={{ margin: 0 }}>Invoice no. {i.number}</h2><div className="sf-small sf-muted">{label('invoiceKind', i.kind)} · {shortDate(i.createdAt, null, true)}{i.dueOn ? ` · due ${calendarDate(i.dueOn, true)}` : ''}</div></div>
         <span className={`sf-badge ${i.status === 'paid' ? 'sf-badge-ok' : i.status === 'void' ? 'sf-badge-alert' : 'sf-badge-warn'}`}>{label('invoice', i.status)}</span>
       </div>
       {i.lines?.length ? (

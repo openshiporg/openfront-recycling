@@ -69,6 +69,16 @@ export function zoneName(tz: string | null | undefined, at: Date = new Date()) {
 }
 
 /** YYYY-MM-DD for "today" in a zone (for date inputs). */
+/** A day-only value (stored as midnight UTC, or YYYY-MM-DD): show that calendar day, never shifted by a time zone. */
+export function calendarDate(value: string | Date | null | undefined, withYear = false) {
+  if (!value) return '—';
+  const iso = typeof value === 'string' ? value : value.toISOString();
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return '—';
+  const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12));
+  return new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short', day: 'numeric', month: 'short', ...(withYear ? { year: 'numeric' } : {}) }).format(d);
+}
+
 export function todayIn(tz: string | null | undefined, offsetDays = 0) {
   const d = new Date(Date.now() + offsetDays * 86400000);
   const parts = new Intl.DateTimeFormat('en-CA', { timeZone: safeZone(tz), year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { getYardRules } from '../../lib/data/public';
 import { getVisit, getVisits } from '../../lib/data/seller';
-import { address, dateTime, label, shortDate } from '../../lib/format';
+import { calendarDate, address, dateTime, label, shortDate } from '../../lib/format';
 import { LoadError, Qr, StateCard } from '../../components/ui';
 import { CancelVisitButton } from '../../components/forms/SellerForms';
 import { PrintButton } from '../../components/PrintButton';
@@ -24,7 +24,7 @@ export async function VisitsPage() {
           {r.data.map((v) => (
             <Link key={v.id} href={`/account/visits/${v.id}`} className="sf-card sf-between" style={{ textDecoration: 'none' }}>
               <div>
-                <strong>{v.yard?.name}</strong> · {shortDate(v.plannedDate, v.yard?.timezone, true)}
+                <strong>{v.yard?.name}</strong> · {calendarDate(v.plannedDate, true)}
                 <div className="sf-mono sf-muted">{v.code}</div>
               </div>
               <span className={`sf-badge ${badge(v.status)}`}>{label('visit', v.status)}</span>
@@ -54,7 +54,7 @@ export async function VisitPage({ id, isNew }: { id: string; isNew?: boolean }) 
       <section className="sf-card sf-pass">
         <div className="sf-pass-tag">Scale pass</div>
         <div className="sf-h3" style={{ color: 'var(--sf-ink)' }}>{v.yard?.name}</div>
-        <div className="sf-muted">{shortDate(v.plannedDate, tz, true)}</div>
+        <div className="sf-muted">{calendarDate(v.plannedDate, true)}</div>
         {active ? <Qr value={v.code} label={`QR code for check-in code ${v.code}`} /> : null}
         <div className="sf-small sf-muted" style={{ textTransform: 'uppercase', letterSpacing: '0.08em' }}>Check-in code</div>
         <div className="sf-pass-code" style={active ? undefined : { textDecoration: 'line-through', opacity: 0.5 }}>{v.code}</div>
