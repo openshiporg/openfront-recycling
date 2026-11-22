@@ -38,6 +38,7 @@ import {
 import { AdminMeta } from '../hooks/useAdminMeta'
 import { Home, Database, ChevronRight, Package } from 'lucide-react'
 import { Logo, LogoIcon } from '@/features/dashboard/components/Logo'
+import type { DashboardBusiness } from '@/features/dashboard/lib/business'
 import { UserProfileClient } from './UserProfileClient'
 import { visibleSidebarLists } from '../lib/sidebarAccess'
 import { visibleNavItems } from '@/features/platform/lib/navigation'
@@ -55,9 +56,10 @@ interface User {
 interface SidebarProps {
   adminMeta: AdminMeta | null
   user?: User | null
+  business?: DashboardBusiness
 }
 
-export function Sidebar({ adminMeta, user }: SidebarProps) {
+export function Sidebar({ adminMeta, user, business }: SidebarProps) {
   const { isMobile, setOpenMobile } = useSidebar()
   const pathname = usePathname()
 
@@ -107,12 +109,12 @@ export function Sidebar({ adminMeta, user }: SidebarProps) {
       <SidebarHeader>
         <SidebarMenuButton asChild>
           <div className="group-has-[[data-collapsible=icon]]/sidebar-wrapper:hidden p-2">
-            <Logo />
+            <Logo name={business?.name} logoUrl={business?.logoUrl} />
           </div>
         </SidebarMenuButton>
         <SidebarMenuButton asChild>
           <div className="hidden group-has-[[data-collapsible=icon]]/sidebar-wrapper:block">
-            <LogoIcon />
+            <LogoIcon logoUrl={business?.logoUrl} name={business?.name} />
           </div>
         </SidebarMenuButton>
       </SidebarHeader>

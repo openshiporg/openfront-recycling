@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { AiConfigProvider } from '../hooks/use-ai-config'
 import { QueryProvider } from '../providers/QueryProvider'
+import type { DashboardBusiness } from '../lib/business'
 
 // Shared Message type
 interface Message {
@@ -53,6 +54,7 @@ interface DashboardLayoutProps {
   children: React.ReactNode
   adminMeta?: any
   authenticatedItem?: any
+  business?: DashboardBusiness
 }
 
 function FloatingChatButton() {
@@ -83,10 +85,10 @@ function FloatingChatButton() {
   )
 }
 
-function DashboardLayoutContent({ children, adminMeta, authenticatedItem }: DashboardLayoutProps) {
+function DashboardLayoutContent({ children, adminMeta, authenticatedItem, business }: DashboardLayoutProps) {
   return (
     <>
-      <Sidebar adminMeta={adminMeta} user={authenticatedItem} />
+      <Sidebar adminMeta={adminMeta} user={authenticatedItem} business={business} />
       {/* pb-20 keeps the last rows and fields clear of the floating assistant button */}
       <SidebarInset className="min-w-0 pb-20">
         {children}
@@ -118,7 +120,7 @@ function ChatModeProvider({ children, user }: { children: React.ReactNode; user?
   )
 }
 
-export function DashboardLayout({ children, adminMeta, authenticatedItem }: DashboardLayoutProps) {
+export function DashboardLayout({ children, adminMeta, authenticatedItem, business }: DashboardLayoutProps) {
   return (
     <ErrorBoundary>
       <QueryProvider>
@@ -127,7 +129,7 @@ export function DashboardLayout({ children, adminMeta, authenticatedItem }: Dash
             <AiConfigProvider>
               <ChatModeProvider user={authenticatedItem}>
                 <SidebarProvider defaultOpenRight={false}>
-                  <DashboardLayoutContent adminMeta={adminMeta} authenticatedItem={authenticatedItem}>
+                  <DashboardLayoutContent adminMeta={adminMeta} authenticatedItem={authenticatedItem} business={business}>
                     {children}
                   </DashboardLayoutContent>
                 </SidebarProvider>

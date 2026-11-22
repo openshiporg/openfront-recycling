@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
+import { getDashboardBusiness } from "@/features/dashboard/lib/business";
 
-export const metadata: Metadata = {
-  title: "Keystone x Next Dashboard",
-  description: "Admin interface",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { name } = await getDashboardBusiness();
+  return { title: { default: `${name} · Dashboard`, template: `%s · ${name}` }, description: `${name} staff dashboard` };
+}
 
 export default function DashboardLayout({
   children,

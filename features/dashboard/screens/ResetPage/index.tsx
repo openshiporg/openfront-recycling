@@ -1,5 +1,6 @@
 // Server Component
 import { Logo } from "../../components/Logo";
+import { getDashboardBusiness } from "../../lib/business";
 import { ResetForm } from "./ResetForm";
 import Link from "next/link";
 import { passwordResetEmailAvailable, RESET_EMAIL_UNAVAILABLE } from "../../lib/authFlow";
@@ -10,6 +11,7 @@ type ResetPageProps = {
 
 export async function ResetPage({ searchParams }: ResetPageProps) {
   const resolvedSearchParams = await searchParams;
+  const business = await getDashboardBusiness();
   const token =
     typeof resolvedSearchParams.token === "string"
       ? resolvedSearchParams.token
@@ -21,7 +23,7 @@ export async function ResetPage({ searchParams }: ResetPageProps) {
     <main className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
       <div className="w-full max-w-sm">
         <div className="flex items-center space-x-1.5">
-          <Logo aria-hidden="true" />
+          <Logo aria-hidden="true" name={business.name} logoUrl={business.logoUrl} />
         </div>
         <h1 className="mt-6 text-lg font-semibold text-foreground dark:text-foreground">
           {mode === "reset" ? "Reset your password" : "Reset password"}
