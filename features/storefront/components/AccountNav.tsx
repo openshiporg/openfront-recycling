@@ -15,6 +15,7 @@ const ITEMS = [
   { href: '/account/identity', label: 'ID' },
   { href: '/account/vehicles', label: 'Vehicles' },
   { href: '/account/applications', label: 'Applications' },
+  { href: '/account/company', label: 'Company portal' },
 ];
 
 export function AccountNav({ extra = [] }: { extra?: Array<{ href: string; label: string }> }) {

@@ -98,6 +98,18 @@ const LABELS: Record<string, Record<string, string>> = {
   requestKind: { deliver: 'Deliver a container', swap: 'Swap a container', pickup: 'Empty a container', remove: 'Remove a container', live_load: 'Live load', public_pickup: 'Pickup' },
   window: { any: 'Any time', morning: 'Morning', afternoon: 'Afternoon' },
   job: { planned: 'Planned', assigned: 'Driver assigned', en_route: 'On the way', on_site: 'On site', completed: 'Done', failed: 'Could not be done', cancelled: 'Cancelled' },
+  form: { loose: 'Loose', baled: 'Baled', sheared: 'Sheared', shredded: 'Shredded', briquetted: 'Briquetted', boxed: 'In boxes', gaylord: 'In gaylords', drum: 'In drums', ingot: 'Ingots', bundle: 'Bundles' },
+  contactRole: { admin: 'Admin', member: 'Member', billing: 'Billing', driver: 'Driver' },
+  accountStatus: { active: 'Active', suspended: 'Suspended' },
+  paymentTerms: { pay_at_scale: 'Paid at the scale', on_account: 'On account', prepay: 'Prepaid', net: 'Net terms' },
+  cycle: { weekly: 'Weekly', semi_monthly: 'Twice a month', monthly: 'Monthly' },
+  container: { in_yard: 'In the yard', assigned: 'Assigned', at_customer: 'On site', in_transit: 'On the truck', maintenance: 'In repair', retired: 'Retired' },
+  settlement: { draft: 'Being prepared', approved: 'Approved', paid: 'Paid', void: 'Cancelled' },
+  chargeKind: { haul: 'Haul', delivery: 'Delivery', rental: 'Container rental', dry_run: 'Dry run', other: 'Other' },
+  invoice: { draft: 'Draft', open: 'Open', partially_paid: 'Part paid', paid: 'Paid', void: 'Cancelled', refunded: 'Refunded' },
+  invoiceKind: { ticket: 'Scale ticket', service: 'Service', settlement: 'Settlement', shipment: 'Shipment', other: 'Other' },
+  payment: { pending: 'Pending', succeeded: 'Paid', failed: 'Failed', refunded: 'Refunded', partially_refunded: 'Part refunded' },
+  paymentMethod: { card: 'Card', cash: 'Cash', check: 'Check', transfer: 'Bank transfer' },
   containerKind: { roll_off: 'Roll-off', lugger: 'Lugger box', hopper: 'Hopper', gaylord: 'Gaylord', drum: 'Drum', trailer: 'Trailer' },
 };
 

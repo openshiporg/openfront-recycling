@@ -7,7 +7,7 @@ import { ApplyForm } from '../components/forms/RequestForms';
 import { IconBuilding, IconContainer, IconScale, IconTruckScale } from '../components/icons';
 
 const KINDS = {
-  supplier: { title: 'Open a business account', crumb: 'Commercial', back: '/commercial', lead: 'For shops, contractors, plants and demolition crews that bring metal often or need containers. We read every application and reply by email.' },
+  supplier: { title: 'Open a business account', crumb: 'Commercial', back: '/commercial', lead: 'For shops, contractors, plants and wrecking crews that bring metal often or need containers. We read every application and reply by email.' },
   buyer: { title: 'Apply as a buyer', crumb: 'Buyers', back: '/buyers', lead: 'Mills, foundries, brokers and exporters can buy processed material from our yards. Approved buyers see the market with prices and make offers.' },
   nonprofit: { title: 'Become a nonprofit partner', crumb: 'Donate', back: '/donate', lead: 'Registered nonprofits can receive sellers’ donations from their scale tickets. You need an EIN.' },
 } as const;
@@ -26,7 +26,7 @@ export async function CommercialPage() {
   ];
   return (
     <>
-      <PageHead title="Commercial accounts" crumbs={[{ href: '/', label: 'Home' }, { label: 'Commercial' }]} lead={`${name === 'We' ? 'We buy' : `${name} buys`} from shops, contractors, plants and demolition crews, and puts containers where the scrap is made.`}>
+      <PageHead title="Commercial accounts" crumbs={[{ href: '/', label: 'Home' }, { label: 'Commercial' }]} lead={`${name === 'We' ? 'We buy' : `${name} buys`} from shops, contractors, plants and wrecking crews, and puts containers where the scrap is made.`}>
         <div className="sf-cluster"><Link className="sf-btn" href="/commercial/apply">Open a business account</Link><Link className="sf-btn sf-btn-ghost" href="/account/company">Company sign in</Link></div>
       </PageHead>
       <div className="sf-wrap sf-section sf-stack">

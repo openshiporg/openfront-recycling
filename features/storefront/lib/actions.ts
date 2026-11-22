@@ -334,3 +334,80 @@ export async function payByCardAction(_prev: FormState, form: FormData): Promise
   if (!url) return { error: 'Card payment is not set up for this business yet. Pay at the window, or call the yard.' };
   redirect(url);
 }
+
+// ---- Company portal (C4, C6) ----
+export async function saveSiteAction(_prev: FormState, form: FormData): Promise<FormState> {
+  const v = {
+    accountId: str(form, 'accountId'),
+    siteId: str(form, 'siteId') || null,
+    name: str(form, 'name'),
+    addressLine1: str(form, 'addressLine1'),
+    addressLine2: str(form, 'addressLine2') || null,
+    city: str(form, 'city'),
+    region: str(form, 'region') || null,
+    postalCode: str(form, 'postalCode') || null,
+    contactName: str(form, 'contactName') || null,
+    contactPhone: str(form, 'contactPhone') || null,
+    accessNotes: str(form, 'accessNotes') || null,
+    isActive: form.get('isActive') !== null || !str(form, 'siteId'),
+  };
+  const fields = Object.fromEntries(Object.entries(v).map(([k, x]) => [k, x === null ? '' : String(x)]));
+  if (!v.name || !v.addressLine1 || !v.city) return { error: 'Enter the site name, street address and city.', fields };
+  const r = await gql(
+    `mutation($accountId: ID!, $siteId: ID, $name: String!, $addressLine1: String!, $addressLine2: String, $city: String!, $region: String, $postalCode: String, $contactName: String, $contactPhone: String, $accessNotes: String, $isActive: Boolean) {
+      upsertAccountSite(accountId: $accountId, siteId: $siteId, name: $name, addressLine1: $addressLine1, addressLine2: $addressLine2, city: $city, region: $region, postalCode: $postalCode, contactName: $contactName, contactPhone: $contactPhone, accessNotes: $accessNotes, isActive: $isActive) { id }
+    }`,
+    v,
+  );
+  if (!r.ok) return { error: r.error, fields };
+  revalidatePath(`/account/company/${str(form, 'slug')}`, 'layout');
+  return { error: null, success: v.siteId ? 'Site saved.' : 'Site added.' };
+}
+
+export async function companyRequestAction(_prev: FormState, form: FormData): Promise<FormState> {
+  const slug = str(form, 'slug');
+  const v = {
+    yardId: str(form, 'yardId'),
+    kind: str(form, 'kind'),
+    accountId: str(form, 'accountId'),
+    siteId: str(form, 'siteId') || null,
+    containerTypeId: str(form, 'containerTypeId') || null,
+    containerId: str(form, 'containerId') || null,
+    preferredDate: str(form, 'preferredDate') || null,
+    preferredWindow: str(form, 'preferredWindow') || 'any',
+    accessNotes: str(form, 'accessNotes') || null,
+    itemsDescription: str(form, 'itemsDescription') || null,
+  };
+  const fields = Object.fromEntries(Object.entries(v).map(([k, x]) => [k, x ?? '']));
+  if (!v.kind) return { error: 'Choose what you need.', fields };
+  if (['deliver', 'swap'].includes(v.kind) && !v.containerTypeId) return { error: 'Choose the container size.', fields };
+  if (['pickup', 'remove', 'swap'].includes(v.kind) && !v.containerId) return { error: 'Choose the container on site.', fields };
+  const r = await gql<{ createServiceRequest: { id: string } }>(
+    `mutation($yardId: ID!, $kind: String!, $accountId: ID, $siteId: ID, $containerTypeId: ID, $containerId: ID, $preferredDate: String, $preferredWindow: String, $accessNotes: String, $itemsDescription: String, $idempotencyKey: String) {
+      createServiceRequest(yardId: $yardId, kind: $kind, accountId: $accountId, siteId: $siteId, containerTypeId: $containerTypeId, containerId: $containerId, preferredDate: $preferredDate, preferredWindow: $preferredWindow, accessNotes: $accessNotes, itemsDescription: $itemsDescription, idempotencyKey: $idempotencyKey) { id }
+    }`,
+    { ...v, idempotencyKey: str(form, 'idempotencyKey') || randomUUID() },
+  );
+  if (!r.ok) return { error: r.error, fields };
+  revalidatePath(`/account/company/${slug}`, 'layout');
+  redirect(`/account/company/${slug}/requests/${r.data.createServiceRequest.id}?new=1`);
+}
+
+// ---- Market (B2) ----
+export async function offerAction(_prev: FormState, form: FormData): Promise<FormState> {
+  const listingId = str(form, 'listingId');
+  const buyNow = str(form, 'mode') === 'buy';
+  const v = { listingId, accountId: str(form, 'accountId'), weight: str(form, 'weight'), unitPrice: buyNow ? null : str(form, 'unitPrice') || null, pickupFrom: str(form, 'pickupFrom') || null, pickupTo: str(form, 'pickupTo') || null, message: str(form, 'message') || null, buyNow };
+  const fields = { ...Object.fromEntries(Object.entries(v).map(([k, x]) => [k, x === null ? '' : String(x)])), mode: buyNow ? 'buy' : 'offer' };
+  if (!(Number(v.weight) > 0)) return { error: 'Enter the weight you want.', fields };
+  if (!buyNow && !(Number(v.unitPrice) > 0)) return { error: 'Enter your price.', fields };
+  const r = await gql<{ submitOffer: { id: string } }>(
+    `mutation($listingId: ID!, $accountId: ID!, $weight: String!, $unitPrice: String, $pickupFrom: String, $pickupTo: String, $message: String, $buyNow: Boolean, $idempotencyKey: String) {
+      submitOffer(listingId: $listingId, accountId: $accountId, weight: $weight, unitPrice: $unitPrice, pickupFrom: $pickupFrom, pickupTo: $pickupTo, message: $message, buyNow: $buyNow, idempotencyKey: $idempotencyKey) { id }
+    }`,
+    { ...v, idempotencyKey: str(form, 'idempotencyKey') || randomUUID() },
+  );
+  if (!r.ok) return { error: r.error, fields };
+  revalidatePath(`/market/${listingId}`);
+  redirect(`/market/${listingId}?sent=${buyNow ? 'bought' : 'offer'}`);
+}

@@ -311,12 +311,12 @@
 .sf-qr svg { width: 100%; height: auto; display: block; }
 
 /* ---------- Steps indicator (check-in) ---------- */
-.sf-progress { display: flex; gap: 8px; list-style: none; margin: 0 0 20px; padding: 0; flex-wrap: wrap; }
-.sf-progress li { display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--sf-ink-muted); font-size: 15px; }
-.sf-progress li b { display: inline-flex; width: 28px; height: 28px; border-radius: 50%; align-items: center; justify-content: center; background: var(--sf-rule); color: var(--sf-ink); font-size: 14px; }
-.sf-progress li[data-state='done'] b { background: var(--sf-ok); color: #fff; }
-.sf-progress li[data-state='current'] { color: var(--sf-rust); }
-.sf-progress li[data-state='current'] b { background: var(--sf-rust); color: var(--sf-on-rust); }
+.sf-flowsteps { display: flex; gap: 8px; list-style: none; margin: 0 0 20px; padding: 0; flex-wrap: wrap; }
+.sf-flowsteps li { display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--sf-ink-muted); font-size: 15px; }
+.sf-flowsteps li b { display: inline-flex; width: 28px; height: 28px; border-radius: 50%; align-items: center; justify-content: center; background: var(--sf-rule); color: var(--sf-ink); font-size: 14px; }
+.sf-flowsteps li[data-state='done'] b { background: var(--sf-ok); color: #fff; }
+.sf-flowsteps li[data-state='current'] { color: var(--sf-rust); }
+.sf-flowsteps li[data-state='current'] b { background: var(--sf-rust); color: var(--sf-on-rust); }
 
 /* ---------- Print ---------- */
 @media print {
@@ -337,3 +337,7 @@
 /* Icon in a rust disc (commercial points, pickup steps). */
 .sf-icon-badge { width: 56px; height: 56px; border-radius: 50%; background: var(--sf-rust); color: var(--sf-on-rust); display: grid; place-items: center; }
 .sf-icon-badge svg { width: 30px; height: 30px; }
+.sf-companynav { overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; }
+.sf-companynav a { white-space: nowrap; }
+.sf-progress { height: 12px; border-radius: 999px; background: var(--sf-rule); overflow: hidden; }
+.sf-progress > span { display: block; height: 100%; background: var(--sf-rust); border-radius: inherit; }

@@ -130,6 +130,9 @@ export async function StorefrontShell({ children }: { children: ReactNode }) {
             <Link href="/prices/print">Printable price sheet</Link>
             <Link href="/pickup">Request a pickup</Link>
             <Link href="/commercial/apply">Open a business account</Link>
+            <Link href="/buyers">Buy material</Link>
+            <Link href="/market">Material for sale</Link>
+            <Link href="/donate">Donate your scrap</Link>
             {business?.isNonprofit && business.ein ? <span>Nonprofit · EIN {business.ein}</span> : null}
           </div>
         </div>

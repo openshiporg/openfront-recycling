@@ -6,10 +6,10 @@ import type { FormState } from '../lib/actions';
 
 type Action = (prev: FormState, form: FormData) => Promise<FormState>;
 
-export function Submit({ children, pending: pendingText, className = 'sf-btn' }: { children: ReactNode; pending?: string; className?: string }) {
+export function Submit({ children, pending: pendingText, className = 'sf-btn', disabled = false }: { children: ReactNode; pending?: string; className?: string; disabled?: boolean }) {
   const { pending } = useFormStatus();
   return (
-    <button className={className} type="submit" disabled={pending} aria-disabled={pending}>
+    <button className={className} type="submit" disabled={pending || disabled} aria-disabled={pending || disabled}>
       {pending ? pendingText || 'Working…' : children}
     </button>
   );

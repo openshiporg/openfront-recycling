@@ -33,7 +33,7 @@ export default async function CheckInPage({ yard }: { yard?: string | null }) {
   ];
   const currentStep = steps.find((s) => !s.done)?.key || 'visit';
   const progress = (
-    <ol className="sf-progress" aria-label="Steps">
+    <ol className="sf-flowsteps" aria-label="Steps">
       {steps.map((s, i) => <li key={s.key} data-state={s.done ? 'done' : s.key === currentStep ? 'current' : 'todo'} aria-current={s.key === currentStep ? 'step' : undefined}><b>{s.done ? '✓' : i + 1}</b>{s.label}</li>)}
     </ol>
   );
