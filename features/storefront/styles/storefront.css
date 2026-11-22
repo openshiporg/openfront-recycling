@@ -199,7 +199,7 @@
 .sf-step p { margin: 0; font-size: 15px; color: var(--sf-ink); }
 .sf-step:not(:last-child)::after { content: '→'; position: absolute; right: -14px; top: 30px; color: var(--sf-orange); font-size: 26px; font-weight: 700; }
 .sf-phonecol { border-left: 2px solid var(--sf-rust); padding-left: 24px; }
-.sf-phone-mock { width: 230px; margin: 0 auto; background: #1f130d; border-radius: 34px; padding: 12px; box-shadow: var(--sf-shadow); transform: rotate(2.5deg); }
+.sf-pass-phone { width: 230px; margin: 0 auto; background: var(--sf-footer); border-radius: 34px; padding: 12px; box-shadow: var(--sf-shadow); transform: rotate(2.5deg); }
 .sf-phone-screen { background: var(--sf-card); border-radius: 24px; padding: 18px 14px; text-align: center; }
 .sf-pass-tag { display: inline-block; background: var(--sf-orange-deep); color: var(--sf-on-rust); font-family: var(--sf-font-display); font-weight: 800; text-transform: uppercase; font-size: 20px; padding: 6px 14px; border-radius: 4px; margin: 6px 0 10px; }
 .sf-phone-screen .sf-qr { width: 140px; margin: 0 auto; }
@@ -331,3 +331,5 @@
 .sf-print { background: #fff; color: #000; padding: 24px; max-width: 900px; margin: 0 auto; }
 .sf-print h1 { font-family: var(--sf-font-display); text-transform: uppercase; font-size: 34px; margin: 0; }
 .sf-print .sf-table td, .sf-print .sf-table th { padding: 6px 8px; }
+.sf-split { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); align-items: start; }
+@media (max-width: 860px) { .sf-split { grid-template-columns: 1fr; } }
