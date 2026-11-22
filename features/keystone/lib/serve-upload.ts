@@ -65,9 +65,9 @@ export async function servePrivateUpload(context: any, folder: string, name: str
   const id = n.replace(/\.[^.]+$/, '')
   if (folder === 'private-files') {
     // Company portal (C12): an active contact of the account gets the documents shared with it, as accountDocuments lists them.
-    const doc = await prisma.accountDocument.findFirst({ where: { file_filename: n, visibleToAccount: true, accountId: { not: null } }, select: { accountId: true } })
-    if (doc && (await prisma.accountContact.findFirst({ where: { accountId: doc.accountId, userId: context.session.itemId, status: 'active' }, select: { id: true } }))) {
-      return send(folder, n, 'private, max-age=300')
+    const doc = await prisma.accountDocument.findFirst({ where: { file_filename: n, visibleToAccount: true, account: { status: { in: ['active', 'suspended'] } } }, select: { accountId: true } })
+    if (doc && (await prisma.accountContact.findFirst({ where: { accountId: doc.accountId, userId: context.session.itemId, status: 'active', role: { in: ['admin', 'member', 'billing', 'driver'] } }, select: { id: true } }))) {
+      return send(folder, n, 'private, no-store')
     }
   }
   for (const h of holders) {
@@ -77,7 +77,7 @@ export async function servePrivateUpload(context: any, folder: string, name: str
       // Read it back through the user's own access: null or a missing field means no.
       const item: any = await context.query[h.list].findOne({ where: { id: r.id }, query: `id ${h.field} { ${folder === 'private-images' ? 'id' : 'filename'} }` }).catch(() => null)
       const value: any = item?.[h.field]
-      if (value && (value.id === id || value.filename === n)) return send(folder, n, 'private, max-age=300')
+      if (value && (value.id === id || value.filename === n)) return send(folder, n, 'private, no-store')
     }
   }
   return new Response('Not found', { status: 404 })

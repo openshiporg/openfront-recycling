@@ -115,6 +115,37 @@ test('C12 to C14: documents and certificate requests, team, vehicles; each only 
   assert.equal((await gql(as(member), DOCS, { s: acct.slug, k: 'w9' })).accountDocuments.documents.length, 0)
   await assert.rejects(gql(as(member), DOCS, { s: acct.slug, k: 'passport' }), /kind/)
   await assert.rejects(gql(as(outsider), DOCS, { s: acct.slug }), /NOT_FOUND/)
+
+  // Bounded access review: suspension preserves reads; membership revocation does not.
+  await prisma.account.update({ where: { id: acct.id }, data: { status: 'suspended' } })
+  for (const query of [DOCS, TEAM, VEH]) await gql(as(member), query, { s: acct.slug })
+  const filename = cert.fileUrl.split('/').pop()
+  if (!s3Configured()) {
+    const response = await servePrivateUpload(as(member), 'private-files', filename)
+    assert.equal(response.status, 200, 'active contacts retain reads on suspended accounts')
+    assert.equal(response.headers.get('cache-control'), 'private, no-store', 'a future request must reauthorize after revocation')
+    assert.equal((await servePrivateUpload(anon, 'private-files', filename)).status, 401)
+    assert.equal((await servePrivateUpload(as(member), 'private-files', '../certificate.pdf')).status, 404)
+    assert.equal((await servePrivateUpload(as(member), 'private-files', 'unknown.pdf')).status, 404)
+  }
+  await prisma.accountDocument.update({ where: { id: cert.id }, data: { visibleToAccount: false } })
+  assert.equal((await gql(as(member), DOCS, { s: acct.slug })).accountDocuments.documents.length, 0)
+  if (!s3Configured()) assert.equal((await servePrivateUpload(as(member), 'private-files', filename)).status, 404, 'known filename cannot bypass hidden document')
+  await prisma.accountDocument.update({ where: { id: cert.id }, data: { visibleToAccount: true } })
+
+  for (const status of ['invited', 'removed']) {
+    await prisma.accountContact.updateMany({ where: { accountId: acct.id, userId: member.id }, data: { status } })
+    for (const query of [DOCS, TEAM, VEH]) await assert.rejects(gql(as(member), query, { s: acct.slug }), /NOT_FOUND/)
+    await assert.rejects(gql(as(member), REQ, { s: acct.slug, t: ticket.id }), /NOT_FOUND/)
+    if (!s3Configured()) assert.equal((await servePrivateUpload(as(member), 'private-files', filename)).status, 404, `${status} contact cannot reuse a known filename`)
+  }
+  // Revoke an actual invitation through the command, then refuse its original token.
+  const invitee = await user('Invitee')
+  const invitation = (await gql(as(admin), `mutation($a: ID!, $e: String!) { inviteAccountContact(accountId: $a, email: $e, role: "member") { contactId token } }`, { a: acct.id, e: invitee.email })).inviteAccountContact
+  await gql(as(admin), `mutation($c: ID!) { updateAccountContact(contactId: $c, remove: true) { id } }`, { c: invitation.contactId })
+  await assert.rejects(gql(as(invitee), `mutation($t: String!) { acceptAccountInvite(token: $t) { id } }`, { t: invitation.token }), /not valid any more/)
+  for (const query of [DOCS, TEAM, VEH]) await assert.rejects(gql(as(invitee), query, { s: acct.slug }), /NOT_FOUND/)
+  if (!s3Configured()) assert.equal((await servePrivateUpload(as(invitee), 'private-files', filename)).status, 404)
 })
 
 test.after(async () => { await prisma.$disconnect() })
