@@ -226,3 +226,111 @@ export async function trackAction(_prev: FormState, form: FormData): Promise<For
   if (!number || !code) return { error: 'Enter the ticket number and the lookup code from your receipt.', fields: { number, code } };
   redirect(`/track?number=${encodeURIComponent(number)}&code=${encodeURIComponent(code)}`);
 }
+
+// ---- Applications (P12, P13, S16) ----
+const APPLY_KINDS = ['supplier', 'buyer', 'nonprofit'] as const;
+export async function applyAction(_prev: FormState, form: FormData): Promise<FormState> {
+  const kind = str(form, 'kind');
+  const a = {
+    kind,
+    businessName: str(form, 'businessName'),
+    legalName: str(form, 'legalName') || null,
+    taxId: str(form, 'taxId') || null,
+    addressLine1: str(form, 'addressLine1') || null,
+    addressLine2: str(form, 'addressLine2') || null,
+    city: str(form, 'city') || null,
+    region: str(form, 'region') || null,
+    postalCode: str(form, 'postalCode') || null,
+    phone: str(form, 'phone') || null,
+    email: str(form, 'email').toLowerCase() || null,
+    monthlyVolume: str(form, 'monthlyVolume') || null,
+    containerNeeds: str(form, 'containerNeeds') || null,
+    message: str(form, 'message') || null,
+    materials: str(form, 'materials') ? str(form, 'materials').split(',').map((s) => s.trim()).filter(Boolean) : null,
+  };
+  const fields = Object.fromEntries(Object.entries(a).map(([k, v]) => [k, Array.isArray(v) ? v.join(', ') : v ?? '']));
+  if (!APPLY_KINDS.includes(kind as (typeof APPLY_KINDS)[number])) return { error: 'Choose what kind of account you are applying for.', fields };
+  if (a.businessName.length < 2) return { error: 'Enter the business name.', fields };
+  if (kind === 'nonprofit' && !a.taxId) return { error: 'Enter the EIN of the nonprofit.', fields };
+  if (a.email && !EMAIL.test(a.email)) return { error: 'Enter a valid email address, or leave it empty.', fields };
+  const r = await gql<{ submitAccountApplication: { id: string } }>(
+    `mutation($kind: String!, $businessName: String!, $legalName: String, $taxId: String, $addressLine1: String, $addressLine2: String, $city: String, $region: String, $postalCode: String, $phone: String, $email: String, $materials: JSON, $monthlyVolume: String, $containerNeeds: String, $message: String, $idempotencyKey: String) {
+      submitAccountApplication(kind: $kind, businessName: $businessName, legalName: $legalName, taxId: $taxId, addressLine1: $addressLine1, addressLine2: $addressLine2, city: $city, region: $region, postalCode: $postalCode, phone: $phone, email: $email, materials: $materials, monthlyVolume: $monthlyVolume, containerNeeds: $containerNeeds, message: $message, idempotencyKey: $idempotencyKey) { id }
+    }`,
+    { ...a, idempotencyKey: str(form, 'idempotencyKey') || randomUUID() },
+  );
+  if (!r.ok) return { error: r.unauthenticated ? 'Sign in first, then send the application.' : r.error, fields };
+  revalidatePath('/account', 'layout');
+  redirect('/account/applications?sent=1');
+}
+
+export async function withdrawApplicationAction(_prev: FormState, form: FormData): Promise<FormState> {
+  const r = await gql(`mutation($id: ID!) { withdrawApplication(applicationId: $id) { id } }`, { id: str(form, 'id') });
+  if (!r.ok) return { error: r.error };
+  revalidatePath('/account/applications');
+  return { error: null, success: 'Application withdrawn.' };
+}
+
+// ---- Public pickups (P16, S14) ----
+export async function requestPickupAction(_prev: FormState, form: FormData): Promise<FormState> {
+  const address = {
+    name: str(form, 'placeName') || null,
+    addressLine1: str(form, 'addressLine1'),
+    addressLine2: str(form, 'addressLine2') || null,
+    city: str(form, 'city'),
+    region: str(form, 'region') || null,
+    postalCode: str(form, 'postalCode') || null,
+    contactName: str(form, 'contactName') || null,
+    contactPhone: str(form, 'contactPhone') || null,
+  };
+  const v = {
+    yardId: str(form, 'yardId'),
+    itemsDescription: str(form, 'itemsDescription'),
+    materialId: str(form, 'materialId') || null,
+    preferredDate: str(form, 'preferredDate') || null,
+    preferredWindow: str(form, 'preferredWindow') || 'any',
+    accessNotes: str(form, 'accessNotes') || null,
+  };
+  const fields = { ...Object.fromEntries(Object.entries({ ...address, ...v }).map(([k, x]) => [k, x ?? ''])), placeName: address.name || '' };
+  if (!v.yardId) return { error: 'Choose the yard nearest you.', fields };
+  if (!v.itemsDescription) return { error: 'Tell us what to pick up, for example “a washer and a dryer”.', fields };
+  if (!address.addressLine1 || !address.city) return { error: 'Enter the street address and city for the pickup.', fields };
+  const r = await gql<{ createServiceRequest: { id: string } }>(
+    `mutation($yardId: ID!, $materialId: ID, $itemsDescription: String, $preferredDate: String, $preferredWindow: String, $accessNotes: String, $address: PickupAddressInput, $idempotencyKey: String) {
+      createServiceRequest(yardId: $yardId, kind: "public_pickup", materialId: $materialId, itemsDescription: $itemsDescription, preferredDate: $preferredDate, preferredWindow: $preferredWindow, accessNotes: $accessNotes, address: $address, idempotencyKey: $idempotencyKey) { id }
+    }`,
+    { ...v, address, idempotencyKey: str(form, 'idempotencyKey') || randomUUID() },
+  );
+  if (!r.ok) return { error: r.unauthenticated ? 'Sign in first, then send the request.' : r.error, fields };
+  revalidatePath('/account', 'layout');
+  redirect(`/account/pickups/${r.data.createServiceRequest.id}?new=1`);
+}
+
+export async function acceptQuoteAction(_prev: FormState, form: FormData): Promise<FormState> {
+  const r = await gql(`mutation($id: ID!) { acceptServiceQuote(requestId: $id) { id } }`, { id: str(form, 'id') });
+  if (!r.ok) return { error: r.error };
+  revalidatePath('/account', 'layout');
+  return { error: null, success: 'Quote accepted.' };
+}
+
+export async function cancelRequestAction(_prev: FormState, form: FormData): Promise<FormState> {
+  const r = await gql(`mutation($id: ID!, $reason: String) { cancelServiceRequest(requestId: $id, reason: $reason) { id } }`, { id: str(form, 'id'), reason: str(form, 'reason') || null });
+  if (!r.ok) return { error: r.error };
+  revalidatePath('/account', 'layout');
+  return { error: null, success: 'Request cancelled. Any card payment is refunded in full.' };
+}
+
+// ---- Card payments (S12, S14, C6, C10): the provider's hosted checkout. ----
+export async function payByCardAction(_prev: FormState, form: FormData): Promise<FormState> {
+  const kind = str(form, 'kind');
+  const id = str(form, 'id');
+  const returnPath = safeNext(str(form, 'returnPath'), '/account');
+  const key = str(form, 'idempotencyKey') || randomUUID();
+  const r = kind === 'request'
+    ? await gql<{ payServiceRequestByCard: { url: string | null } }>(`mutation($id: ID!, $returnPath: String, $key: String!) { payServiceRequestByCard(requestId: $id, returnPath: $returnPath, idempotencyKey: $key) { url } }`, { id, returnPath, key })
+    : await gql<{ payInvoiceByCard: { url: string | null } }>(`mutation($id: ID!, $returnPath: String, $key: String!) { payInvoiceByCard(invoiceId: $id, returnPath: $returnPath, idempotencyKey: $key) { url } }`, { id, returnPath, key });
+  if (!r.ok) return { error: r.error };
+  const url = 'payServiceRequestByCard' in r.data ? r.data.payServiceRequestByCard.url : r.data.payInvoiceByCard.url;
+  if (!url) return { error: 'Card payment is not set up for this business yet. Pay at the window, or call the yard.' };
+  redirect(url);
+}

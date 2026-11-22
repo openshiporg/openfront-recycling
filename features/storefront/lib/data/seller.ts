@@ -127,10 +127,11 @@ export type TicketDetail = Receipt & {
   adjustments: Array<{ id: string; displayNumber: string }>;
   adjusts: { id: string; displayNumber: string } | null;
   amountDueCents: number | null;
+  invoiceId: string | null;
 };
 
 export const getTicket = cache(async (id: string): Promise<GqlResult<TicketDetail | null>> => {
-  const r = await gql<{ myTicket: (RawReceipt & { lookupCode?: string | null; amountDueCents?: number | null; adjustsId?: string | null }) | null }>(
+  const r = await gql<{ myTicket: (RawReceipt & { lookupCode?: string | null; amountDueCents?: number | null; invoiceId?: string | null; adjustsId?: string | null }) | null }>(
     `query($id: ID!) { myTicket(id: $id) { ${RECEIPT_FIELDS} } }`,
     { id },
   );
@@ -147,6 +148,7 @@ export const getTicket = cache(async (id: string): Promise<GqlResult<TicketDetai
       adjusts: t.adjustsDisplayNumber ? { id: t.adjustsId || '', displayNumber: t.adjustsDisplayNumber } : null,
       // Charge tickets (the seller owes a fee) carry the amount still due once the backend exposes it.
       amountDueCents: t.amountDueCents ?? null,
+      invoiceId: t.invoiceId ?? null,
     },
   };
 });

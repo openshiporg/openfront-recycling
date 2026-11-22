@@ -92,6 +92,12 @@ const LABELS: Record<string, Record<string, string>> = {
   direction: { pay_seller: 'We pay you', charge_customer: 'Drop-off fee' },
   categoryKind: { ferrous: 'Ferrous', non_ferrous: 'Non-ferrous', electronics: 'Electronics', paper: 'Paper', plastic: 'Plastic', glass: 'Glass', other: 'Other' },
   documents: { title: 'Vehicle title', repair_invoice: 'Repair invoice', business_licence: 'Business licence', bill_of_sale: 'Bill of sale', receipt: 'Purchase receipt' },
+  application: { submitted: 'Waiting for review', approved: 'Approved', declined: 'Declined', withdrawn: 'Withdrawn' },
+  applicationKind: { supplier: 'Commercial supplier', buyer: 'Buyer', nonprofit: 'Nonprofit partner' },
+  request: { requested: 'Received', awaiting_payment: 'Waiting for payment', approved: 'Approved', scheduled: 'Scheduled', completed: 'Done', declined: 'Declined', cancelled: 'Cancelled' },
+  requestKind: { deliver: 'Deliver a container', swap: 'Swap a container', pickup: 'Empty a container', remove: 'Remove a container', live_load: 'Live load', public_pickup: 'Pickup' },
+  window: { any: 'Any time', morning: 'Morning', afternoon: 'Afternoon' },
+  job: { planned: 'Planned', assigned: 'Driver assigned', en_route: 'On the way', on_site: 'On site', completed: 'Done', failed: 'Could not be done', cancelled: 'Cancelled' },
   containerKind: { roll_off: 'Roll-off', lugger: 'Lugger box', hopper: 'Hopper', gaylord: 'Gaylord', drum: 'Drum', trailer: 'Trailer' },
 };
 

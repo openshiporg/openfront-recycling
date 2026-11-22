@@ -333,3 +333,7 @@
 .sf-print .sf-table td, .sf-print .sf-table th { padding: 6px 8px; }
 .sf-split { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); align-items: start; }
 @media (max-width: 860px) { .sf-split { grid-template-columns: 1fr; } }
+
+/* Icon in a rust disc (commercial points, pickup steps). */
+.sf-icon-badge { width: 56px; height: 56px; border-radius: 50%; background: var(--sf-rust); color: var(--sf-on-rust); display: grid; place-items: center; }
+.sf-icon-badge svg { width: 30px; height: 30px; }

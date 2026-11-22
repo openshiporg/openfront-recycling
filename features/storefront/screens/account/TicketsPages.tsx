@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { randomUUID } from 'node:crypto';
+import { PayByCardButton } from '../../components/forms/RequestForms';
 import { getBusiness } from '../../lib/data/public';
 import { getPayouts, getTicket, getTickets } from '../../lib/data/seller';
 import { dateTime, holdSentence, label, money, shortDate } from '../../lib/format';
@@ -138,6 +140,32 @@ export async function PayoutsPage() {
           })}
         </div>
       )}
+    </>
+  );
+}
+
+/** S12: pay a fee ticket by card through the ticket's invoice. */
+export async function TicketPayPage({ id }: { id: string }) {
+  const r = await getTicket(id);
+  if (!r.ok) return <LoadError what="this ticket" />;
+  const t = r.data;
+  if (!t) return <StateCard title="We can’t find that ticket" action={<Link className="sf-btn sf-btn-sm" href="/account/tickets">Your tickets</Link>} />;
+  const due = t.amountDueCents || 0;
+  return (
+    <>
+      <AccountTitle title={`Pay ticket ${t.displayNumber}`} />
+      {due <= 0 || !t.invoiceId ? (
+        <StateCard title="Nothing to pay" action={<Link className="sf-btn sf-btn-sm" href={`/account/tickets/${t.id}`}>Back to the ticket</Link>}>{t.totalCents < 0 ? 'This ticket has been paid.' : 'This ticket pays you; there is nothing to pay on it.'}</StateCard>
+      ) : (
+        <section className="sf-card sf-stack">
+          <div className="sf-between">
+            <div><div className="sf-small sf-muted">Amount due</div><div className="sf-price" style={{ fontSize: 34 }}>{money(due, t.currencyCode)}</div></div>
+            <PayByCardButton kind="invoice" id={t.invoiceId} label={`Pay ${money(due, t.currencyCode)} by card`} returnPath={`/account/tickets/${t.id}?paid=1`} idempotencyKey={randomUUID()} />
+          </div>
+          <p className="sf-small sf-muted" style={{ margin: 0 }}>You pay on the card provider’s secure page and come back here. You can also pay at the scale window.</p>
+        </section>
+      )}
+      <ReceiptView r={t} />
     </>
   );
 }
