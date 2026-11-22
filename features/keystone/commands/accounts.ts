@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { hasFlag } from '../access'
+import { normalizeName } from '../lib/domain'
 import { CommandError, cleanKey, compareAndSet, lockRow, refuse, runCommand, type CommandCtx, type Tx } from '../lib/command'
 
 /**
@@ -210,7 +211,7 @@ export async function setSellerStatusTx(ctx: CommandCtx, input: { sellerId: stri
   if (!rule.who) throw new CommandError('A manager must make this change.', 'FORBIDDEN')
   await compareAndSet(ctx.tx, 'seller', seller.id, rule.from, { status: input.status, statusReason: reason }, `A ${seller.status} seller cannot become ${input.status}.`)
   if (input.status === 'do_not_buy') {
-    await ctx.tx.doNotBuyEntry.create({ data: { firstName: seller.firstName, lastName: seller.lastName, nameNormalized: `${seller.firstName} ${seller.lastName}`.toLowerCase().replace(/[^a-z]/g, ''), dateOfBirth: seller.dateOfBirth, source: 'yard', reason, isActive: true, sellerId: seller.id, addedById: ctx.actorId } })
+    await ctx.tx.doNotBuyEntry.create({ data: { firstName: seller.firstName, lastName: seller.lastName, nameNormalized: normalizeName(seller.firstName, seller.lastName), dateOfBirth: seller.dateOfBirth, source: 'yard', reason, isActive: true, sellerId: seller.id, addedById: ctx.actorId } })
   } else if (seller.status === 'do_not_buy') {
     await ctx.tx.doNotBuyEntry.updateMany({ where: { sellerId: seller.id, source: 'yard', isActive: true }, data: { isActive: false } })
   }

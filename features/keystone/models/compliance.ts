@@ -108,11 +108,11 @@ export const DoNotBuyEntry = list({
     resolveInput: ({ resolvedData, item, context, operation }) => {
       const first = resolvedData.firstName ?? item?.firstName ?? ''
       const last = resolvedData.lastName ?? item?.lastName ?? ''
-      resolvedData.nameNormalized = `${first} ${last}`.trim().toLowerCase().replace(/\s+/g, ' ') || null
+      resolvedData.nameNormalized = `${first} ${last}`.trim().toLowerCase().replace(/\s+/g, ' ')
       const id = resolvedData.idNumber ?? item?.idNumber
-      resolvedData.idNumberNormalized = id ? String(id).replace(/[^a-z0-9]/gi, '').toUpperCase() : null
+      resolvedData.idNumberNormalized = id ? String(id).replace(/[^a-z0-9]/gi, '').toUpperCase() : ''
       const plate = resolvedData.plate ?? item?.plate
-      resolvedData.plateNormalized = plate ? String(plate).replace(/[^a-z0-9]/gi, '').toUpperCase() : null
+      resolvedData.plateNormalized = plate ? String(plate).replace(/[^a-z0-9]/gi, '').toUpperCase() : ''
       if (operation === 'create' && context.session?.itemId) resolvedData.addedBy = { connect: { id: context.session.itemId } }
       return resolvedData
     },

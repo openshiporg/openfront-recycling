@@ -1,0 +1,54 @@
+/*
+ * Storefront theme: Capella. Every colour, font and radius the storefront uses lives here, so a different
+ * design is a change to this file only. Colours were sampled from the Capella reference image.
+ */
+[data-storefront] {
+  /* Page and surfaces */
+  --sf-page: #f6ecdb;          /* warm cream page */
+  --sf-header: #f8eedf;        /* header strip */
+  --sf-card: #fffaea;          /* rounded cream cards */
+  --sf-card-edge: #ead8c1;     /* card border */
+  --sf-rule: #e2cdb3;          /* hairlines on cream */
+
+  /* Rust family */
+  --sf-rust: #a73912;          /* headings and accents on cream */
+  --sf-rust-strong: #84300f;   /* hero block */
+  --sf-rust-deep: #67270e;     /* hero shadow edge */
+  --sf-orange: #c4531e;        /* buttons (top) */
+  --sf-orange-deep: #a73a0b;   /* buttons (bottom) and pressed */
+  --sf-band: #8d300b;          /* facts band and picture tiles */
+  --sf-ember: #c85f2f;         /* footer ridge, highlights on dark */
+
+  /* Dark footer */
+  --sf-footer: #4e1f0d;
+  --sf-footer-text: #f1dfcb;
+  --sf-footer-muted: #d2b49c;
+
+  /* Text */
+  --sf-ink: #2a140b;           /* body text on cream */
+  --sf-ink-muted: #6b4a38;     /* secondary text on cream */
+  --sf-on-rust: #f8e9d6;       /* text on rust */
+  --sf-on-rust-muted: #f0d3bb;
+
+  /* States */
+  --sf-ok: #2f6b3a;
+  --sf-ok-bg: #e4efd9;
+  --sf-warn: #8a5a00;
+  --sf-warn-bg: #fbecc8;
+  --sf-alert: #9c1f12;
+  --sf-alert-bg: #f8dcd3;
+  --sf-focus: #1d5fa8;
+
+  /* Type */
+  --sf-font-display: var(--font-sf-display), 'Arial Narrow', Impact, sans-serif;
+  --sf-font-body: var(--font-sf-body), system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --sf-font-mono: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+
+  /* Shape */
+  --sf-radius-card: 14px;
+  --sf-radius-button: 6px;
+  --sf-radius-tile: 8px;
+  --sf-radius-pill: 999px;
+  --sf-angle: 9%;              /* how far the hero's angled edge leans */
+  --sf-shadow: 0 10px 28px -14px rgba(78, 31, 13, 0.45);
+}
