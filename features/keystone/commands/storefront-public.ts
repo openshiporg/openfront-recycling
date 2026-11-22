@@ -222,6 +222,8 @@ export const publicTypeDefs = `
     id: ID!, displayNumber: String!, direction: String!, status: String!, yardName: String!, yardAddress: String, sellerName: String, accountName: String, vehiclePlate: String, completedAt: DateTime, createdAt: DateTime,
     businessName: String, weightUnit: String!, paymentMode: String!, donatePercent: Int, lines: [ReceiptLine!]!, fees: [ReceiptFee!]!, materialTotalCents: Int!, feeTotalCents: Int!, taxCents: Int!, totalCents: Int!,
     payouts: [ReceiptPayout!]!, holds: [ReceiptHold!]!, adjustments: [ReceiptAdjustment!]!, adjustsDisplayNumber: String, photoIds: [String!]!
+    "Only on myTicket (the signed-in seller's own ticket)."
+    lookupCode: String, adjustsId: ID, invoiceId: ID, amountDueCents: Int
   }
   type PublicBusiness { logoUrl: String, timezone: String!, name: String!, legalName: String, about: String, supportEmail: String, supportPhone: String, isNonprofit: Boolean!, ein: String, weightUnit: String!, currencyCode: String!, marketVisibility: String! }
 `

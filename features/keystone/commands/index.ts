@@ -7,6 +7,7 @@ import { complianceMutationDefs, complianceQueryDefs, complianceResolvers, compl
 import { nonprofitMutationDefs, nonprofitResolvers, nonprofitTypeDefs } from './nonprofits'
 import { salesMutationDefs, salesResolvers, salesTypeDefs } from './sales'
 import { publicQueryDefs, publicResolvers, publicTypeDefs } from './storefront-public'
+import { sellerMutationDefs, sellerQueryDefs, sellerResolvers, sellerTypeDefs } from './storefront-seller'
 
 export type CommandModule = { typeDefs?: string; mutationDefs?: string; queryDefs?: string; resolvers: Record<string, Record<string, unknown>> }
 
@@ -20,4 +21,5 @@ export const commandModules: CommandModule[] = [
   { typeDefs: complianceTypeDefs, mutationDefs: complianceMutationDefs, queryDefs: complianceQueryDefs, resolvers: complianceResolvers },
   { typeDefs: nonprofitTypeDefs, mutationDefs: nonprofitMutationDefs, resolvers: nonprofitResolvers },
   { typeDefs: publicTypeDefs, queryDefs: publicQueryDefs, resolvers: publicResolvers },
+  { typeDefs: sellerTypeDefs, queryDefs: sellerQueryDefs, mutationDefs: sellerMutationDefs, resolvers: sellerResolvers },
 ]

@@ -39,3 +39,26 @@ payouts [{ id amountCents status method allowedMethods releaseAt checkNumber pai
 holds [{ id status releaseAt weight }] adjustments [{ id displayNumber status totalCents }] adjustsDisplayNumber photoIds }`
 
 A held payout past its release time reads `ready`. A police hold reads `held` with no release date.
+
+## §8.2 Seller (signed in) — `features/keystone/commands/storefront-seller.ts`
+
+Every operation finds the Seller whose `user` is the session user; another seller's id answers `NOT_FOUND`. No session answers `UNAUTHENTICATED`.
+
+| Row | Operation | Notes |
+|---|---|---|
+| P18 | `registerCustomer(name, email, phone?, password)` → `{id name email}` | No staff role. Email is lower-cased; duplicate refuses "An account already uses this email…". Password ≥ 10 chars. Then sign in with `authenticateUserWithPassword`. |
+| S1 | `mySellerOverview` | Fields as asked plus `ticketCount`. `seller` is `null` until the first `upsertMySellerProfile`. `pendingCents` = ready + pending payouts; a hold past `releaseAt` counts as ready. |
+| S2 | `upsertMySellerProfile(data)` → `MySeller` | First save needs `dateOfBirth` (YYYY-MM-DD). Extra optional `defaultNonprofitId`. Once staff verify the ID, name and date of birth are locked. `dateOfBirth` comes back as `YYYY-MM-DD`. |
+| S3 | `submitMyIdentityDocument(data:{kind number issuer expiresOn frontImage backImage})` | **Difference:** `frontImage`/`backImage` are `ImageFieldInput` (`{ upload: Upload! }`), not a bare `Upload`. Stored in `private_images`. Expired IDs refuse. Sends the seller back to `unverified` until staff check the card. |
+| S3 | `myIdentityStatus` → `{status documents[...]}` | `status`: `missing` / `on_file` / `verified` / `expired`. Documents add `expired hasFrontImage hasBackImage`. Never returns the full number. |
+| S4 | `myVehicles`, `upsertMyVehicle(id?, data)`, `removeMyVehicle(id)` | `kind`: car, pickup, box_truck, trailer, roll_off, semi, other. Plate stored upper-case without spaces. Remove hides it (old tickets keep it). |
+| S5 | `createMyVisit(data, idempotencyKey)` → `MyVisit` | Extra optional `donatePercent nonprofitId campaignId`. Refuses: no profile, yard not public, past/over-30-day date, closed day, **no current ID when the yard requires one**, plate required but no vehicle, 5 open visits. |
+| S5 | `myVisits`, `myVisit(id)`, `cancelMyVisit(id)` | `plannedDate` is `YYYY-MM-DD`; `expiresAt` ISO. A booked visit past its day reads `expired`. Extra: `donatePercent nonprofitName campaignName ticketId yard{id phone} vehicle{id make model}`. |
+| S7 | `myTickets(status, from, to, take, skip)` | `payoutStatus`: `ready held pending paid returned amount_due on_account` or null. Extra `isAdjustment`. `from`/`to` are dates (inclusive). |
+| S8 | `myTicket(id)` → `TicketReceipt` | Adds `lookupCode adjustsId invoiceId amountDueCents` (these four are null on the guest lookup). Pay a fee with `payInvoiceByCard(invoiceId)`. |
+| S10 | `myPayouts` | Extra `returnReason replacesId createdAt`. |
+| S13 | `myDonations(year?)` | `{id receiptNumber status kind amountCents weight nonprofitName campaignName date ticket{id displayNumber}}`; receipt via `myDonationReceipt(donationId)`. |
+| S15 | `mySellerYearSummary(year)` | Totals by material and a `csv` string (safe CSV). |
+| S16 | `myApplications` | Adds `decidedAt accountSlug` (slug once approved). |
+| S14 | `myServiceRequests`, `myServiceRequest(id)` | Requests by this user **not** on a company account. `job` is the DispatchJob. Adds `canPay canAcceptQuote canCancel containerTypeName`. |
+| C0 | `myAccounts` | `{id slug name status role isSupplier isBuyer isNonprofit}` |
