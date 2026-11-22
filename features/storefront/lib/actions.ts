@@ -411,3 +411,104 @@ export async function offerAction(_prev: FormState, form: FormData): Promise<For
   revalidatePath(`/market/${listingId}`);
   redirect(`/market/${listingId}?sent=${buyNow ? 'bought' : 'offer'}`);
 }
+
+// ---- Buyer (B3, B7) ----
+export async function respondOfferAction(_prev: FormState, form: FormData): Promise<FormState> {
+  const response = str(form, 'response');
+  if (!['accept', 'decline', 'withdraw'].includes(response)) return { error: 'Choose what to do with the offer.' };
+  const r = await gql<{ respondToOffer: { id: string; status: string } }>(
+    `mutation($offerId: ID!, $response: String!, $idempotencyKey: String) { respondToOffer(offerId: $offerId, response: $response, idempotencyKey: $idempotencyKey) { id status } }`,
+    { offerId: str(form, 'id'), response, idempotencyKey: str(form, 'idempotencyKey') || randomUUID() },
+  );
+  if (!r.ok) return { error: r.error };
+  revalidatePath('/account/company', 'layout');
+  return { error: null, success: response === 'accept' ? 'Counter accepted. The order is confirmed.' : response === 'withdraw' ? 'Offer withdrawn.' : 'Counter declined.' };
+}
+
+export async function fileClaimAction(_prev: FormState, form: FormData): Promise<FormState> {
+  const slug = str(form, 'slug');
+  const orderId = str(form, 'orderId');
+  const v = { shipmentId: str(form, 'shipmentId'), kind: str(form, 'kind'), description: str(form, 'description'), amount: str(form, 'amount') };
+  const fields = { ...v };
+  if (!v.kind) return { error: 'Choose what went wrong.', fields };
+  if (v.description.length < 10) return { error: 'Tell us what you found, with weights if you have them.', fields };
+  const cents = Math.round(Number(v.amount) * 100);
+  if (!Number.isFinite(cents) || cents <= 0) return { error: 'Enter the amount you are claiming.', fields };
+  const r = await gql<{ fileClaim: { id: string } }>(
+    `mutation($shipmentId: ID!, $kind: String!, $description: String!, $claimedCents: Int!, $idempotencyKey: String) { fileClaim(shipmentId: $shipmentId, kind: $kind, description: $description, claimedCents: $claimedCents, idempotencyKey: $idempotencyKey) { id } }`,
+    { shipmentId: v.shipmentId, kind: v.kind, description: v.description, claimedCents: cents, idempotencyKey: str(form, 'idempotencyKey') || randomUUID() },
+  );
+  if (!r.ok) return { error: r.error, fields };
+  revalidatePath(`/account/company/${slug}`, 'layout');
+  redirect(`/account/company/${slug}/claims?filed=${encodeURIComponent(orderId)}`);
+}
+
+export async function withdrawClaimAction(_prev: FormState, form: FormData): Promise<FormState> {
+  const r = await gql(`mutation($claimId: ID!, $idempotencyKey: String) { withdrawClaim(claimId: $claimId, idempotencyKey: $idempotencyKey) { id } }`, { claimId: str(form, 'id'), idempotencyKey: randomUUID() });
+  if (!r.ok) return { error: r.error };
+  revalidatePath('/account/company', 'layout');
+  return { error: null, success: 'Claim withdrawn.' };
+}
+
+// ---- Nonprofit (N1, N2) ----
+export async function nonprofitProfileAction(_prev: FormState, form: FormData): Promise<FormState> {
+  const v = { accountId: str(form, 'accountId'), nonprofitSummary: str(form, 'summary'), nonprofitWebsite: str(form, 'website'), isPublicNonprofit: form.get('isPublic') === 'on' };
+  const fields = { summary: v.nonprofitSummary, website: v.nonprofitWebsite, isPublic: v.isPublicNonprofit ? 'on' : '' };
+  if (v.nonprofitWebsite && !/^https:\/\//i.test(v.nonprofitWebsite)) return { error: 'The website must start with https://', fields };
+  const r = await gql(
+    `mutation($accountId: ID!, $nonprofitSummary: String, $nonprofitWebsite: String, $isPublicNonprofit: Boolean) { updateNonprofitProfile(accountId: $accountId, nonprofitSummary: $nonprofitSummary, nonprofitWebsite: $nonprofitWebsite, isPublicNonprofit: $isPublicNonprofit) { id } }`,
+    { ...v, nonprofitWebsite: v.nonprofitWebsite || null, nonprofitSummary: v.nonprofitSummary || null },
+  );
+  if (!r.ok) return { error: r.error, fields };
+  revalidatePath('/account/company', 'layout');
+  revalidatePath('/donate');
+  return { error: null, success: 'Profile saved.', fields };
+}
+
+export async function campaignAction(_prev: FormState, form: FormData): Promise<FormState> {
+  const slug = str(form, 'slug');
+  const v = {
+    accountId: str(form, 'accountId'), campaignId: str(form, 'campaignId') || null, name: str(form, 'name'), description: str(form, 'description') || null,
+    goalWeight: str(form, 'goalWeight') || null, goal: str(form, 'goal'), startsOn: str(form, 'startsOn') || null, endsOn: str(form, 'endsOn') || null,
+    isPublic: form.get('isPublic') === 'on', status: str(form, 'status') || 'active',
+  };
+  const fields = Object.fromEntries(Object.entries(v).map(([k, x]) => [k, x === null ? '' : typeof x === 'boolean' ? (x ? 'on' : '') : String(x)]));
+  if (v.name.length < 3) return { error: 'Name the campaign.', fields };
+  const goalCents = v.goal ? Math.round(Number(v.goal) * 100) : null;
+  if (goalCents !== null && !(goalCents > 0)) return { error: 'Enter the money goal as an amount, or leave it empty.', fields };
+  if (v.goalWeight && !(Number(v.goalWeight) > 0)) return { error: 'Enter the weight goal as a number, or leave it empty.', fields };
+  const r = await gql<{ upsertCampaign: { id: string } }>(
+    `mutation($accountId: ID!, $campaignId: ID, $name: String!, $description: String, $goalWeight: String, $goalCents: Int, $startsOn: String, $endsOn: String, $isPublic: Boolean, $status: String) {
+      upsertCampaign(accountId: $accountId, campaignId: $campaignId, name: $name, description: $description, goalWeight: $goalWeight, goalCents: $goalCents, startsOn: $startsOn, endsOn: $endsOn, isPublic: $isPublic, status: $status) { id }
+    }`,
+    { accountId: v.accountId, campaignId: v.campaignId, name: v.name, description: v.description, goalWeight: v.goalWeight, goalCents, startsOn: v.startsOn, endsOn: v.endsOn, isPublic: v.isPublic, status: v.status },
+  );
+  if (!r.ok) return { error: r.error, fields };
+  revalidatePath(`/account/company/${slug}`, 'layout');
+  revalidatePath('/donate');
+  redirect(`/account/company/${slug}/cause?saved=1`);
+}
+
+export async function endCampaignAction(_prev: FormState, form: FormData): Promise<FormState> {
+  const r = await gql(`mutation($campaignId: ID!) { endCampaign(campaignId: $campaignId) { id } }`, { campaignId: str(form, 'id') });
+  if (!r.ok) return { error: r.error };
+  revalidatePath('/account/company', 'layout');
+  revalidatePath('/donate');
+  return { error: null, success: 'Campaign ended.' };
+}
+
+// ---- Company invite (C13 join) ----
+export async function acceptInviteAction(_prev: FormState, form: FormData): Promise<FormState> {
+  const token = str(form, 'token');
+  if (!token) return { error: 'This invitation link is incomplete. Open the link from the email again.' };
+  // The returned contact's account is not readable by a customer, so find the new account by comparing myAccounts.
+  const mine = `query { myAccounts { slug } }`;
+  const before = await gql<{ myAccounts: Array<{ slug: string }> }>(mine);
+  const r = await gql<{ acceptAccountInvite: { id: string } | null }>(`mutation($token: String!) { acceptAccountInvite(token: $token) { id } }`, { token });
+  if (!r.ok) return { error: r.unauthenticated ? 'Sign in first, then open the link again.' : r.error };
+  const after = await gql<{ myAccounts: Array<{ slug: string }> }>(mine);
+  const had = new Set(before.ok ? before.data.myAccounts.map((a) => a.slug) : []);
+  const added = after.ok ? after.data.myAccounts.find((a) => !had.has(a.slug)) : undefined;
+  revalidatePath('/account', 'layout');
+  redirect(added ? `/account/company/${added.slug}?joined=1` : '/account/company?joined=1');
+}

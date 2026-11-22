@@ -121,6 +121,14 @@ const LABELS: Record<string, Record<string, string>> = {
   invoiceKind: { ticket: 'Scale ticket', service: 'Service', settlement: 'Settlement', shipment: 'Shipment', other: 'Other' },
   payment: { pending: 'Pending', succeeded: 'Paid', failed: 'Failed', refunded: 'Refunded', partially_refunded: 'Part refunded' },
   paymentMethod: { card: 'Card', cash: 'Cash', check: 'Check', transfer: 'Bank transfer' },
+  offer: { submitted: 'Waiting for the yard', countered: 'Counter offer', accepted: 'Accepted', declined: 'Declined', withdrawn: 'Withdrawn', expired: 'Expired' },
+  salesOrder: { draft: 'Being prepared', confirmed: 'Confirmed', in_fulfilment: 'Shipping', fulfilled: 'Shipped', closed: 'Closed', cancelled: 'Cancelled' },
+  shipment: { scheduled: 'Scheduled', loading: 'Loading', loaded: 'Loaded', released: 'On the road', delivered: 'Delivered', reconciled: 'Weights agreed', cancelled: 'Cancelled' },
+  claim: { open: 'Being reviewed', accepted: 'Accepted', rejected: 'Not accepted', withdrawn: 'Withdrawn' },
+  claimKind: { short_weight: 'Short weight', contamination: 'Contamination', wrong_grade: 'Wrong grade', damage: 'Damage', other: 'Other' },
+  weightBasis: { shipped: 'Our scale weight', received: 'Your received weight' },
+  campaign: { draft: 'Draft', active: 'Running', ended: 'Ended' },
+  donationKind: { payout_donation: 'From a scale ticket', goods_donation: 'Material donated' },
   containerKind: { roll_off: 'Roll-off', lugger: 'Lugger box', hopper: 'Hopper', gaylord: 'Gaylord', drum: 'Drum', trailer: 'Trailer' },
 };
 

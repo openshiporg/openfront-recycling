@@ -13,11 +13,28 @@ import { AccountTitle } from '../account/AccountLayout';
 
 const base = (slug: string) => `/account/company/${slug}`;
 
+type Kinds = { isSupplier: boolean; isBuyer: boolean; isNonprofit: boolean };
+const accountKinds = (a: Kinds) => [a.isSupplier ? 'Supplier' : null, a.isBuyer ? 'Buyer' : null, a.isNonprofit ? 'Nonprofit' : null].filter(Boolean).join(', ') || 'Business account';
+
+/** Tabs for what the account is. An account with no kind set is treated as a supplier (the commercial default). */
+export function companyTabs(a: Kinds | null): Array<[string, string]> {
+  const supplier = !a || a.isSupplier || (!a.isBuyer && !a.isNonprofit);
+  const tabs: Array<[string, string]> = [['', 'Home']];
+  if (supplier) tabs.push(['/prices', 'Prices'], ['/tickets', 'Tickets'], ['/requests', 'Requests'], ['/containers', 'Containers'], ['/sites', 'Sites']);
+  if (a?.isBuyer) tabs.push(['/offers', 'Offers'], ['/orders', 'Orders'], ['/claims', 'Claims']);
+  if (a?.isNonprofit) tabs.push(['/cause', 'Our cause'], ['/donations', 'Donations']);
+  if (supplier || a?.isNonprofit) tabs.push(['/statements', 'Statements']);
+  tabs.push(['/invoices', 'Invoices']);
+  if (supplier) tabs.push(['/reports', 'Reports']);
+  if (a?.isBuyer) tabs.push(['/purchases', 'Purchases']);
+  return tabs;
+}
+
 /** Chooser: the accounts this person is a contact of. */
 export async function CompanyChooserPage() {
   const r = await getMyAccounts();
   if (!r.ok) return <LoadError what="your companies" />;
-  const accounts = r.data.filter((a) => a.isSupplier || (!a.isBuyer && !a.isNonprofit));
+  const accounts = r.data;
   return (
     <>
       <AccountTitle title="Company portal" lead="Business accounts you are on." />
@@ -30,7 +47,7 @@ export async function CompanyChooserPage() {
           {accounts.map((a) => (
             <Link key={a.id} href={base(a.slug)} className="sf-card" style={{ textDecoration: 'none', color: 'inherit' }}>
               <strong className="sf-h3">{a.name}</strong>
-              <div className="sf-small sf-muted">{label('contactRole', a.role)}{a.status !== 'active' ? ` · ${label('accountStatus', a.status)}` : ''}</div>
+              <div className="sf-small sf-muted">{accountKinds(a)} · {label('contactRole', a.role)}{a.status !== 'active' ? ` · ${label('accountStatus', a.status)}` : ''}</div>
             </Link>
           ))}
         </div>
@@ -41,8 +58,9 @@ export async function CompanyChooserPage() {
 
 /** Wraps every company page: loads the account (the server checks membership) and shows the sub-navigation. */
 export async function CompanyFrame({ slug, children }: { slug: string; children: ReactNode }) {
-  const r = await getAccountOverview(slug);
+  const [r, mine] = await Promise.all([getAccountOverview(slug), getMyAccounts()]);
   if (!r.ok) return <LoadError what="this company account" />;
+  const kinds = mine.ok ? mine.data.find((m) => m.slug === slug) || null : null;
   if (!r.data) return <StateCard title="You are not on this account" action={<Link className="sf-btn sf-btn-sm" href="/account/company">Your companies</Link>}>Ask the account’s admin to invite you.</StateCard>;
   const a = r.data.account;
   return (
@@ -52,17 +70,20 @@ export async function CompanyFrame({ slug, children }: { slug: string; children:
         <div className="sf-h2" style={{ margin: '2px 0 0' }}>{a.name}</div>
       </div>
       {a.status !== 'active' ? <p className="sf-note sf-note-alert" role="alert" style={{ margin: 0 }}>This account is suspended. You can see its records; new service requests are paused. Call the yard.</p> : null}
-      <CompanyNav slug={slug} />
+      <CompanyNav slug={slug} items={companyTabs(kinds)} />
       {children}
     </div>
   );
 }
 
 /** C1 */
-export async function CompanyHomePage({ slug }: { slug: string }) {
-  const r = await getAccountOverview(slug);
+export async function CompanyHomePage({ slug, joined }: { slug: string; joined?: boolean }) {
+  const [r, mine] = await Promise.all([getAccountOverview(slug), getMyAccounts()]);
   if (!r.ok || !r.data) return null;
   const o = r.data;
+  const k = mine.ok ? mine.data.find((m) => m.slug === slug) : null;
+  const welcome = joined ? <p className="sf-note sf-note-ok" role="status" style={{ margin: 0 }}>You joined {o.account.name}{k ? ` as ${label('contactRole', k.role).toLowerCase()}` : ''}.</p> : null;
+  if (k && !k.isSupplier && (k.isBuyer || k.isNonprofit)) return <>{welcome}<OtherHome slug={slug} isBuyer={k.isBuyer} isNonprofit={k.isNonprofit} /></>;
   const stats: Array<[string, string, string?]> = [
     ['This month', weight(o.monthWeight, o.weightUnit), `${money(o.monthValueCents, o.currencyCode)} value`],
     ['Open requests', String(o.openRequests), undefined],
@@ -71,6 +92,7 @@ export async function CompanyHomePage({ slug }: { slug: string }) {
   ];
   return (
     <>
+      {welcome}
       <div className="sf-grid sf-grid-4">
         {stats.map(([k, v, s]) => (
           <div key={k} className="sf-card sf-card-flat">
@@ -87,6 +109,22 @@ export async function CompanyHomePage({ slug }: { slug: string }) {
       </div>
       <p className="sf-small sf-muted" style={{ margin: 0 }}>Terms: {label('paymentTerms', o.account.paymentTerms)}{o.account.settlementCycle ? `, settled ${label('cycle', o.account.settlementCycle).toLowerCase()}` : ''}.</p>
     </>
+  );
+}
+
+function OtherHome({ slug, isBuyer, isNonprofit }: { slug: string; isBuyer: boolean; isNonprofit: boolean }) {
+  const tiles: Array<[string, string, string]> = [];
+  if (isBuyer) tiles.push(['/market', 'Material for sale', 'Lots on offer now, with weights and terms.'], [`${base(slug)}/offers`, 'Your offers', 'Offers you made and counters from the yard.'], [`${base(slug)}/orders`, 'Orders and loads', 'Shipments, gate passes, weights and invoices.']);
+  if (isNonprofit) tiles.push([`${base(slug)}/cause`, 'Your cause and campaigns', 'What sellers see, and what you have raised.'], [`${base(slug)}/donations`, 'Donations', 'Every gift from a seller’s ticket.']);
+  return (
+    <div className="sf-grid sf-grid-3">
+      {tiles.map(([href, t, d]) => (
+        <Link key={href} href={href} className="sf-card" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <strong className="sf-h3">{t}</strong>
+          <p className="sf-small sf-muted" style={{ margin: '4px 0 0' }}>{d}</p>
+        </Link>
+      ))}
+    </div>
   );
 }
 

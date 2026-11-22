@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { companyRequestAction, saveSiteAction } from '../../lib/actions';
+import { acceptInviteAction, companyRequestAction, saveSiteAction } from '../../lib/actions';
 import type { SiteView } from '../../lib/data/company';
 import { ActionForm, Submit } from '../ActionForm';
 
@@ -103,6 +103,20 @@ export function ServiceRequestForm({ accountId, slug, yards, sites, containers, 
           <Field id="cr-a" label="Notes for the driver"><textarea id="cr-a" name="accessNotes" className="sf-input" rows={3} defaultValue={f.accessNotes} /></Field>
           <p className="sf-small sf-muted" style={{ margin: 0 }}>{chargeToAccount ? 'Fees go on your account and show on your next statement.' : 'If there is a fee, you pay it by card before the truck is booked.'}</p>
           <Submit pending="Sending…" disabled={needContainer && !containers.length}>Send request</Submit>
+        </>
+      )}
+    </ActionForm>
+  );
+}
+
+/** Accept a company invitation: the token stays in the form, so nothing is accepted by opening the link alone. */
+export function AcceptInviteForm({ token }: { token: string }) {
+  return (
+    <ActionForm action={acceptInviteAction}>
+      {() => (
+        <>
+          <input type="hidden" name="token" value={token} />
+          <Submit pending="Joining…">Join the company account</Submit>
         </>
       )}
     </ActionForm>

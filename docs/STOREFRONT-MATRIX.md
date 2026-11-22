@@ -69,11 +69,11 @@ schema (checked 2026-11-22). **not built** = deliberately left out of this store
 | C7 | `requests`, `requests/[id]` | built (`cancelServiceRequest`), waits on `accountServiceRequests`, `accountServiceRequest` |
 | C8 | `statements` | built (`accountSettlements`). One page; no per-settlement detail page. |
 | C9 | on `statements` | built (`accountCharges`) |
-| C10 | `invoices`, `invoices/[id]` | built (`payInvoiceByCard`), waits on `accountInvoices`, `accountInvoice` |
+| C10 | `invoices`, `invoices/[id]` | built (`accountInvoices`, `accountInvoice`, `payInvoiceByCard`) |
 | C11 | `reports`, `reports/csv` | built (`accountDiversionReport`) |
-| C12 | Certificates | not built (tier 3) |
-| C13 | Team | not built (tier 3). Staff invite contacts from the dashboard (`inviteAccountContact`). |
-| C14 | Company vehicles and tares | not built (tier 3) |
+| C12 | Certificates | not built: no portal read yet (`accountDocuments` per account, `requestTicketCertificate`); asked of the backend 2026-11-22 |
+| C13 | Team | not built: `inviteAccountContact` and `updateAccountContact` exist, but there is no team read for the portal; asked of the backend 2026-11-22. Staff invite contacts from the dashboard meanwhile. |
+| C14 | Company vehicles and tares | not built: no `accountVehicles` read yet; asked of the backend 2026-11-22 |
 
 ## Buyer
 
@@ -81,10 +81,18 @@ schema (checked 2026-11-22). **not built** = deliberately left out of this store
 |---|---|---|
 | B1 | `/market`, `/market/[id]` | built |
 | B2 | offer form on `/market/[id]` | built (`submitOffer`, with `buyNow`). Shown when `marketListing.canOffer`. |
-| B3 to B8 | Offers, orders, shipments, invoices, claims, purchase report | not built (tier 3). The sales team handles these from the dashboard and by email. |
+| B3 | `offers` | built (`accountOffers`, `respondToOffer` accept, decline, withdraw from `canAcceptCounter`, `canWithdraw`) |
+| B4 | `orders` | built (`accountSalesOrders`) |
+| B5 | `orders/[id]` | built (`accountSalesOrder`: lines, loads, BOL, seal, tags, gate pass) |
+| B6 | `invoices`, `invoices/[id]` | built (shared with C10; shipment invoices link from each load) |
+| B7 | claim form per delivered load on `orders/[id]`; `claims` | built (`fileClaim`, `accountClaims`, `withdrawClaim`) |
+| B8 | `purchases` | built (`accountPurchaseReport`) |
 
 ## Nonprofit
 
 | Row | Route | Status |
 |---|---|---|
-| N1 to N4 | Profile, campaigns, donations credited, disbursements | not built (tier 3). The public side (P15) is built; nonprofits apply at `/donate/apply`. |
+| N1 | `cause` | built (`accountNonprofit`, `updateNonprofitProfile`, admin only via `canEdit`) |
+| N2 | `cause` | built (`upsertCampaign`, `endCampaign`) |
+| N3 | `donations` | built (`accountDonations`, by campaign, paged) |
+| N4 | `statements` | built (shared with C8, `accountSettlements`) |
