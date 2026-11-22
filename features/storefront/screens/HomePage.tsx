@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { getBusiness, getCatalog, getPriceBoard, getYardRules, getYards, type PriceRow } from '../lib/data/public';
+import { getBusiness, getPriceBoard, getYardRules, getYards, type PriceRow } from '../lib/data/public';
 import { dateTime, methodsText, perUnit, shortDate, todayStatus, unitPriceText, zoneName } from '../lib/format';
 import { IconArrow, IconBolt, IconBuilding, IconCash, IconClock, IconContainer, IconLaptopCheck, IconQr, IconTag, IconTruckScale } from '../components/icons';
 import { LoadError, NotOpenYet, Qr } from '../components/ui';
@@ -13,7 +13,7 @@ function topPrices(entries: PriceRow[], n = 8) {
 }
 
 export default async function HomePage() {
-  const [businessR, yardsR, boardR, catalogR] = await Promise.all([getBusiness(), getYards(), getPriceBoard(null), getCatalog()]);
+  const [businessR, yardsR, boardR] = await Promise.all([getBusiness(), getYards(), getPriceBoard(null)]);
   if (!businessR.ok && !yardsR.ok) return <LoadError what="the home page" />;
   const business = businessR.ok ? businessR.data : null;
   const yards = yardsR.ok ? yardsR.data : [];
@@ -25,7 +25,8 @@ export default async function HomePage() {
   const rules = rulesR?.ok ? rulesR.data : null;
   const currency = board?.currencyCode || business?.currencyCode || 'USD';
   const tz = board?.yard.timezone || mainYard?.timezone || business?.timezone || null;
-  const materialCount = catalogR.ok ? catalogR.data.materials.filter((m) => m.direction !== 'charge_customer').length : null;
+  // Materials this yard buys from the public, from the board shown on this page.
+  const materialCount = board ? new Set(board.entries.filter((e) => e.direction !== 'charge_customer').map((e) => e.materialId)).size : null;
   const today = mainYard ? todayStatus(mainYard.hours, mainYard.timezone, mainYard.closures) : null;
   const rows = board ? topPrices(board.entries) : [];
   const name = business?.name || mainYard?.name || '';
@@ -78,7 +79,7 @@ export default async function HomePage() {
             <div className="sf-fact">
               <IconTag size={40} />
               <div>
-                <strong>{materialCount ? `${materialCount} materials` : 'Materials'}</strong>
+                <strong>{materialCount ? `${materialCount} materials bought here` : 'Materials'}</strong>
                 <span>{board?.publishedAt ? `Prices updated ${shortDate(board.publishedAt, tz)}` : 'Bought by weight at the scale'}</span>
               </div>
             </div>

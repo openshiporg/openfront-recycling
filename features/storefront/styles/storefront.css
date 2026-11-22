@@ -373,3 +373,8 @@
   .sf-filters .sf-input, .sf-filters .sf-select { width: 100%; }
   .sf-filters .sf-btn { grid-column: 1 / -1; }
 }
+
+/* Price categories: masonry-like columns so each card keeps its own height */
+.sf-pricecols { columns: 2; column-gap: 20px; }
+.sf-pricecols > .sf-card { break-inside: avoid; display: block; margin: 0 0 20px; }
+@media (max-width: 860px) { .sf-pricecols { columns: 1; } }

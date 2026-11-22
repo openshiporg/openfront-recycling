@@ -68,7 +68,7 @@ export default async function PricesPage({ yard }: { yard?: string | null }) {
         {groups.length === 0 ? (
           <StateCard title="No prices on the board">This yard has not posted any buying prices yet. Call the yard for a quote.</StateCard>
         ) : (
-          <div className="sf-grid sf-grid-2">
+          <div className="sf-pricecols">
             {groups.map((g) => (
               <section key={g.name} className="sf-card sf-pricecat" style={{ marginTop: 0 }} aria-labelledby={`cat-${g.slug || g.name}`}>
                 <h2 id={`cat-${g.slug || g.name}`}>{g.name}</h2>
@@ -87,7 +87,7 @@ export default async function PricesPage({ yard }: { yard?: string | null }) {
         )}
 
         {fees.length ? (
-          <p className="sf-note">This yard also charges a fee for some items, such as {fees.slice(0, 3).map((f) => f.materialName.toLowerCase()).join(', ')}. <Link className="sf-link" href={`/fees?yard=${board.yard.slug}`}>See drop-off fees</Link>.</p>
+          <p className="sf-note">This yard also charges a fee for some items, such as {fees.slice(0, 3).map((f) => f.materialName).join(', ')}. <Link className="sf-link" href={`/fees?yard=${board.yard.slug}`}>See drop-off fees</Link>.</p>
         ) : null}
         <p className="sf-muted sf-small">Prices are for clean, sorted material. Dirt, attachments and moisture are deducted at the scale and each deduction is written on your ticket. <Link className="sf-link" href={`/rules?yard=${board.yard.slug}`}>Selling rules for this yard</Link>.</p>
       </div>
