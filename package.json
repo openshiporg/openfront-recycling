@@ -9,7 +9,7 @@
     "lint": "next lint",
     "migrate:gen": "keystone build --no-ui && tsx features/keystone/view-order/generate-view-order.ts && keystone prisma migrate dev",
     "migrate": "prisma migrate deploy",
-    "test:integration": "node --import tsx --test tests/*.integration.ts",
+    "test:integration": "node scripts/test-integration.mjs",
     "test:unit": "node --import tsx --test tests/*.test.ts"
   },
   "dependencies": {

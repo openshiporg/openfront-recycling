@@ -1,7 +1,8 @@
 /**
  * Public storefront operations (dissertation §8.1) against a real database.
- *   node --import tsx --test tests/storefront-public.integration.ts
+ *   npm run test:integration -- tests/storefront-public.integration.ts
  */
+import './db-guard'
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'

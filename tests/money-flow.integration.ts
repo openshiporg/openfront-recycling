@@ -1,7 +1,8 @@
 /**
  * Payouts, cash drawer, fee tickets, settlements and webhooks against a real database.
- *   node --import tsx --test tests/money-flow.integration.ts
+ *   npm run test:integration -- tests/money-flow.integration.ts
  */
+import './db-guard'
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { createHmac, randomUUID } from 'node:crypto'

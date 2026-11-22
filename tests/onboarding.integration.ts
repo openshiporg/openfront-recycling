@@ -1,10 +1,11 @@
 /**
  * Onboarding (dissertation §11) and publishPrices (§4.4) against a real database.
- *   node --import tsx --test tests/onboarding.integration.ts
+ *   npm run test:integration -- tests/onboarding.integration.ts
  *
  * Runs on the shared scratch database, so it checks what onboarding guarantees (everything exists, a
  * second run adds nothing) rather than exact row counts other tests may also touch.
  */
+import './db-guard'
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
@@ -50,11 +51,16 @@ test('runOnboarding sets up a working scrap yard; a second run adds nothing', as
     template: 'scrap_yard', rulesTemplate: 'ohio',
     business: { name: 'Riverside Metals', weightUnit: 'lb', currencyCode: 'USD', timezone: 'America/New_York', supportPhone: '(614) 555-0142' },
     yard: { name: `Riverside Metals ${run}`, code, addressLine1: '1840 Joyce Ave', city: 'Columbus', region: 'OH', postalCode: '43219', payoutMethods: ['cash', 'check'] },
+    additionalYards: [{ name: `Riverside Metals West ${run}`, code: `W${run.slice(0, 5)}`, addressLine1: '3400 Valleyview Dr', city: 'Columbus', region: 'OH', postalCode: '43204', scaleTypes: ['floor'] }],
   }
-  const q = `mutation($d: RunOnboardingInput!) { runOnboarding(data: $d) { id yardSlug materials pricesPublished roles containers } }`
+  const q = `mutation($d: RunOnboardingInput!) { runOnboarding(data: $d) { id yardSlug yards materials pricesPublished roles containers } }`
   const first = (await gql(owner, q, { d: data })).runOnboarding
   assert.equal(first.materials, SCRAP_MATERIALS.length)
   assert.equal(first.roles, 10)
+  assert.equal(first.yards, 2)
+  const west = await prisma.yard.findUnique({ where: { code: `W${run.slice(0, 5)}` }, include: { scales: true } })
+  assert.ok(west.boardPriceListId, 'second yard has its own board')
+  assert.deepEqual(west.scales.map((s: any) => s.kind), ['floor'])
   const entriesAfterFirst = await prisma.priceEntry.count()
   const second = (await gql(owner, q, { d: data })).runOnboarding
   assert.equal(second.id, first.id)

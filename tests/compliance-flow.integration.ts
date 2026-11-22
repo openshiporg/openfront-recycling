@@ -1,6 +1,7 @@
 /**
  * Daily report CSV, do-not-buy import blocking check-in, theft alerts, police lookup, and donation receipts.
  */
+import './db-guard'
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'

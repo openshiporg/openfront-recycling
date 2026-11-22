@@ -1,7 +1,8 @@
 /**
  * Company portal reads (dissertation §8.3) against a real database.
- *   node --import tsx --test tests/storefront-account.integration.ts
+ *   npm run test:integration -- tests/storefront-account.integration.ts
  */
+import './db-guard'
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'

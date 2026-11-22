@@ -1,0 +1,63 @@
+{
+  "template": "scrap_yard",
+  "rulesTemplate": "ohio",
+  "cardProvider": "stripe",
+  "business": {
+    "name": "Riverside Metals",
+    "legalName": "Riverside Metals Recycling LLC",
+    "weightUnit": "lb",
+    "currencyCode": "USD",
+    "timezone": "America/New_York",
+    "supportEmail": "office@riversidemetals.com",
+    "supportPhone": "(614) 555-0142",
+    "about": "Family-run scrap metal recycler in Columbus since 1987. Three yards buy copper, brass, aluminum, steel, wire and more from the public and from local trades, on certified scales, with same-day payment. Roll-off containers for contractors, demolition crews and plants across central Ohio."
+  },
+  "yard": {
+    "name": "Riverside Metals East",
+    "code": "EAST",
+    "addressLine1": "1840 Joyce Ave",
+    "city": "Columbus",
+    "region": "OH",
+    "postalCode": "43219",
+    "country": "US",
+    "phone": "(614) 555-0142",
+    "email": "east@riversidemetals.com",
+    "payoutMethods": ["cash", "check"],
+    "scaleTypes": ["truck", "floor"],
+    "publicNotes": "Truck scale and floor scale. Enter from Joyce Ave; commercial loads use the north gate.",
+    "hours": { "mon": { "open": "07:00", "close": "16:30" }, "tue": { "open": "07:00", "close": "16:30" }, "wed": { "open": "07:00", "close": "16:30" }, "thu": { "open": "07:00", "close": "16:30" }, "fri": { "open": "07:00", "close": "16:30" }, "sat": { "open": "08:00", "close": "12:00" }, "sun": { "closed": true } }
+  },
+  "additionalYards": [
+    {
+      "name": "Riverside Metals West",
+      "code": "WEST",
+      "addressLine1": "3400 Valleyview Dr",
+      "city": "Columbus",
+      "region": "OH",
+      "postalCode": "43204",
+      "country": "US",
+      "phone": "(614) 555-0187",
+      "email": "west@riversidemetals.com",
+      "payoutMethods": ["cash", "check"],
+      "scaleTypes": ["floor"],
+      "publicNotes": "Walk-in and pickup-truck loads only, on the floor scale. Semi loads go to the East yard.",
+      "hours": { "mon": { "open": "08:00", "close": "17:00" }, "tue": { "open": "08:00", "close": "17:00" }, "wed": { "open": "08:00", "close": "17:00" }, "thu": { "open": "08:00", "close": "17:00" }, "fri": { "open": "08:00", "close": "17:00" }, "sat": { "open": "08:00", "close": "13:00" }, "sun": { "closed": true } }
+    },
+    {
+      "name": "Riverside Metals Groveport",
+      "code": "GROVE",
+      "addressLine1": "5225 Rohr Rd",
+      "city": "Groveport",
+      "region": "OH",
+      "postalCode": "43125",
+      "country": "US",
+      "phone": "(614) 555-0163",
+      "email": "groveport@riversidemetals.com",
+      "payoutMethods": ["check", "transfer"],
+      "acceptsPublic": false,
+      "scaleTypes": ["truck"],
+      "publicNotes": "Commercial and industrial accounts only: roll-off returns, plant scrap and mill shipments. No walk-in sellers.",
+      "hours": { "mon": { "open": "06:00", "close": "15:00" }, "tue": { "open": "06:00", "close": "15:00" }, "wed": { "open": "06:00", "close": "15:00" }, "thu": { "open": "06:00", "close": "15:00" }, "fri": { "open": "06:00", "close": "15:00" }, "sat": { "closed": true }, "sun": { "closed": true } }
+    }
+  ]
+}

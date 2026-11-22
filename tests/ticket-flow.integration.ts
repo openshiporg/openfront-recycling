@@ -1,7 +1,8 @@
 /**
  * Scale ticket flow against a real database (DATABASE_URL). Run:
- *   node --import tsx --test tests/ticket-flow.integration.ts
+ *   npm run test:integration -- tests/ticket-flow.integration.ts
  */
+import './db-guard'
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'

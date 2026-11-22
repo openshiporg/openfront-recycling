@@ -1,7 +1,8 @@
 /**
  * Signed-in seller storefront operations (dissertation §8.2) against a real database.
- *   node --import tsx --test tests/storefront-seller.integration.ts
+ *   npm run test:integration -- tests/storefront-seller.integration.ts
  */
+import './db-guard'
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'

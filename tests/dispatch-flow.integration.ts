@@ -1,6 +1,7 @@
 /**
  * Accounts and applications, service requests, dispatch jobs, containers and rental against a real database.
  */
+import './db-guard'
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'

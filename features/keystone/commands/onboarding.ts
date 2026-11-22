@@ -17,14 +17,15 @@ import { slugify } from './accounts'
 export type OnboardingInput = {
   template: 'scrap_yard' | 'community_centre'
   business: { name: string; legalName?: string | null; weightUnit?: 'lb' | 'kg' | null; currencyCode?: string | null; timezone?: string | null; isNonprofit?: boolean | null; ein?: string | null; supportEmail?: string | null; supportPhone?: string | null; about?: string | null }
-  yard: { name: string; code?: string | null; addressLine1?: string | null; city?: string | null; region?: string | null; postalCode?: string | null; country?: string | null; phone?: string | null; email?: string | null; payoutMethods?: string[] | null; hours?: unknown }
+  yard: { name: string; code?: string | null; acceptsPublic?: boolean | null; scaleTypes?: string[] | null; publicNotes?: string | null; addressLine1?: string | null; city?: string | null; region?: string | null; postalCode?: string | null; country?: string | null; phone?: string | null; email?: string | null; payoutMethods?: string[] | null; hours?: unknown }
+  additionalYards?: Array<OnboardingInput['yard']> | null
   rulesTemplate?: RulesTemplate['template'] | null
   cardProvider?: 'stripe' | 'none' | null
 }
 
 const text = (v: unknown, max = 200) => (typeof v === 'string' ? v.trim().slice(0, max) : '')
 
-type Step1 = { yardId: string; profileId: string; template: 'scrap_yard' | 'community_centre'; weightUnit: 'lb' | 'kg'; rules: RulesTemplate['template'] }
+type Step1 = { yardId: string; yardIds: string[]; profileId: string; template: 'scrap_yard' | 'community_centre'; weightUnit: 'lb' | 'kg'; rules: RulesTemplate['template'] }
 
 /** Step 1: business, roles, rules profile, first yard. */
 export async function onboardBusinessTx(ctx: CommandCtx, input: OnboardingInput): Promise<Step1> {
@@ -62,32 +63,41 @@ export async function onboardBusinessTx(ctx: CommandCtx, input: OnboardingInput)
   let profile = await tx.rulesProfile.findFirst({ where: { template: rt.template, name: rt.name } })
   if (!profile) profile = await tx.rulesProfile.create({ data: { name: rt.name, region: rt.region, template: rt.template, ...rt.profile } })
 
-  // (2) First yard.
-  const y = input.yard || ({} as OnboardingInput['yard'])
-  const yardName = text(y.name, 120)
-  if (yardName.length < 2) refuse('Enter the yard name.')
-  const code = (text(y.code, 8) || 'MAIN').toUpperCase().replace(/[^A-Z0-9]/g, '')
-  if (!code) refuse('Enter a short yard code, for example MAIN.')
-  const payoutMethods = (Array.isArray(y.payoutMethods) && y.payoutMethods.length ? y.payoutMethods : ['cash', 'check']).filter((m) => ['cash', 'check', 'transfer'].includes(m))
-  if (!payoutMethods.length) refuse('Choose how the yard pays sellers.')
-  const yardData = {
-    name: yardName, addressLine1: text(y.addressLine1), city: text(y.city, 100), region: text(y.region, 100), postalCode: text(y.postalCode, 20), country: text(y.country, 2) || 'US',
-    phone: text(y.phone, 40), email: text(y.email, 254), timezone, hours: (y.hours as any) || WEEKDAY_HOURS, payoutMethods, acceptsPublic: true, status: 'active',
-    scaleTypes: ['truck', 'floor'], rulesProfileId: profile.id,
-  }
-  let yard = await tx.yard.findUnique({ where: { code } })
-  if (yard) yard = await tx.yard.update({ where: { id: yard.id }, data: yardData })
-  else {
-    let slug = slugify(yardName) || 'main-yard'
-    if (await tx.yard.findUnique({ where: { slug } })) slug = `${slug}-${code.toLowerCase()}`
-    yard = await tx.yard.create({ data: { ...yardData, code, slug } })
+  // (2) Yards: the first one, then any others. Every yard gets the same rules and starting prices.
+  const yardInputs = [input.yard, ...(Array.isArray(input.additionalYards) ? input.additionalYards : [])].filter(Boolean).slice(0, 10)
+  if (!yardInputs.length) refuse('Enter the yard name.')
+  const codes = new Set<string>()
+  const yardIds: string[] = []
+  for (const [i, y] of yardInputs.entries()) {
+    const yardName = text(y.name, 120)
+    if (yardName.length < 2) refuse('Enter the yard name.')
+    const code = (text(y.code, 8) || (i === 0 ? 'MAIN' : '')).toUpperCase().replace(/[^A-Z0-9]/g, '')
+    if (!code) refuse(`Enter a short code for ${yardName}, for example EAST.`)
+    if (codes.has(code)) refuse(`Two yards use the code ${code}.`)
+    codes.add(code)
+    const payoutMethods = (Array.isArray(y.payoutMethods) && y.payoutMethods.length ? y.payoutMethods : ['cash', 'check']).filter((m) => ['cash', 'check', 'transfer'].includes(m))
+    if (!payoutMethods.length) refuse(`Choose how ${yardName} pays sellers.`)
+    const yardData = {
+      name: yardName, addressLine1: text(y.addressLine1), city: text(y.city, 100), region: text(y.region, 100), postalCode: text(y.postalCode, 20), country: text(y.country, 2) || 'US',
+      phone: text(y.phone, 40), email: text(y.email, 254), timezone, hours: (y.hours as any) || WEEKDAY_HOURS, payoutMethods, acceptsPublic: y.acceptsPublic ?? true, status: 'active',
+      scaleTypes: (Array.isArray(y.scaleTypes) && y.scaleTypes.length ? y.scaleTypes : ['truck', 'floor']).filter((k) => ['truck', 'floor', 'bench'].includes(k)), publicNotes: text(y.publicNotes, 1000), rulesProfileId: profile.id,
+    }
+    let yard = await tx.yard.findUnique({ where: { code } })
+    if (yard) yard = await tx.yard.update({ where: { id: yard.id }, data: yardData })
+    else {
+      let slug = slugify(yardName) || `yard-${code.toLowerCase()}`
+      if (await tx.yard.findUnique({ where: { slug } })) slug = `${slug}-${code.toLowerCase()}`
+      yard = await tx.yard.create({ data: { ...yardData, code, slug } })
+    }
+    yardIds.push(yard.id)
   }
   if (ctx.actorId) {
     const actor = await tx.user.findUnique({ where: { id: ctx.actorId }, include: { yards: { select: { id: true } } } })
-    if (actor && !actor.yards.some((x: any) => x.id === yard.id)) await tx.user.update({ where: { id: actor.id }, data: { yards: { connect: { id: yard.id } } } })
+    const missing = yardIds.filter((id) => !actor?.yards.some((x: any) => x.id === id))
+    if (actor && missing.length) await tx.user.update({ where: { id: actor.id }, data: { yards: { connect: missing.map((id) => ({ id })) } } })
   }
 
-  return { yardId: yard.id, profileId: profile.id, template, weightUnit, rules: rt.template }
+  return { yardId: yardIds[0], yardIds, profileId: profile.id, template, weightUnit, rules: rt.template }
 }
 
 const templateMaterials = (t: Step1['template']) => (t === 'community_centre' ? [...SCRAP_MATERIALS, ...COMMUNITY_MATERIALS] : SCRAP_MATERIALS)
@@ -141,13 +151,7 @@ export async function onboardPricesTx(ctx: CommandCtx, s1: Step1) {
   const { weightUnit } = s1
   const materials = templateMaterials(s1.template)
   const yard = await tx.yard.findUnique({ where: { id: s1.yardId } })
-  const yardName = yard.name
   const matIds: Record<string, string> = Object.fromEntries((await tx.material.findMany({ where: { code: { in: materials.map((m) => m.code) } }, select: { id: true, code: true } })).map((m: any) => [m.code, m.id]))
-  let board = yard.boardPriceListId ? await tx.priceList.findUnique({ where: { id: yard.boardPriceListId } }) : null
-  if (!board) {
-    board = await tx.priceList.create({ data: { name: `${yardName} board`, kind: 'board', yardId: yard.id, isActive: true } })
-    await tx.yard.update({ where: { id: yard.id }, data: { boardPriceListId: board.id } })
-  }
   const toUnitPrice = (m: (typeof materials)[number], factor = 1) => {
     let p = new Decimal(m.price)
     if (weightUnit === 'kg' && m.unit === 'lb') p = p.times('2.20462')
@@ -155,7 +159,14 @@ export async function onboardPricesTx(ctx: CommandCtx, s1: Step1) {
     return p.times(factor).toDecimalPlaces(m.unit === 'each' || m.unit === 'net_ton' ? 2 : 3).toFixed()
   }
   let published = 0
-  if (!(await tx.priceEntry.count({ where: { priceListId: board.id } }))) {
+  for (const yardId of s1.yardIds) {
+    const y = await tx.yard.findUnique({ where: { id: yardId } })
+    let board = y.boardPriceListId ? await tx.priceList.findUnique({ where: { id: y.boardPriceListId } }) : null
+    if (!board) {
+      board = await tx.priceList.create({ data: { name: `${y.name} board`, kind: 'board', yardId: y.id, isActive: true } })
+      await tx.yard.update({ where: { id: y.id }, data: { boardPriceListId: board.id } })
+    }
+    if (await tx.priceEntry.count({ where: { priceListId: board.id } })) continue
     const r = await publishPricesTx(ctx, {
       priceListId: board.id,
       entries: materials.map((m) => ({ materialId: matIds[m.code], unitPrice: toUnitPrice(m), unitPriceHigh: m.high ? toUnitPrice({ ...m, price: m.high }) : null, isPublic: m.isPublic ?? true })),
@@ -194,8 +205,15 @@ export async function onboardEquipmentTx(ctx: CommandCtx, s1: Step1, input: Onbo
   }
   const trucks = [{ name: 'Roll-off 1', plate: '', kind: 'roll_off' }, { name: 'Flatbed 1', plate: '', kind: 'flatbed' }]
   for (const t of trucks) if (!(await tx.truck.findFirst({ where: { yardId: yard.id, name: t.name } }))) await tx.truck.create({ data: { ...t, yardId: yard.id, isActive: true } })
-  for (const s of [{ name: 'Truck scale', kind: 'truck' }, { name: 'Floor scale', kind: 'floor' }]) if (!(await tx.scale.findFirst({ where: { yardId: yard.id, name: s.name } }))) await tx.scale.create({ data: { ...s, yardId: yard.id, isActive: true } })
-  if (!(await tx.cashDrawer.findFirst({ where: { yardId: yard.id } }))) await tx.cashDrawer.create({ data: { name: 'Front counter', yardId: yard.id, isActive: true } })
+  for (const yardId of s1.yardIds) {
+    const y = await tx.yard.findUnique({ where: { id: yardId } })
+    const kinds: string[] = Array.isArray(y.scaleTypes) && y.scaleTypes.length ? y.scaleTypes : ['truck', 'floor']
+    for (const kind of kinds) {
+      const scaleName = kind === 'truck' ? 'Truck scale' : kind === 'floor' ? 'Floor scale' : 'Bench scale'
+      if (!(await tx.scale.findFirst({ where: { yardId, name: scaleName } }))) await tx.scale.create({ data: { name: scaleName, kind, yardId, isActive: true } })
+    }
+    if (!(await tx.cashDrawer.findFirst({ where: { yardId } }))) await tx.cashDrawer.create({ data: { name: 'Front counter', yardId, isActive: true } })
+  }
 
   // (6) Payment provider: card payments use the Stripe adapter when its keys are present on the server.
   if (input.cardProvider !== 'none') {
@@ -216,14 +234,14 @@ export async function runOnboarding(c: any, input: OnboardingInput, idempotencyK
   const s3 = await runCommand(c, opts('prices'), (ctx) => onboardPricesTx(ctx, s1))
   const s4 = await runCommand(c, opts('equipment'), (ctx) => onboardEquipmentTx(ctx, s1, input))
   const yard = await c.sudo().prisma.yard.findUnique({ where: { id: s1.yardId } })
-  return { id: yard.id, yardSlug: yard.slug, template: s1.template, materials: s2.count, pricesPublished: s3.published, roles: STAFF_ROLES.length, containers: s4.containers }
+  return { id: yard.id, yardSlug: yard.slug, yards: s1.yardIds.length, template: s1.template, materials: s2.count, pricesPublished: s3.published, roles: STAFF_ROLES.length, containers: s4.containers }
 }
 
 export const onboardingTypeDefs = `
   input OnboardingBusinessInput { name: String!, legalName: String, weightUnit: String, currencyCode: String, timezone: String, isNonprofit: Boolean, ein: String, supportEmail: String, supportPhone: String, about: String }
-  input OnboardingYardInput { name: String!, code: String, addressLine1: String, city: String, region: String, postalCode: String, country: String, phone: String, email: String, payoutMethods: [String!], hours: JSON }
-  input RunOnboardingInput { template: String!, business: OnboardingBusinessInput!, yard: OnboardingYardInput!, rulesTemplate: String, cardProvider: String }
-  type OnboardingResult { id: ID!, yardSlug: String!, template: String!, materials: Int!, pricesPublished: Int!, roles: Int!, containers: Int! }
+  input OnboardingYardInput { name: String!, code: String, acceptsPublic: Boolean, scaleTypes: [String!], publicNotes: String, addressLine1: String, city: String, region: String, postalCode: String, country: String, phone: String, email: String, payoutMethods: [String!], hours: JSON }
+  input RunOnboardingInput { template: String!, business: OnboardingBusinessInput!, yard: OnboardingYardInput!, additionalYards: [OnboardingYardInput!], rulesTemplate: String, cardProvider: String }
+  type OnboardingResult { id: ID!, yardSlug: String!, yards: Int!, template: String!, materials: Int!, pricesPublished: Int!, roles: Int!, containers: Int! }
 `
 export const onboardingMutationDefs = `
   runOnboarding(data: RunOnboardingInput!, idempotencyKey: String): OnboardingResult
