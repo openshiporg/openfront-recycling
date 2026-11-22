@@ -1,6 +1,6 @@
 import { Decimal } from 'decimal.js'
 import { hasFlag } from '../access'
-import { CommandError, cleanKey, compareAndSet, lockRow, refuse, runCommand, type CommandCtx, type Tx } from '../lib/command'
+import { CommandError, cleanKey, compareAndSet, lockRow, refuse, requireYard, runCommand, type CommandCtx, type Tx } from '../lib/command'
 import { postMovement } from '../lib/inventory'
 import { maybeCloseOrder, maybeFulfilOrder } from '../lib/sales'
 import { businessSettings } from '../lib/domain'
@@ -30,6 +30,51 @@ function closedByDate(listing: any, now: Date) {
 }
 
 // --- Listings ---
+const LISTING_FORMS = ['bale', 'loose', 'box', 'gaylord', 'drum', 'pallet', 'bundle']
+const LISTING_UNITS = ['lb', 'cwt', 'net_ton', 'gross_ton', 'kg', 'metric_tonne', 'each']
+
+/** A trader drafts material for sale (§4.7 step 2); `setListingStatus` opens it. */
+export async function draftListingTx(ctx: CommandCtx, input: { yardId: string; materialId: string; title: string; description?: string | null; form?: string | null; estimatedWeight: string; askUnitPrice?: string | null; unit?: string | null; allowOffers?: boolean | null; buyNow?: boolean | null; minimumWeight?: string | null; terms?: string | null; closesAt?: string | null; unitIds?: string[] | null }) {
+  const { tx } = ctx
+  const yard = await tx.yard.findUnique({ where: { id: input.yardId } })
+  if (!yard) refuse('Yard not found.')
+  requireYard(ctx.session, yard.id)
+  const material = await tx.material.findUnique({ where: { id: input.materialId } })
+  if (!material || !material.isActive) refuse('Material not found.')
+  const title = String(input.title || '').trim().slice(0, 160)
+  if (title.length < 3) refuse('Give the listing a title.')
+  const form = input.form || 'loose'
+  if (!LISTING_FORMS.includes(form)) refuse('Choose the form the material is in.')
+  const unit = input.unit || material.defaultUnit || 'lb'
+  if (!LISTING_UNITS.includes(unit)) refuse('Choose the price unit.')
+  const estimated = dec(input.estimatedWeight)
+  if (!estimated.gt(0)) refuse('Enter the estimated weight.')
+  const ask = input.askUnitPrice === undefined || input.askUnitPrice === null || input.askUnitPrice === '' ? null : dec(input.askUnitPrice)
+  if (ask && !ask.gt(0)) refuse('Enter an asking price above zero.')
+  if (input.buyNow && !ask) refuse('A buy-now listing needs an asking price.')
+  if (!input.buyNow && input.allowOffers === false) refuse('Allow offers or set a buy-now price.')
+  const minimum = input.minimumWeight ? dec(input.minimumWeight) : null
+  if (minimum && (minimum.isNegative() || minimum.gt(estimated))) refuse('The minimum cannot be more than the estimated weight.')
+  const terms = input.terms || 'fob_yard'
+  if (!['fob_yard', 'delivered'].includes(terms)) refuse('Choose FOB yard or delivered.')
+  const closesAt = input.closesAt ? new Date(input.closesAt) : null
+  if (closesAt && (Number.isNaN(closesAt.getTime()) || closesAt <= ctx.now)) refuse('The closing date must be in the future.')
+  const unitIds = Array.from(new Set(input.unitIds || []))
+  if (unitIds.length) {
+    const units = await tx.inventoryUnit.findMany({ where: { id: { in: unitIds } } })
+    if (units.length !== unitIds.length || units.some((u: any) => u.yardId !== yard.id || u.materialId !== material.id || u.status !== 'available' || u.listingId)) refuse('Every unit must be an available, unlisted tag of this material at this yard.')
+  }
+  const listing = await tx.listing.create({
+    data: {
+      yardId: yard.id, materialId: material.id, title, description: String(input.description || '').slice(0, 4000), form, estimatedWeight: estimated.toFixed(2), availableWeight: '0',
+      askUnitPrice: ask ? ask.toFixed(5) : null, unit, allowOffers: input.allowOffers ?? true, buyNow: Boolean(input.buyNow), minimumWeight: minimum ? minimum.toFixed(2) : null, terms, closesAt, status: 'draft',
+      ...(unitIds.length ? { units: { connect: unitIds.map((id) => ({ id })) } } : {}),
+    },
+  })
+  await ctx.audit({ eventType: 'listing.drafted', aggregateType: 'Listing', aggregateId: listing.id, yardId: yard.id, after: { title, materialId: material.id, estimatedWeight: estimated.toFixed(2), askUnitPrice: listing.askUnitPrice } })
+  return listing
+}
+
 export async function setListingStatusTx(ctx: CommandCtx, input: { listingId: string; status: 'open' | 'paused' | 'closed' }) {
   const listing = await lockRow(ctx.tx, 'Listing', input.listingId)
   if (!listing) refuse('Listing not found.')
@@ -360,6 +405,7 @@ export const salesTypeDefs = `
   input SalesOrderLineInput { materialId: ID!, weight: String!, unitPrice: String!, unit: String, tolerancePercent: String }
 `
 export const salesMutationDefs = `
+  draftListing(yardId: ID!, materialId: ID!, title: String!, description: String, form: String, estimatedWeight: String!, askUnitPrice: String, unit: String, allowOffers: Boolean, buyNow: Boolean, minimumWeight: String, terms: String, closesAt: String, unitIds: [ID!], idempotencyKey: String): Listing
   setListingStatus(listingId: ID!, status: String!, idempotencyKey: String): Listing
   submitOffer(listingId: ID!, accountId: ID!, weight: String!, unitPrice: String, pickupFrom: String, pickupTo: String, message: String, buyNow: Boolean, idempotencyKey: String): Offer
   decideOffer(offerId: ID!, decision: String!, reason: String, counterUnitPrice: String, counterWeight: String, counterMessage: String, idempotencyKey: String): Offer
@@ -380,6 +426,7 @@ const one = (c: any, list: string) => (r: any) => (r?.id ? c.sudo().db[list].fin
 const staffOne = (c: any, list: string) => (r: any) => (r?.id ? c.db[list].findOne({ where: { id: r.id } }) : null)
 export const salesResolvers = {
   Mutation: {
+    draftListing: (_: unknown, a: any, c: any) => runCommand(c, { name: 'draftListing', input: a, idempotencyKey: cleanKey(a.idempotencyKey), permission: TRADER }, (ctx) => draftListingTx(ctx, a)).then(staffOne(c, 'Listing')),
     setListingStatus: (_: unknown, a: any, c: any) => runCommand(c, { name: 'setListingStatus', input: a, idempotencyKey: cleanKey(a.idempotencyKey), permission: TRADER }, (ctx) => setListingStatusTx(ctx, a)).then(staffOne(c, 'Listing')),
     // Buyer commands prove account membership inside the command, then return through sudo.
     submitOffer: (_: unknown, a: any, c: any) => runCommand(c, { name: 'submitOffer', input: a, idempotencyKey: cleanKey(a.idempotencyKey), requireSignIn: true }, (ctx) => submitOfferTx(ctx, a)).then(one(c, 'Offer')),

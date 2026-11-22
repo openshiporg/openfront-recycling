@@ -8457,6 +8457,7 @@ type Mutation {
   cancelDispatchJob(jobId: ID!, reason: String!): DispatchJob
   setContainerStatus(containerId: ID!, status: String!, note: String): Container
   accrueContainerRentals(accountId: ID): RentalAccrual
+  draftListing(yardId: ID!, materialId: ID!, title: String!, description: String, form: String, estimatedWeight: String!, askUnitPrice: String, unit: String, allowOffers: Boolean, buyNow: Boolean, minimumWeight: String, terms: String, closesAt: String, unitIds: [ID!], idempotencyKey: String): Listing
   setListingStatus(listingId: ID!, status: String!, idempotencyKey: String): Listing
   submitOffer(listingId: ID!, accountId: ID!, weight: String!, unitPrice: String, pickupFrom: String, pickupTo: String, message: String, buyNow: Boolean, idempotencyKey: String): Offer
   decideOffer(offerId: ID!, decision: String!, reason: String, counterUnitPrice: String, counterWeight: String, counterMessage: String, idempotencyKey: String): Offer
