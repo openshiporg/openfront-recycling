@@ -62,3 +62,22 @@ Every operation finds the Seller whose `user` is the session user; another selle
 | S16 | `myApplications` | Adds `decidedAt accountSlug` (slug once approved). |
 | S14 | `myServiceRequests`, `myServiceRequest(id)` | Requests by this user **not** on a company account. `job` is the DispatchJob. Adds `canPay canAcceptQuote canCancel containerTypeName`. |
 | C0 | `myAccounts` | `{id slug name status role isSupplier isBuyer isNonprofit}` |
+
+## §8.3 Company portal (signed-in contact) — `features/keystone/commands/storefront-account.ts`
+
+Every query takes `accountSlug`; the user must hold an **active** AccountContact on it. Wrong or foreign slug/id → `NOT_FOUND` (never reveals the account). No session → `UNAUTHENTICATED`. A `driver` contact gets `FORBIDDEN` on settlements, charges and invoices (money is admin/billing/member).
+
+Shapes match `features/storefront/lib/data/company.ts` exactly; every storefront query was validated against the built schema.
+
+| Row | Operation | Notes |
+|---|---|---|
+| C1 | `accountOverview` | `monthWeight`/`monthValueCents`: completed tickets this calendar month (UTC). `unsettledCents` = unsettled on-account tickets minus open charges. `openInvoiceCents` = open + partially paid balances. |
+| C2 | `accountPrices` | Latest current entry per material on the account's own price list; empty when none (the board is on `publicPriceBoard`). |
+| C3 | `accountTickets(siteId materialId from to take skip)`, `accountTicket(id)` | Excludes open tickets. `netWeight` sums non-`each` lines. `accountTicket` is `TicketReceipt` (+`lookupCode`). |
+| C4 | `accountSites` | All sites, active first. |
+| C5 | `accountContainers` | Containers `at_customer`, `assigned`, `in_transit`. `rentalAccruingCents` = days past free days (or past `rentalChargedThrough`) × type daily rate. |
+| C7 | `accountServiceRequests`, `accountServiceRequest(id)` | Same `MyServiceRequest` shape; `yard` also has `timezone` (added for `requests.ts`). |
+| C8 | `accountSettlements` | Excludes drafts. |
+| C9 | `accountCharges(unsettledOnly)` | **Schema change:** the generated AccountCharge list is renamed (`accountChargeItems`, `AccountChargeItems*`) so this name is the portal's. Dashboard uses list metadata, so nothing else changes. |
+| C10 | `accountInvoices`, `accountInvoice(id)` | Excludes void. Payments list succeeded/reversed only. Pay with `payInvoiceByCard`. |
+| C11 | `accountDiversionReport(year)` | Rows by `YYYY-MM` × material; CSV is built in the storefront. |

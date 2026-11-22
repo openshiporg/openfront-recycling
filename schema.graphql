@@ -8094,7 +8094,6 @@ type Mutation {
   deleteAccounts(where: [AccountWhereUniqueInput!]!): [Account]
   createAccountContact(data: AccountContactCreateInput!): AccountContact
   createAccountContacts(data: [AccountContactCreateInput!]!): [AccountContact]
-  updateAccountContact(where: AccountContactWhereUniqueInput!, data: AccountContactUpdateInput!): AccountContact
   updateAccountContacts(data: [AccountContactUpdateArgs!]!): [AccountContact]
   deleteAccountContact(where: AccountContactWhereUniqueInput!): AccountContact
   deleteAccountContacts(where: [AccountContactWhereUniqueInput!]!): [AccountContact]
@@ -8171,11 +8170,11 @@ type Mutation {
   deleteCashDrawerEvent(where: CashDrawerEventWhereUniqueInput!): CashDrawerEvent
   deleteCashDrawerEvents(where: [CashDrawerEventWhereUniqueInput!]!): [CashDrawerEvent]
   createAccountCharge(data: AccountChargeCreateInput!): AccountCharge
-  createAccountCharges(data: [AccountChargeCreateInput!]!): [AccountCharge]
+  createAccountChargeItems(data: [AccountChargeCreateInput!]!): [AccountCharge]
   updateAccountCharge(where: AccountChargeWhereUniqueInput!, data: AccountChargeUpdateInput!): AccountCharge
-  updateAccountCharges(data: [AccountChargeUpdateArgs!]!): [AccountCharge]
+  updateAccountChargeItems(data: [AccountChargeUpdateArgs!]!): [AccountCharge]
   deleteAccountCharge(where: AccountChargeWhereUniqueInput!): AccountCharge
-  deleteAccountCharges(where: [AccountChargeWhereUniqueInput!]!): [AccountCharge]
+  deleteAccountChargeItems(where: [AccountChargeWhereUniqueInput!]!): [AccountCharge]
   createSettlement(data: SettlementCreateInput!): Settlement
   createSettlements(data: [SettlementCreateInput!]!): [Settlement]
   updateSettlement(where: SettlementWhereUniqueInput!, data: SettlementUpdateInput!): Settlement
@@ -8194,7 +8193,6 @@ type Mutation {
   updateInventoryMovements(data: [InventoryMovementUpdateArgs!]!): [InventoryMovement]
   deleteInventoryMovement(where: InventoryMovementWhereUniqueInput!): InventoryMovement
   deleteInventoryMovements(where: [InventoryMovementWhereUniqueInput!]!): [InventoryMovement]
-  createInventoryUnit(data: InventoryUnitCreateInput!): InventoryUnit
   createInventoryUnits(data: [InventoryUnitCreateInput!]!): [InventoryUnit]
   updateInventoryUnit(where: InventoryUnitWhereUniqueInput!, data: InventoryUnitUpdateInput!): InventoryUnit
   updateInventoryUnits(data: [InventoryUnitUpdateArgs!]!): [InventoryUnit]
@@ -8224,7 +8222,6 @@ type Mutation {
   updateOffers(data: [OfferUpdateArgs!]!): [Offer]
   deleteOffer(where: OfferWhereUniqueInput!): Offer
   deleteOffers(where: [OfferWhereUniqueInput!]!): [Offer]
-  createSalesOrder(data: SalesOrderCreateInput!): SalesOrder
   createSalesOrders(data: [SalesOrderCreateInput!]!): [SalesOrder]
   updateSalesOrder(where: SalesOrderWhereUniqueInput!, data: SalesOrderUpdateInput!): SalesOrder
   updateSalesOrders(data: [SalesOrderUpdateArgs!]!): [SalesOrder]
@@ -8302,7 +8299,6 @@ type Mutation {
   updateContainers(data: [ContainerUpdateArgs!]!): [Container]
   deleteContainer(where: ContainerWhereUniqueInput!): Container
   deleteContainers(where: [ContainerWhereUniqueInput!]!): [Container]
-  createServiceRequest(data: ServiceRequestCreateInput!): ServiceRequest
   createServiceRequests(data: [ServiceRequestCreateInput!]!): [ServiceRequest]
   updateServiceRequest(where: ServiceRequestWhereUniqueInput!, data: ServiceRequestUpdateInput!): ServiceRequest
   updateServiceRequests(data: [ServiceRequestUpdateArgs!]!): [ServiceRequest]
@@ -8425,6 +8421,69 @@ type Mutation {
   buildSettlement(accountId: ID!, periodStart: String!, periodEnd: String!, idempotencyKey: String): Settlement
   approveSettlement(settlementId: ID!, idempotencyKey: String): Settlement
   voidSettlement(settlementId: ID!, reason: String!, idempotencyKey: String): Settlement
+  regradeInventory(yardId: ID!, fromMaterialId: ID!, toMaterialId: ID!, weight: String!, reason: String, idempotencyKey: String!): InventoryResult
+  adjustInventory(yardId: ID!, materialId: ID!, weightDelta: String!, reason: String!, idempotencyKey: String!): InventoryResult
+  reviewInventoryMovement(movementId: ID!): InventoryResult
+  createInventoryUnit(yardId: ID!, materialId: ID!, weight: String!, form: String, location: String, tagNumber: String, idempotencyKey: String): InventoryUnit
+  postProcessingRun(yardId: ID!, kind: String!, inputs: [RunLineInput!]!, outputs: [RunLineInput!]!, processingCostCents: Int, notes: String, idempotencyKey: String): ProcessingRun
+  sendYardTransfer(fromYardId: ID!, toYardId: ID!, lines: [WeightLineInput!], unitIds: [ID!], idempotencyKey: String): YardTransfer
+  receiveYardTransfer(transferId: ID!, received: [WeightLineInput!], idempotencyKey: String): YardTransfer
+  releaseHoldTag(holdTagId: ID!, reason: String!, caseNumber: String, idempotencyKey: String): HoldTag
+  placePoliceHold(holdTagId: ID, ticketId: ID, agency: String!, caseNumber: String, reason: String!, idempotencyKey: String): InventoryResult
+  seizeHoldTag(holdTagId: ID!, caseNumber: String!, reason: String!, idempotencyKey: String): HoldTag
+  submitAccountApplication(kind: String!, businessName: String!, legalName: String, taxId: String, addressLine1: String, addressLine2: String, city: String, region: String, postalCode: String, country: String, phone: String, email: String, materials: JSON, monthlyVolume: String, containerNeeds: String, message: String, idempotencyKey: String): AccountApplication
+  decideAccountApplication(applicationId: ID!, decision: String!, reason: String, accountId: ID, paymentTerms: String, netDays: Int, weightBasis: String, hasCredit: Boolean, priceListId: ID, idempotencyKey: String): AccountApplication
+  withdrawApplication(applicationId: ID!): AccountApplication
+  setAccountStatus(accountId: ID!, status: String!, reason: String!): Account
+  inviteAccountContact(accountId: ID!, email: String!, role: String!): AccountInvite
+  acceptAccountInvite(token: String!): AccountContact
+  updateAccountContact(contactId: ID!, role: String, remove: Boolean): AccountContact
+  upsertAccountSite(accountId: ID!, siteId: ID, name: String!, addressLine1: String!, addressLine2: String, city: String!, region: String, postalCode: String, country: String, contactName: String, contactPhone: String, accessNotes: String, isActive: Boolean): ServiceSite
+  setSellerStatus(sellerId: ID!, status: String!, reason: String!): Seller
+  verifySellerIdentity(identityDocumentId: ID!): Seller
+  createServiceRequest(yardId: ID!, kind: String!, accountId: ID, siteId: ID, containerTypeId: ID, containerId: ID, materialId: ID, itemsDescription: String, photos: [String!], preferredDate: String, preferredWindow: String, accessNotes: String, address: PickupAddressInput, idempotencyKey: String): ServiceRequest
+  quoteServiceRequest(requestId: ID!, feeCents: Int!, note: String): ServiceRequest
+  acceptServiceQuote(requestId: ID!): ServiceRequest
+  payServiceRequestByCard(requestId: ID!, returnPath: String, idempotencyKey: String!): CardCheckout
+  approveServiceRequest(requestId: ID!): ServiceRequest
+  declineServiceRequest(requestId: ID!, reason: String!): ServiceRequest
+  cancelServiceRequest(requestId: ID!, reason: String): ServiceRequest
+  scheduleDispatchJob(requestId: ID, shipmentId: ID, yardId: ID, kind: String, scheduledDate: String!, driverId: ID, truckId: ID, dropContainerId: ID, pickContainerId: ID, sequence: Int, idempotencyKey: String): DispatchJob
+  assignDispatchJob(jobId: ID!, driverId: ID, truckId: ID, dropContainerId: ID): DispatchJob
+  startDispatchJob(jobId: ID!): DispatchJob
+  arriveDispatchJob(jobId: ID!): DispatchJob
+  completeDispatchJob(jobId: ID!, dropContainerNumber: String, pickContainerNumber: String, photos: [String!], signedName: String, driverNotes: String): DispatchJob
+  failDispatchJob(jobId: ID!, reason: String!, chargeDryRun: Boolean): DispatchJob
+  cancelDispatchJob(jobId: ID!, reason: String!): DispatchJob
+  setContainerStatus(containerId: ID!, status: String!, note: String): Container
+  accrueContainerRentals(accountId: ID): RentalAccrual
+  setListingStatus(listingId: ID!, status: String!, idempotencyKey: String): Listing
+  submitOffer(listingId: ID!, accountId: ID!, weight: String!, unitPrice: String, pickupFrom: String, pickupTo: String, message: String, buyNow: Boolean, idempotencyKey: String): Offer
+  decideOffer(offerId: ID!, decision: String!, reason: String, counterUnitPrice: String, counterWeight: String, counterMessage: String, idempotencyKey: String): Offer
+  respondToOffer(offerId: ID!, response: String!, idempotencyKey: String): Offer
+  createSalesOrder(yardId: ID!, accountId: ID!, lines: [SalesOrderLineInput!]!, shipTo: String, buyerReference: String, shipWindowStart: String, shipWindowEnd: String, confirm: Boolean, idempotencyKey: String): SalesOrder
+  confirmSalesOrder(orderId: ID!, idempotencyKey: String): SalesOrder
+  cancelSalesOrder(orderId: ID!, reason: String!, idempotencyKey: String): SalesOrder
+  markSalesOrderFulfilled(orderId: ID!, idempotencyKey: String): SalesOrder
+  scheduleShipment(orderId: ID!, carrier: String, driverName: String, truckPlate: String, trailerNumber: String, sealNumber: String, scheduledFor: String, freightCents: Int, unitIds: [ID!], idempotencyKey: String): Shipment
+  cancelShipment(shipmentId: ID!, reason: String!, idempotencyKey: String): Shipment
+  recordShipmentDelivery(shipmentId: ID!, receivedWeight: String, gradeNote: String, idempotencyKey: String): Shipment
+  fileClaim(shipmentId: ID!, kind: String!, description: String!, claimedCents: Int!, photos: [String!], idempotencyKey: String): Claim
+  decideClaim(claimId: ID!, decision: String!, creditCents: Int, reason: String, idempotencyKey: String): Claim
+  withdrawClaim(claimId: ID!, idempotencyKey: String): Claim
+  generateComplianceReport(yardId: ID!, reportDate: String!): ComplianceReport
+  markComplianceReportSubmitted(reportId: ID!, note: String): ComplianceReport
+  importDoNotBuyList(csv: String!, source: String): DoNotBuyImportResult
+  updateNonprofitProfile(accountId: ID!, nonprofitSummary: String, nonprofitWebsite: String, isPublicNonprofit: Boolean): Account
+  upsertCampaign(accountId: ID!, campaignId: ID, name: String!, description: String, goalWeight: String, goalCents: Int, startsOn: String, endsOn: String, isPublic: Boolean, status: String): DonationCampaign
+  endCampaign(campaignId: ID!): DonationCampaign
+  registerCustomer(name: String!, email: String!, phone: String, password: String!): RegisteredCustomer
+  upsertMySellerProfile(data: MySellerProfileInput!): MySeller
+  submitMyIdentityDocument(data: MyIdentityDocumentInput!): MyIdentityDocument
+  upsertMyVehicle(id: ID, data: MyVehicleInput!): MyVehicle
+  removeMyVehicle(id: ID!): MyVehicle
+  createMyVisit(data: CreateMyVisitInput!, idempotencyKey: String): MyVisit
+  cancelMyVisit(id: ID!): MyVisit
 }
 
 union UserAuthenticationWithPasswordResult = UserAuthenticationWithPasswordSuccess | UserAuthenticationWithPasswordFailure
@@ -8541,8 +8600,8 @@ type Query {
   cashDrawerEvents(where: CashDrawerEventWhereInput! = {}, orderBy: [CashDrawerEventOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: CashDrawerEventWhereUniqueInput): [CashDrawerEvent!]
   cashDrawerEventsCount(where: CashDrawerEventWhereInput! = {}): Int
   accountCharge(where: AccountChargeWhereUniqueInput!): AccountCharge
-  accountCharges(where: AccountChargeWhereInput! = {}, orderBy: [AccountChargeOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: AccountChargeWhereUniqueInput): [AccountCharge!]
-  accountChargesCount(where: AccountChargeWhereInput! = {}): Int
+  accountChargeItems(where: AccountChargeWhereInput! = {}, orderBy: [AccountChargeOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: AccountChargeWhereUniqueInput): [AccountCharge!]
+  accountChargeItemsCount(where: AccountChargeWhereInput! = {}): Int
   settlement(where: SettlementWhereUniqueInput!): Settlement
   settlements(where: SettlementWhereInput! = {}, orderBy: [SettlementOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: SettlementWhereUniqueInput): [Settlement!]
   settlementsCount(where: SettlementWhereInput! = {}): Int
@@ -8657,6 +8716,48 @@ type Query {
   redirectToInit: Boolean
   ticketComplianceChecklist(ticketId: ID!): [ComplianceItem!]
   payoutQueue(yardId: ID): [Payout!]
+  releaseDueHolds(yardId: ID): Int
+  theftAlertsForMaterial(materialId: ID!): [TheftAlert!]
+  policeLookup(name: String, idNumber: String, plate: String, materialId: ID, from: String, to: String, yardId: ID): [ScaleTicket!]
+  complianceReportCsv(reportId: ID!): String
+  publicPriceBoard(yardSlug: String, yard: String): PublicPriceBoard
+  publicYardRules(yardSlug: String, yard: String): PublicYardRules
+  publicMaterial(slug: String!): PublicMaterial
+  publicPriceHistory(materialSlug: String!, yardSlug: String, yard: String, days: Int): [PublicPricePoint!]!
+  marketListings: MarketListingsResult!
+  marketListing(id: ID!): MarketListing
+  publicNonprofits: [PublicNonprofit!]!
+  publicCampaign(slug: String!): PublicCampaign
+  lookupTicketReceipt(displayNumber: String, lookupCode: String, ticketNumber: String, code: String): TicketReceipt
+  publicBusiness: PublicBusiness!
+  myDonationReceipt(donationId: ID!): DonationReceipt
+  accountOverview(accountSlug: String!): AccountOverview
+  accountPrices(accountSlug: String!): AccountPrices
+  accountTickets(accountSlug: String!, siteId: ID, materialId: ID, from: String, to: String, take: Int, skip: Int): AccountTicketPage
+  accountTicket(accountSlug: String!, id: ID!): TicketReceipt
+  accountSites(accountSlug: String!): [AccountSiteView!]!
+  accountContainers(accountSlug: String!): [AccountContainerView!]!
+  accountServiceRequests(accountSlug: String!): [MyServiceRequest!]!
+  accountServiceRequest(accountSlug: String!, id: ID!): MyServiceRequest
+  accountSettlements(accountSlug: String!): [AccountSettlementView!]!
+  accountCharges(accountSlug: String!, unsettledOnly: Boolean): [AccountChargeView!]!
+  accountInvoices(accountSlug: String!): [AccountInvoiceView!]!
+  accountInvoice(accountSlug: String!, id: ID!): AccountInvoiceView
+  accountDiversionReport(accountSlug: String!, year: Int!): DiversionReport
+  mySellerOverview: MySellerOverview
+  myIdentityStatus: MyIdentityStatus
+  myVehicles: [MyVehicle!]!
+  myVisits: [MyVisit!]!
+  myVisit(id: ID!): MyVisit
+  myTickets(status: String, from: String, to: String, take: Int, skip: Int): MyTicketPage!
+  myTicket(id: ID!): TicketReceipt
+  myPayouts: MyPayoutPage!
+  myDonations(year: Int): [MyDonation!]!
+  mySellerYearSummary(year: Int!): SellerYearSummary!
+  myApplications: [MyApplication!]!
+  myServiceRequests: [MyServiceRequest!]!
+  myServiceRequest(id: ID!): MyServiceRequest
+  myAccounts: [MyAccount!]!
 }
 
 union AuthenticatedItem = User
@@ -8904,4 +9005,843 @@ type ComplianceItem {
 type CardCheckout {
   paymentSessionId: ID!
   url: String
+}
+
+input RunLineInput {
+  materialId: ID!
+  weight: String!
+  unitIds: [ID!]
+  makeUnit: Boolean
+  form: String
+}
+
+input WeightLineInput {
+  materialId: ID!
+  weight: String!
+}
+
+type InventoryResult {
+  id: ID
+}
+
+type AccountInvite {
+  contactId: ID!
+  token: String!
+}
+
+input PickupAddressInput {
+  name: String
+  addressLine1: String!
+  addressLine2: String
+  city: String!
+  region: String
+  postalCode: String
+  contactName: String
+  contactPhone: String
+}
+
+type RentalAccrual {
+  days: Int!
+}
+
+input SalesOrderLineInput {
+  materialId: ID!
+  weight: String!
+  unitPrice: String!
+  unit: String
+  tolerancePercent: String
+}
+
+type DoNotBuyImportResult {
+  created: Int!
+  skipped: Int!
+  errors: [String!]!
+}
+
+type DonationReceiptItem {
+  material: String
+  weight: String
+  unit: String
+  quantity: Int
+}
+
+type DonationReceipt {
+  id: ID!
+  receiptNumber: String!
+  issuedAt: DateTime
+  status: String!
+  kind: String!
+  donorName: String
+  date: DateTime
+  yardName: String
+  nonprofitLegalName: String
+  nonprofitEin: String
+  campaignName: String
+  items: [DonationReceiptItem!]!
+  amountCreditedCents: Int
+  goodsOrServicesProvided: Boolean!
+  statement: String!
+}
+
+type PublicYardSummary {
+  id: ID!
+  name: String!
+  slug: String!
+  code: String!
+  addressLine1: String
+  city: String
+  region: String
+  timezone: String
+}
+
+type PublicPriceItem {
+  materialId: ID!
+  materialName: String!
+  materialSlug: String!
+  specName: String
+  categoryName: String
+  categorySlug: String
+  categorySortOrder: Int
+  imageUrl: String
+  direction: String!
+  unit: String!
+  unitPrice: String!
+  unitPriceHigh: String
+  effectiveFrom: DateTime
+  minimumWeight: String
+}
+
+type PublicPriceBoard {
+  yard: PublicYardSummary!
+  publishedAt: DateTime
+  currencyCode: String!
+  weightUnit: String!
+  items: [PublicPriceItem!]!
+  entries: [PublicPriceItem!]!
+}
+
+type PublicRestriction {
+  label: String
+  kind: String!
+  materialName: String
+  materialSlug: String
+  categoryName: String
+  allowedMethods: [String!]
+  requiredDocuments: [String!]!
+  forbidCash: Boolean!
+  paymentHoldDays: Int
+  materialHoldDays: Int
+  mailCheckOnly: Boolean!
+  publicNote: String
+}
+
+type PublicYardRules {
+  yardId: ID!
+  yardName: String!
+  payoutMethods: [String!]!
+  requireGovernmentId: Boolean!
+  requireIdPhoto: Boolean!
+  requireSellerPhoto: Boolean!
+  requireMaterialPhoto: Boolean!
+  requireVehiclePlate: Boolean!
+  requireSignature: Boolean!
+  requireThumbprint: Boolean!
+  minimumSellerAge: Int!
+  cashLimitPerTicketCents: Int
+  cashLimitPerDayCents: Int
+  cashRounding: String!
+  defaultPaymentHoldDays: Int!
+  defaultMaterialHoldDays: Int!
+  ownershipStatement: String
+  restrictions: [PublicRestriction!]!
+}
+
+type PublicMaterialPrice {
+  yardId: ID!
+  yardName: String!
+  yardSlug: String!
+  unit: String!
+  unitPrice: String!
+  unitPriceHigh: String
+  effectiveFrom: DateTime
+}
+
+type PublicMaterialRestriction {
+  yardName: String!
+  label: String
+  kind: String!
+  requiredDocuments: [String!]!
+  forbidCash: Boolean!
+  publicNote: String
+}
+
+type PublicMaterial {
+  id: ID!
+  name: String!
+  slug: String!
+  specName: String
+  description: String
+  preparationTips: String
+  categoryName: String
+  defaultUnit: String!
+  direction: String!
+  minimumWeight: String
+  imageId: String
+  prices: [PublicMaterialPrice!]!
+  restrictions: [PublicMaterialRestriction!]!
+}
+
+type PublicPricePoint {
+  effectiveFrom: DateTime!
+  effectiveTo: DateTime
+  unit: String!
+  unitPrice: String!
+  unitPriceHigh: String
+}
+
+type MarketUnit {
+  tagNumber: String!
+  form: String!
+  weight: String!
+}
+
+type MarketListing {
+  id: ID!
+  title: String!
+  description: String
+  form: String!
+  materialName: String!
+  materialSlug: String
+  yardName: String
+  photos: JSON
+  availableWeight: String!
+  minimumWeight: String
+  unit: String!
+  terms: String!
+  closesAt: DateTime
+  allowOffers: Boolean!
+  buyNow: Boolean!
+  askUnitPrice: String
+  unitCount: Int!
+  units: [MarketUnit!]!
+  status: String
+  canOffer: Boolean
+}
+
+type MarketListingsResult {
+  visible: Boolean!
+  canSeePrices: Boolean!
+  listings: [MarketListing!]!
+}
+
+type PublicCampaignRef {
+  id: ID!
+  name: String!
+  slug: String!
+}
+
+type PublicNonprofit {
+  id: ID!
+  name: String!
+  slug: String!
+  legalName: String
+  ein: String
+  summary: String
+  website: String
+  logoId: String
+  campaigns: [PublicCampaignRef!]!
+}
+
+type PublicCampaign {
+  id: ID!
+  name: String!
+  slug: String!
+  description: String
+  imageId: String
+  status: String!
+  startsOn: DateTime
+  endsOn: DateTime
+  goalWeight: String
+  goalCents: Int
+  raisedCents: Int!
+  raisedWeight: String!
+  donorCount: Int!
+  nonprofitName: String!
+  nonprofitSlug: String!
+  nonprofitEin: String
+}
+
+type ReceiptLine {
+  id: ID!
+  materialName: String!
+  grossWeight: String!
+  tareWeight: String!
+  netWeight: String!
+  deductionWeight: String!
+  deductionPercent: String!
+  deductionReason: String
+  payWeight: String!
+  quantity: Int
+  unit: String!
+  unitPrice: String!
+  amountCents: Int!
+  direction: String!
+}
+
+type ReceiptFee {
+  label: String!
+  amountCents: Int!
+}
+
+type ReceiptPayout {
+  id: ID!
+  amountCents: Int!
+  status: String!
+  method: String
+  allowedMethods: [String!]!
+  releaseAt: DateTime
+  checkNumber: String
+  paidAt: DateTime
+  returnReason: String
+}
+
+type ReceiptHold {
+  id: ID!
+  status: String!
+  releaseAt: DateTime
+  weight: String!
+}
+
+type ReceiptAdjustment {
+  id: ID!
+  displayNumber: String!
+  status: String!
+  totalCents: Int!
+}
+
+type TicketReceipt {
+  id: ID!
+  displayNumber: String!
+  direction: String!
+  status: String!
+  yardName: String!
+  yardAddress: String
+  sellerName: String
+  accountName: String
+  vehiclePlate: String
+  completedAt: DateTime
+  createdAt: DateTime
+  businessName: String
+  weightUnit: String!
+  paymentMode: String!
+  donatePercent: Int
+  lines: [ReceiptLine!]!
+  fees: [ReceiptFee!]!
+  materialTotalCents: Int!
+  feeTotalCents: Int!
+  taxCents: Int!
+  totalCents: Int!
+  payouts: [ReceiptPayout!]!
+  holds: [ReceiptHold!]!
+  adjustments: [ReceiptAdjustment!]!
+  adjustsDisplayNumber: String
+  photoIds: [String!]!
+
+  """Only on myTicket (the signed-in seller's own ticket)."""
+  lookupCode: String
+  adjustsId: ID
+  invoiceId: ID
+  amountDueCents: Int
+}
+
+type PublicBusiness {
+  logoUrl: String
+  timezone: String!
+  name: String!
+  legalName: String
+  about: String
+  supportEmail: String
+  supportPhone: String
+  isNonprofit: Boolean!
+  ein: String
+  weightUnit: String!
+  currencyCode: String!
+  marketVisibility: String!
+}
+
+type AccountSummary {
+  id: ID!
+  slug: String!
+  name: String!
+  accountNumber: String
+  status: String!
+  paymentTerms: String!
+  hasCredit: Boolean!
+  settlementCycle: String
+}
+
+type AccountOverview {
+  account: AccountSummary!
+  role: String!
+  monthWeight: String!
+  monthValueCents: Int!
+  openRequests: Int!
+  containersOnSite: Int!
+  unsettledCents: Int!
+  openInvoiceCents: Int!
+  currencyCode: String!
+  weightUnit: String!
+}
+
+type AccountPrice {
+  materialId: ID!
+  materialName: String!
+  materialSlug: String!
+  categoryName: String
+  unit: String!
+  unitPrice: String!
+  unitPriceHigh: String
+  effectiveFrom: DateTime!
+  effectiveTo: DateTime
+  direction: String!
+}
+
+type AccountPrices {
+  priceListName: String
+  currencyCode: String!
+  items: [AccountPrice!]!
+}
+
+type AccountTicketRow {
+  id: ID!
+  displayNumber: String!
+  status: String!
+  completedAt: DateTime
+  createdAt: DateTime
+  totalCents: Int!
+  netWeight: String
+  siteName: String
+  materials: String
+  yard: MyTicketYard
+}
+
+type AccountTicketPage {
+  count: Int!
+  currencyCode: String!
+  items: [AccountTicketRow!]!
+}
+
+type AccountSiteView {
+  id: ID!
+  name: String!
+  addressLine1: String
+  addressLine2: String
+  city: String
+  region: String
+  postalCode: String
+  contactName: String
+  contactPhone: String
+  accessNotes: String
+  isActive: Boolean!
+}
+
+type AccountContainerType {
+  name: String!
+  capacityLabel: String
+  freeRentalDays: Int!
+}
+
+type AccountContainerSite {
+  id: ID!
+  name: String!
+}
+
+type NamedRef {
+  name: String!
+}
+
+type AccountContainerView {
+  id: ID!
+  number: String!
+  status: String!
+  placedOn: DateTime
+  daysOnSite: Int
+  rentalAccruingCents: Int
+  type: AccountContainerType
+  site: AccountContainerSite
+  currentMaterial: NamedRef
+}
+
+type AccountSettlementView {
+  id: ID!
+  number: Int
+  status: String!
+  periodStart: DateTime
+  periodEnd: DateTime
+  ticketTotalCents: Int!
+  chargeTotalCents: Int!
+  donationTotalCents: Int!
+  netCents: Int!
+  paidAt: DateTime
+  payoutStatus: String
+}
+
+type AccountChargeView {
+  id: ID!
+  kind: String!
+  description: String
+  amountCents: Int!
+  serviceDate: DateTime
+  status: String!
+  containerNumber: String
+}
+
+type AccountInvoiceLineView {
+  description: String!
+  quantity: String
+  amountCents: Int!
+}
+
+type AccountPaymentView {
+  id: ID!
+  amountCents: Int!
+  method: String!
+  status: String!
+  createdAt: DateTime
+  refundedCents: Int!
+}
+
+type AccountInvoiceView {
+  id: ID!
+  number: Int
+  kind: String!
+  status: String!
+  subtotalCents: Int!
+  taxCents: Int!
+  totalCents: Int!
+  paidCents: Int!
+  refundedCents: Int!
+  dueOn: DateTime
+  createdAt: DateTime
+  lines: [AccountInvoiceLineView!]
+  payments: [AccountPaymentView!]
+}
+
+type DiversionRow {
+  month: String!
+  materialName: String!
+  categoryName: String
+  weight: String!
+  valueCents: Int!
+}
+
+type DiversionReport {
+  weightUnit: String!
+  currencyCode: String!
+  rows: [DiversionRow!]!
+}
+
+type RequestYard {
+  timezone: String
+  id: ID!
+  name: String!
+  phone: String
+}
+
+type RegisteredCustomer {
+  id: ID!
+  name: String!
+  email: String!
+}
+
+type MySeller {
+  id: ID!
+  firstName: String!
+  lastName: String!
+  status: String!
+  idVerification: String!
+  preferredPayout: String
+  phone: String
+  email: String
+  dateOfBirth: String
+  addressLine1: String
+  addressLine2: String
+  city: String
+  region: String
+  postalCode: String
+  defaultNonprofitId: ID
+}
+
+input MySellerProfileInput {
+  firstName: String!
+  lastName: String!
+  dateOfBirth: String
+  phone: String
+  email: String
+  addressLine1: String
+  addressLine2: String
+  city: String
+  region: String
+  postalCode: String
+  preferredPayout: String
+  defaultNonprofitId: ID
+}
+
+input MyIdentityDocumentInput {
+  kind: String!
+  number: String!
+  issuer: String
+  expiresOn: String!
+  frontImage: ImageFieldInput
+  backImage: ImageFieldInput
+}
+
+type MyIdentityDocument {
+  id: ID!
+  kind: String!
+  issuer: String
+  last4: String
+  expiresOn: DateTime
+  isCurrent: Boolean!
+  verified: Boolean!
+  expired: Boolean
+  hasFrontImage: Boolean
+  hasBackImage: Boolean
+}
+
+type MyIdentityStatus {
+  status: String!
+  documents: [MyIdentityDocument!]!
+}
+
+input MyVehicleInput {
+  plate: String!
+  plateRegion: String
+  make: String
+  model: String
+  color: String
+  kind: String
+}
+
+type MyVehicle {
+  id: ID!
+  plate: String
+  plateRegion: String
+  make: String
+  model: String
+  color: String
+  kind: String!
+}
+
+input ExpectedItemInput {
+  materialId: ID!
+  estimatedWeight: String
+}
+
+input CreateMyVisitInput {
+  yardSlug: String!
+  plannedDate: String!
+  vehicleId: ID
+  expectedItems: [ExpectedItemInput!]
+  donatePercent: Int
+  nonprofitId: ID
+  campaignId: ID
+}
+
+type MyVisitYard {
+  id: ID!
+  name: String!
+  slug: String!
+  timezone: String
+  addressLine1: String
+  city: String
+  region: String
+  phone: String
+}
+
+type MyVisitVehicle {
+  id: ID!
+  plate: String
+  make: String
+  model: String
+}
+
+type MyVisit {
+  id: ID!
+  code: String!
+  status: String!
+  plannedDate: String!
+  expiresAt: DateTime!
+  donatePercent: Int!
+  nonprofitName: String
+  campaignName: String
+  ticketId: ID
+  createdAt: DateTime
+  yard: MyVisitYard
+  vehicle: MyVisitVehicle
+  expectedItems: JSON
+}
+
+type MyTicketYard {
+  name: String!
+  timezone: String
+}
+
+type MyTicketSummary {
+  id: ID!
+  displayNumber: String!
+  status: String!
+  completedAt: DateTime
+  createdAt: DateTime
+  totalCents: Int!
+  isAdjustment: Boolean!
+  payoutStatus: String
+  yard: MyTicketYard
+}
+
+type MyTicketPage {
+  count: Int!
+  currencyCode: String!
+  items: [MyTicketSummary!]!
+}
+
+type TicketRef {
+  id: ID!
+  displayNumber: String!
+}
+
+type MyPayout {
+  id: ID!
+  amountCents: Int!
+  status: String!
+  method: String
+  allowedMethods: [String!]!
+  checkNumber: String
+  releaseAt: DateTime
+  paidAt: DateTime
+  returnReason: String
+  replacesId: ID
+  createdAt: DateTime
+  ticket: TicketRef
+  yard: MyTicketYard
+}
+
+type MyPayoutPage {
+  currencyCode: String!
+  items: [MyPayout!]!
+}
+
+type MySellerOverview {
+  seller: MySeller
+  lifetimeWeight: String!
+  lifetimePaidCents: Int!
+  pendingCents: Int!
+  heldCents: Int!
+  identityOnFile: Boolean!
+  vehicleCount: Int!
+  ticketCount: Int!
+  nextVisit: MyVisit
+  currencyCode: String!
+  weightUnit: String!
+}
+
+type MyDonation {
+  id: ID!
+  receiptNumber: String
+  status: String!
+  kind: String!
+  amountCents: Int
+  weight: String!
+  nonprofitName: String
+  campaignName: String
+  date: DateTime
+  ticket: TicketRef
+}
+
+type YearMaterialTotal {
+  materialName: String!
+  unit: String!
+  weight: String!
+  quantity: Int!
+  amountCents: Int!
+}
+
+type SellerYearSummary {
+  year: Int!
+  currencyCode: String!
+  weightUnit: String!
+  ticketCount: Int!
+  totalWeight: String!
+  totalCents: Int!
+  paidCents: Int!
+  donatedCents: Int!
+  materials: [YearMaterialTotal!]!
+  csv: String!
+}
+
+type MyApplication {
+  id: ID!
+  kind: String!
+  businessName: String!
+  status: String!
+  decisionReason: String
+  decidedAt: DateTime
+  createdAt: DateTime
+  accountSlug: String
+}
+
+type RequestSite {
+  id: ID!
+  name: String
+  addressLine1: String
+  addressLine2: String
+  city: String
+  region: String
+  postalCode: String
+}
+
+type RequestJob {
+  scheduledDate: DateTime
+  status: String!
+  driverNotes: String
+  completedAt: DateTime
+  failureReason: String
+  photos: JSON
+}
+
+type MyServiceRequest {
+  id: ID!
+  number: Int
+  kind: String!
+  status: String!
+  feeCents: Int!
+  quoteNote: String
+  quoteAcceptedAt: DateTime
+  decisionReason: String
+  preferredDate: DateTime
+  preferredWindow: String
+  itemsDescription: String
+  accessNotes: String
+  photos: JSON
+  createdAt: DateTime
+  chargeToAccount: Boolean!
+  canPay: Boolean!
+  canAcceptQuote: Boolean!
+  canCancel: Boolean!
+  yard: RequestYard
+  site: RequestSite
+  containerTypeName: String
+  containerNumber: String
+  job: RequestJob
+}
+
+type MyAccount {
+  id: ID!
+  slug: String!
+  name: String!
+  status: String!
+  role: String!
+  isSupplier: Boolean!
+  isBuyer: Boolean!
+  isNonprofit: Boolean!
 }

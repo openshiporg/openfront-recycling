@@ -89,6 +89,8 @@ export const CashDrawerEvent = list({
 
 // §6.6 AccountCharge
 export const AccountCharge = list({
+  // The plain `accountCharges` query is the customer portal's (§8.3 C9); the list keeps its own name.
+  graphql: { plural: 'AccountChargeItems' },
   access: staffList({ read: anyOf('canManageFinance', 'canManageAccounts', 'canManageDispatch'), create: denyAll, update: denyAll, delete: denyAll }),
   fields: {
     account: relationship({ ref: 'Account', ...cmd }),
