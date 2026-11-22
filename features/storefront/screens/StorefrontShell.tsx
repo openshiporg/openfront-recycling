@@ -85,10 +85,11 @@ export async function StorefrontShell({ children }: { children: ReactNode }) {
           <div className="sf-footer-row">
             <div>
               <Link href="/" className="sf-brand" aria-label="Home"><Brand business={business} fallbackName={fallbackName} size="footer" /></Link>
-              {business?.about ? <p style={{ marginTop: 12 }}>{business.about.length > 160 ? `${business.about.slice(0, 157)}…` : business.about}</p> : null}
+              {business?.about ? <p style={{ marginTop: 12 }}>{leadSentences(business.about, 170)}</p> : null}
             </div>
             <div>
-              <h3><IconClock size={20} /> Hours{main && yards.length > 1 ? ` · ${main.name}` : ''}</h3>
+              <h3><IconClock size={20} /> Hours</h3>
+              {main && yards.length > 1 ? <p className="sf-footer-yard">{main.name}</p> : null}
               {main && main.hours ? (
                 <ul>
                   {groupedHours(main.hours).map((g) => <li key={g.days}>{g.days}: {g.text}</li>)}
@@ -139,4 +140,15 @@ export async function StorefrontShell({ children }: { children: ReactNode }) {
       </footer>
     </div>
   );
+}
+
+/** Whole sentences up to about `max` characters; never cuts mid-sentence. */
+function leadSentences(text: string, max: number): string {
+  const parts = text.trim().match(/[^.!?]+[.!?]+(\s+|$)|[^.!?]+$/g) || [text];
+  let out = '';
+  for (const part of parts) {
+    if (out && (out + part).trim().length > max) break;
+    out += part;
+  }
+  return out.trim();
 }
