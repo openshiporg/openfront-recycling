@@ -1,4 +1,4 @@
-import { Banknote, Scale, Tags } from 'lucide-react'
+import { Banknote, Boxes, Scale, Tags } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 /**
@@ -34,6 +34,13 @@ export const platformNavItems: PlatformNavItem[] = [
     description: 'Yard boards, customer tiers and contract lists; publish dated prices.',
     icon: Tags,
     flags: ['canManagePricing'],
+  },
+  {
+    title: 'Materials',
+    href: '/platform/materials',
+    description: 'Categories and materials, photos, preparation tips and rules per profile.',
+    icon: Boxes,
+    flags: ['canManageMaterials', 'canManageCompliance'],
   },
 ]
 
