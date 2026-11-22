@@ -133,4 +133,22 @@ test('mill sale: buy now, reserve, outbound ticket, prepay release on payment, r
   assert.equal(fileClaim.status, 'open')
   const rejected = gql(trader, `mutation($c: ID!) { decideClaim(claimId: $c, decision: "reject") { status } }`, { c: fileClaim.id })
   await assert.rejects(rejected, /reason/)
+
+  // §8.4 buyer portal reads for the same records.
+  const slug = { s: account.slug }
+  const offers = (await gql(buyer, `query($s: String!) { accountOffers(accountSlug: $s) { id status salesOrderId canWithdraw } }`, slug)).accountOffers
+  assert.deepEqual(offers.map((o: any) => [o.id, o.status, o.salesOrderId, o.canWithdraw]), [[submitOffer.id, 'accepted', orderId, false]])
+  const orders = (await gql(buyer, `query($s: String!) { accountSalesOrders(accountSlug: $s) { id status orderedWeight shippedWeight } }`, slug)).accountSalesOrders
+  assert.deepEqual([orders[0].id, orders[0].status, orders[0].orderedWeight, orders[0].shippedWeight], [orderId, 'closed', '8000', '8000'])
+  const order = (await gql(buyer, `query($s: String!, $id: ID!) { accountSalesOrder(accountSlug: $s, id: $id) { shipments { bolNumber sealNumber receivedWeight gatePass { bolNumber } invoice { status } canClaim } } }`, { ...slug, id: orderId })).accountSalesOrder
+  assert.equal(order.shipments[0].sealNumber, 'S-88')
+  assert.equal(order.shipments[0].gatePass.bolNumber, scheduleShipment.bolNumber)
+  assert.equal(order.shipments[0].invoice.status, 'paid')
+  assert.equal(order.shipments[0].canClaim, true)
+  const claims = (await gql(buyer, `query($s: String!) { accountClaims(accountSlug: $s) { id status claimedCents canWithdraw } }`, slug)).accountClaims
+  assert.deepEqual(claims.map((c: any) => [c.id, c.status, c.claimedCents, c.canWithdraw]), [[fileClaim.id, 'open', 15000, true]])
+  const report = (await gql(buyer, `query($s: String!, $y: Int!) { accountPurchaseReport(accountSlug: $s, year: $y) { rows { materialName weight valueCents } } }`, { ...slug, y: new Date().getUTCFullYear() })).accountPurchaseReport
+  assert.deepEqual(report.rows.map((r: any) => [r.materialName, r.weight, r.valueCents]), [[copper.name, '8000', 2480000]])
+  await assert.rejects(gql(stranger, `query($s: String!) { accountSalesOrders(accountSlug: $s) { id } }`, slug), /not found/i)
+  await assert.rejects(gql(stranger, `query($s: String!, $id: ID!) { accountSalesOrder(accountSlug: $s, id: $id) { id } }`, { ...slug, id: orderId }), /not found/i)
 })

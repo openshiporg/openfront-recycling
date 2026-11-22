@@ -8737,6 +8737,13 @@ type Query {
   drawerState(yardId: ID!): DrawerState
   priceBoardGrid(priceListId: ID!): PriceBoardGrid
   searchSellers(q: String!, limit: Int): [SellerSearchResult!]!
+  accountOffers(accountSlug: String!): [AccountOfferView!]!
+  accountSalesOrders(accountSlug: String!): [BuyerOrder!]!
+  accountSalesOrder(accountSlug: String!, id: ID!): BuyerOrder
+  accountClaims(accountSlug: String!): [AccountClaimView!]!
+  accountPurchaseReport(accountSlug: String!, year: Int!): PurchaseReport
+  accountNonprofit(accountSlug: String!): NonprofitAccountView
+  accountDonations(accountSlug: String!, campaignId: ID, take: Int, skip: Int): NonprofitDonationPage
   accountOverview(accountSlug: String!): AccountOverview
   accountPrices(accountSlug: String!): AccountPrices
   accountTickets(accountSlug: String!, siteId: ID, materialId: ID, from: String, to: String, take: Int, skip: Int): AccountTicketPage
@@ -9588,6 +9595,191 @@ type SellerSearchResult {
   plates: [String!]!
   lastTicketAt: DateTime
   ticketCount: Int!
+}
+
+type AccountOfferView {
+  id: ID!
+  status: String!
+  listingId: ID
+  listingTitle: String
+  materialName: String
+  yardName: String
+  weight: String
+  unit: String!
+  unitPrice: String
+  pickupFrom: DateTime
+  pickupTo: DateTime
+  message: String
+  counterUnitPrice: String
+  counterWeight: String
+  counterMessage: String
+  decisionReason: String
+  expiresAt: DateTime
+  salesOrderId: ID
+  contactName: String
+  createdAt: DateTime!
+  canAcceptCounter: Boolean!
+  canWithdraw: Boolean!
+}
+
+type BuyerOrderLine {
+  id: ID!
+  materialName: String!
+  weight: String
+  unit: String!
+  unitPrice: String
+  shippedWeight: String
+  tolerancePercent: String
+}
+
+type BuyerShipmentUnit {
+  tagNumber: String!
+  form: String!
+  weight: String
+}
+
+type BuyerGatePass {
+  shipmentId: ID!
+  bolNumber: String
+  sealNumber: String
+  truckPlate: String
+  releasedAt: DateTime
+}
+
+type BuyerShipmentInvoice {
+  id: ID!
+  number: Int
+  status: String!
+  totalCents: Int!
+  paidCents: Int!
+}
+
+type BuyerShipment {
+  id: ID!
+  number: Int
+  status: String!
+  carrier: String
+  driverName: String
+  truckPlate: String
+  trailerNumber: String
+  sealNumber: String
+  bolNumber: String
+  scheduledFor: DateTime
+  shippedWeight: String
+  receivedWeight: String
+  receivedGradeNote: String
+  freightCents: Int!
+  releasedAt: DateTime
+  deliveredAt: DateTime
+  units: [BuyerShipmentUnit!]!
+  gatePass: BuyerGatePass
+  invoice: BuyerShipmentInvoice
+  canClaim: Boolean!
+}
+
+type BuyerOrder {
+  id: ID!
+  number: Int
+  status: String!
+  yardName: String
+  buyerReference: String
+  shipTo: String
+  terms: String
+  paymentTerms: String!
+  netDays: Int
+  weightBasis: String!
+  shipWindowStart: DateTime
+  shipWindowEnd: DateTime
+  cancelReason: String
+  createdAt: DateTime!
+  orderedWeight: String!
+  shippedWeight: String!
+  valueCents: Int!
+  lines: [BuyerOrderLine!]!
+  shipments: [BuyerShipment!]!
+}
+
+type AccountClaimView {
+  id: ID!
+  status: String!
+  kind: String!
+  description: String!
+  claimedCents: Int!
+  creditCents: Int!
+  decisionReason: String
+  decidedAt: DateTime
+  photoCount: Int!
+  shipmentId: ID
+  shipmentNumber: Int
+  orderId: ID
+  orderNumber: Int
+  openedByName: String
+  createdAt: DateTime!
+  canWithdraw: Boolean!
+}
+
+type PurchaseReportRow {
+  month: String!
+  materialName: String!
+  weight: String!
+  valueCents: Int!
+}
+
+type PurchaseReport {
+  year: Int!
+  weightUnit: String!
+  currencyCode: String!
+  rows: [PurchaseReportRow!]!
+}
+
+type NonprofitCampaignView {
+  id: ID!
+  name: String!
+  slug: String!
+  description: String
+  status: String!
+  isPublic: Boolean!
+  startsOn: DateTime
+  endsOn: DateTime
+  goalWeight: String
+  goalCents: Int
+  raisedCents: Int!
+  raisedWeight: String
+  donationCount: Int!
+}
+
+type NonprofitAccountView {
+  accountId: ID!
+  slug: String!
+  name: String!
+  legalName: String
+  ein: String
+  summary: String
+  website: String
+  logoId: String
+  isPublic: Boolean!
+  canEdit: Boolean!
+  raisedCents: Int!
+  awaitingDisbursementCents: Int!
+  campaigns: [NonprofitCampaignView!]!
+}
+
+type NonprofitDonationRow {
+  id: ID!
+  date: DateTime
+  kind: String!
+  status: String!
+  amountCents: Int!
+  weight: String
+  campaignName: String
+  receiptNumber: String
+  donorName: String
+  disbursed: Boolean!
+}
+
+type NonprofitDonationPage {
+  count: Int!
+  items: [NonprofitDonationRow!]!
 }
 
 type AccountSummary {

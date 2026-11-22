@@ -103,3 +103,21 @@ Reads only; every change goes through the existing commands. Each checks a role 
 | Drawer | `drawerState(yardId)` → per drawer: open/counting session (expected, totals by kind, last 25 events, `isMine`) or the last close; `pendingApproval` | canPaySellers, canManageCashDrawers, canManageFinance | Actions: openDrawerSession, moveDrawerCash, countDrawer, recountDrawer, approveDrawerClose |
 | Price board grid | `priceBoardGrid(priceListId)` → every active material with current price, high, unit, public flag, previous price, change, scheduled price | canManagePricing, canManageTickets, canManageMaterials | Publish with `publishPrices(priceListId, entries, effectiveFrom)` |
 | Seller search | `searchSellers(q, limit)` matches name tokens, ID number (normalised), phone digits (4+), plate (on vehicles and past tickets); `matchedOn` says why | canManageTickets, canManageSellers, canManageCompliance, canPaySellers | Returns only the last 4 of the ID number |
+
+## §8.4 Buyer and §8.5 Nonprofit — `features/keystone/commands/storefront-buyer.ts`
+
+Every read takes `accountSlug` and proves an active contact (`requireContact`); another company's slug answers NOT_FOUND. A non-buyer account gets FORBIDDEN on buyer reads, and a non-nonprofit account gets FORBIDDEN on nonprofit reads.
+
+| # | Operation | Notes |
+|---|---|---|
+| B1 | `marketListings`, `marketListing` | existing (§8.1) |
+| B2 | `submitOffer(listingId, accountId, weight, unitPrice, pickupFrom, pickupTo, message, buyNow, idempotencyKey)` | existing. **Difference:** there is no separate `buyNow` mutation. Pass `buyNow: true`, which accepts at the asking price and creates the confirmed order |
+| B3 | `accountOffers(accountSlug)`; `respondToOffer(offerId, response: accept\|decline\|withdraw)` | **Difference:** one `respondToOffer` instead of `respondToCounter` and `withdrawOffer`. `canAcceptCounter` and `canWithdraw` say which buttons to show. Drivers are refused |
+| B4, B5 | `accountSalesOrders(accountSlug)`, `accountSalesOrder(accountSlug, id)` | Lines show ordered against shipped weight. Shipments show carrier, BOL, seal, weights, units/tags and invoice. `gatePass` is null until the yard releases the load. `canClaim` is true once delivered |
+| B6 | `accountInvoices`, `accountInvoice`, `payInvoiceByCard` | existing (§8.3) |
+| B7 | `fileClaim(shipmentId, kind, description, claimedCents, photos)`, `accountClaims(accountSlug)`, `withdrawClaim(claimId)` | **Difference:** named `fileClaim` rather than `openClaim`. `kind` is one of short_weight, contamination, wrong_grade, damage, other |
+| B8 | `accountPurchaseReport(accountSlug, year)` | Material lines of sale invoices for released loads, by month (from `releasedAt`) and material. Admin and billing roles only |
+| N1 | `accountNonprofit(accountSlug)` (read), `updateNonprofitProfile(accountId, nonprofitSummary, nonprofitWebsite, isPublicNonprofit)` | The website must start with https://. Only an admin may edit (`canEdit`). The read also returns the campaigns with progress |
+| N2 | `upsertCampaign(accountId, campaignId, name, description, goalWeight, goalCents, startsOn, endsOn, isPublic, status)`, `endCampaign(campaignId)` | existing. Admin or member |
+| N3 | `accountDonations(accountSlug, campaignId, take, skip)` | Credited and disbursed donations only. `donorName` ("Ruth A.") appears only when the donor agreed (`showDonorName`) |
+| N4 | `accountSettlements(accountSlug)` | existing (§8.3) |

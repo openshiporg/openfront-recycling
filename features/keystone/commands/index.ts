@@ -10,6 +10,7 @@ import { publicQueryDefs, publicResolvers, publicTypeDefs } from './storefront-p
 import { onboardingMutationDefs, onboardingResolvers, onboardingTypeDefs } from './onboarding'
 import { pricingMutationDefs, pricingResolvers, pricingTypeDefs } from './pricing'
 import { staffBoardQueryDefs, staffBoardResolvers, staffBoardTypeDefs } from './staff-boards'
+import { buyerQueryDefs, buyerResolvers, buyerTypeDefs } from './storefront-buyer'
 import { portalQueryDefs, portalResolvers, portalTypeDefs } from './storefront-account'
 import { sellerMutationDefs, sellerQueryDefs, sellerResolvers, sellerTypeDefs } from './storefront-seller'
 
@@ -28,6 +29,7 @@ export const commandModules: CommandModule[] = [
   { typeDefs: pricingTypeDefs, mutationDefs: pricingMutationDefs, resolvers: pricingResolvers },
   { typeDefs: onboardingTypeDefs, mutationDefs: onboardingMutationDefs, resolvers: onboardingResolvers },
   { typeDefs: staffBoardTypeDefs, queryDefs: staffBoardQueryDefs, resolvers: staffBoardResolvers },
+  { typeDefs: buyerTypeDefs, queryDefs: buyerQueryDefs, resolvers: buyerResolvers },
   { typeDefs: portalTypeDefs, queryDefs: portalQueryDefs, resolvers: portalResolvers },
   { typeDefs: sellerTypeDefs, queryDefs: sellerQueryDefs, mutationDefs: sellerMutationDefs, resolvers: sellerResolvers },
 ]
