@@ -1,5 +1,5 @@
 import { Decimal } from 'decimal.js'
-import { CommandError, refuse } from '../lib/command'
+import { CommandError, refuse, runCommand, type CommandCtx } from '../lib/command'
 import { businessSettings } from '../lib/domain'
 import { formatTicketNumber } from '../models/tickets'
 import { ticketReceipt } from './storefront-public'
@@ -218,7 +218,94 @@ export async function accountDiversionReport(prisma: any, session: any, slug: st
   }
 }
 
+// --- C12 documents ---
+const DOC_KINDS = ['w9', 'licence', 'insurance', 'contract', 'certificate', 'other']
+
+/** Documents the yard shares with the company (visibleToAccount), newest first. Files are private; the URL is served only to the account's contacts. */
+export async function accountDocuments(c: any, session: any, slug: string, kind?: string | null) {
+  const prisma = db(c)
+  const { account } = await requireContact(prisma, session, slug)
+  const where: any = { accountId: account.id, visibleToAccount: true }
+  if (kind) {
+    if (!DOC_KINDS.includes(kind)) refuse('Choose a document kind.')
+    where.kind = kind
+  }
+  const rows = await prisma.accountDocument.findMany({ where, include: { ticket: { include: { yard: { select: { code: true } } } } }, orderBy: [{ createdAt: 'desc' }], take: 200 })
+  const files = rows.some((d: any) => d.file_filename)
+    ? await c.sudo().query.AccountDocument.findMany({ where: { id: { in: rows.filter((d: any) => d.file_filename).map((d: any) => d.id) } }, query: 'id file { url filename filesize }' })
+    : []
+  const fileOf = new Map(files.map((f: any) => [f.id, f.file]))
+  const pending = await prisma.scaleTicket.findMany({ where: { accountId: account.id, certificateRequested: true, status: { in: ['completed', 'settled'] } }, include: { yard: { select: { code: true } } }, orderBy: [{ completedAt: 'desc' }], take: 100 })
+  const issued = new Set(rows.filter((d: any) => d.kind === 'certificate' && d.ticketId).map((d: any) => d.ticketId))
+  return {
+    documents: rows.map((d: any) => {
+      const f: any = fileOf.get(d.id)
+      return {
+        id: d.id, kind: d.kind, title: d.title, body: d.body || null, createdAt: d.createdAt,
+        fileName: f?.filename || null, fileSize: f?.filesize ?? null, fileUrl: f?.url || null,
+        ticketId: d.ticketId || null, ticketNumber: d.ticket ? formatTicketNumber(d.ticket.yard.code, d.ticket.direction, d.ticket.number) : null,
+      }
+    }),
+    certificatesRequested: pending.filter((t: any) => !issued.has(t.id)).map((t: any) => ({ ticketId: t.id, ticketNumber: formatTicketNumber(t.yard.code, t.direction, t.number), completedAt: t.completedAt })),
+  }
+}
+
+/** C12 request: a contact asks for a certificate of recycling or destruction for one of the account's tickets. Staff issue it as an AccountDocument (kind certificate). */
+export async function requestTicketCertificateTx(ctx: CommandCtx, input: { accountSlug: string; ticketId: string }) {
+  const { account } = await requireContact(ctx.tx, ctx.session, input.accountSlug, ['admin', 'member'])
+  const t = await ctx.tx.scaleTicket.findUnique({ where: { id: input.ticketId } })
+  if (!t || t.accountId !== account.id) notFound('Ticket')
+  if (!['completed', 'settled'].includes(t.status)) refuse('A certificate is issued once the ticket is complete.')
+  if (!t.certificateRequested) {
+    await ctx.tx.scaleTicket.update({ where: { id: t.id }, data: { certificateRequested: true } })
+    await ctx.audit({ eventType: 'ticket.certificate_requested', aggregateType: 'ScaleTicket', aggregateId: t.id, yardId: t.yardId })
+  }
+  return { ticketId: t.id, certificateRequested: true }
+}
+
+// --- C13 team ---
+const CONTACT_ROLES = ['admin', 'member', 'billing', 'driver']
+
+/** Everyone on the account. Any contact sees the team; only admins see pending invites and may change roles (updateAccountContact). */
+export async function accountTeam(prisma: any, session: any, slug: string) {
+  const { account, contact: me } = await requireContact(prisma, session, slug, CONTACT_ROLES)
+  const isAdmin = me.role === 'admin'
+  const rows = await prisma.accountContact.findMany({ where: { accountId: account.id, status: { in: isAdmin ? ['active', 'invited'] : ['active'] } }, include: { user: { select: { name: true, email: true, phone: true } } }, orderBy: [{ status: 'asc' }, { createdAt: 'asc' }] })
+  return {
+    canManage: isAdmin, myContactId: me.id,
+    members: rows.map((r: any) => ({
+      id: r.id, role: r.role, status: r.status, isMe: r.id === me.id, since: r.createdAt,
+      name: r.user?.name || null, email: r.user?.email || r.inviteEmail || null, phone: isAdmin ? r.user?.phone || null : null,
+    })),
+  }
+}
+
+// --- C14 vehicles ---
+/** The account's trucks and their stored tares (read only; the yard records tares at the scale). */
+export async function accountVehicles(prisma: any, session: any, slug: string, now = new Date()) {
+  const { account } = await requireContact(prisma, session, slug)
+  const rows = await prisma.vehicle.findMany({ where: { accountId: account.id, isRemoved: false }, orderBy: [{ plate: 'asc' }] })
+  const last = rows.length ? await prisma.scaleTicket.groupBy({ by: ['vehicleId'], where: { accountId: account.id, vehicleId: { in: rows.map((v: any) => v.id) }, status: { in: ['completed', 'settled'] } }, _max: { completedAt: true }, _count: true }) : []
+  const byVehicle = new Map(last.map((g: any) => [g.vehicleId, g]))
+  return rows.map((v: any) => {
+    const g: any = byVehicle.get(v.id)
+    const tareExpired = Boolean(v.storedTareExpiresOn && new Date(v.storedTareExpiresOn) < now)
+    return {
+      id: v.id, plate: v.plate, plateRegion: v.plateRegion || null, make: v.make || null, model: v.model || null, color: v.color || null, kind: v.kind,
+      storedTare: v.storedTare === null || v.storedTare === undefined ? null : String(v.storedTare), storedTareExpiresOn: v.storedTareExpiresOn || null, tareExpired,
+      lastTicketAt: g?._max?.completedAt || null, ticketCount: g?._count ?? 0,
+    }
+  })
+}
+
 export const portalTypeDefs = `
+  type AccountDocumentView { id: ID!, kind: String!, title: String!, body: String, createdAt: DateTime, fileName: String, fileSize: Int, fileUrl: String, ticketId: ID, ticketNumber: String }
+  type CertificateRequestView { ticketId: ID!, ticketNumber: String!, completedAt: DateTime }
+  type AccountDocuments { documents: [AccountDocumentView!]!, certificatesRequested: [CertificateRequestView!]! }
+  type CertificateRequestResult { ticketId: ID!, certificateRequested: Boolean! }
+  type AccountTeamMember { id: ID!, role: String!, status: String!, isMe: Boolean!, since: DateTime, name: String, email: String, phone: String }
+  type AccountTeam { canManage: Boolean!, myContactId: ID!, members: [AccountTeamMember!]! }
+  type AccountVehicleView { id: ID!, plate: String!, plateRegion: String, make: String, model: String, color: String, kind: String!, storedTare: String, storedTareExpiresOn: DateTime, tareExpired: Boolean!, lastTicketAt: DateTime, ticketCount: Int! }
   type AccountSummary { id: ID!, slug: String!, name: String!, accountNumber: String, status: String!, paymentTerms: String!, hasCredit: Boolean!, settlementCycle: String }
   type AccountOverview { account: AccountSummary!, role: String!, monthWeight: String!, monthValueCents: Int!, openRequests: Int!, containersOnSite: Int!, unsettledCents: Int!, openInvoiceCents: Int!, currencyCode: String!, weightUnit: String! }
   type AccountPrice { materialId: ID!, materialName: String!, materialSlug: String!, categoryName: String, unit: String!, unitPrice: String!, unitPriceHigh: String, effectiveFrom: DateTime!, effectiveTo: DateTime, direction: String! }
@@ -254,6 +341,13 @@ export const portalQueryDefs = `
   accountInvoices(accountSlug: String!): [AccountInvoiceView!]!
   accountInvoice(accountSlug: String!, id: ID!): AccountInvoiceView
   accountDiversionReport(accountSlug: String!, year: Int!): DiversionReport
+  accountDocuments(accountSlug: String!, kind: String): AccountDocuments
+  accountTeam(accountSlug: String!): AccountTeam
+  accountVehicles(accountSlug: String!): [AccountVehicleView!]!
+`
+
+export const portalMutationDefs = `
+  requestTicketCertificate(accountSlug: String!, ticketId: ID!): CertificateRequestResult
 `
 
 export const portalResolvers = {
@@ -271,5 +365,11 @@ export const portalResolvers = {
     accountInvoices: (_: unknown, a: any, c: any) => accountInvoices(db(c), c.session, a.accountSlug),
     accountInvoice: (_: unknown, a: any, c: any) => accountInvoice(db(c), c.session, a.accountSlug, a.id),
     accountDiversionReport: (_: unknown, a: any, c: any) => accountDiversionReport(db(c), c.session, a.accountSlug, a.year),
+    accountDocuments: (_: unknown, a: any, c: any) => accountDocuments(c, c.session, a.accountSlug, a.kind),
+    accountTeam: (_: unknown, a: any, c: any) => accountTeam(db(c), c.session, a.accountSlug),
+    accountVehicles: (_: unknown, a: any, c: any) => accountVehicles(db(c), c.session, a.accountSlug),
+  },
+  Mutation: {
+    requestTicketCertificate: (_: unknown, a: any, c: any) => runCommand(c, { name: 'requestTicketCertificate', input: a, requireSignIn: true }, (ctx) => requestTicketCertificateTx(ctx, a)),
   },
 }

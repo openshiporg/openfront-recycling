@@ -183,6 +183,8 @@ export const AccountApplication = list({
 
 // §6.4 AccountDocument
 export const AccountDocument = list({
+  // The portal read `accountDocuments` (C12) uses the plain name; the staff list query is accountDocumentItems.
+  graphql: { plural: 'AccountDocumentItems' },
   access: staffList({ create: anyOf('canManageAccounts', 'canManageFinance'), update: anyOf('canManageAccounts', 'canManageFinance'), delete: accountStaff }),
   fields: {
     account: relationship({ ref: 'Account.documents' }),

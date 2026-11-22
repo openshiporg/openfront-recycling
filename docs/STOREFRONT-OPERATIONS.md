@@ -81,6 +81,10 @@ Shapes match `features/storefront/lib/data/company.ts` exactly; every storefront
 | C9 | `accountCharges(unsettledOnly)` | **Schema change:** the generated AccountCharge list is renamed (`accountChargeItems`, `AccountChargeItems*`) so this name is the portal's. Dashboard uses list metadata, so nothing else changes. |
 | C10 | `accountInvoices`, `accountInvoice(id)` | Excludes void. Payments list succeeded/reversed only. Pay with `payInvoiceByCard`. |
 | C11 | `accountDiversionReport(year)` | Rows by `YYYY-MM` × material; CSV is built in the storefront. |
+| C4 write | `upsertAccountSite(accountId, siteId?, name, addressLine1, city, …)` | Exists (accounts.ts). Admin or member contact, or staff with `canManageAccounts`. Takes `accountId` (from `accountOverview.account.id`), not the slug. |
+| C12 | `accountDocuments(kind)` → `{ documents [{ id kind title body createdAt fileName fileSize fileUrl ticketId ticketNumber }], certificatesRequested [{ ticketId ticketNumber completedAt }] }`; `requestTicketCertificate(accountSlug, ticketId)` → `{ ticketId certificateRequested }` | Only `visibleToAccount` documents, newest first, max 200. `fileUrl` is the private route (`/api/private-files/private-files/…` on disk, a 5-minute signed URL on S3); the route serves it to the account's contacts only. `kind` filter: w9, licence, insurance, contract, certificate, other. Request: admin or member; the ticket must be completed or settled and the account's own; asking twice is a no-op. A request leaves `certificatesRequested` once staff add a `certificate` document linked to that ticket. **Schema change:** the AccountDocument list's plural is now `AccountDocumentItems` (`accountDocumentItems` query), freeing `accountDocuments` for the portal, as with C9. |
+| C13 | `accountTeam` → `{ canManage myContactId members [{ id role status isMe since name email phone }] }` | Any contact sees active members. Admins (`canManage`) also see pending invites (`status: invited`, `email` = invite email) and phones. Invite with `inviteAccountContact(accountId, email, role)`; change role or remove with `updateAccountContact(contactId, role?, remove?)` (admin only; the last admin cannot be demoted or removed). |
+| C14 | `accountVehicles` → `[{ id plate plateRegion make model color kind storedTare storedTareExpiresOn tareExpired lastTicketAt ticketCount }]` | Read only; removed vehicles are hidden. `storedTare` is a decimal string in the business weight unit. `ticketCount`/`lastTicketAt` count completed and settled tickets. |
 
 ## §11 Onboarding — `features/keystone/commands/onboarding.ts`, `features/recycling/templates.ts`
 
@@ -90,7 +94,16 @@ Shapes match `features/storefront/lib/data/company.ts` exactly; every storefront
 - Several yards in one run: `additionalYards` (each gets the same rules, its own board with the same starting prices, its scales and a cash drawer; `acceptsPublic: false` hides a commercial-only yard from walk-in pages).
 - **App database `scratch_openfront_recycling` (reset 2026-11-22, then onboarded from `onboarding/riverside-metals.json`):** Riverside Metals, (614) 555-0142, Ohio rules. Yards: `riverside-metals-east` (1840 Joyce Ave, Columbus; truck and floor scale), `riverside-metals-west` (3400 Valleyview Dr, Columbus; floor scale), `riverside-metals-groveport` (5225 Rohr Rd, Groveport; commercial only). 44 materials; each board shows 43 public prices (converters are priced at the counter). One staff owner and one customer; their passwords are kept outside the repo.
 - **Integration tests never touch the app database.** `npm run test:integration` creates and migrates `<app db>_tests` (or `TEST_DATABASE_URL`) and runs the files one at a time there. `tests/db-guard.ts` makes every integration file refuse a database whose name does not end in `_tests`.
-- Not yet: the "starter book" (sellers, accounts, tickets) from §11.
+- **Starter book** (`node --import tsx scripts/starter-book.ts`): adds to an onboarded database through the real commands, and is safe to run again. It needs the owner, a Scale operator and a Cashier at the first yard.
+  - **People:** 10 counter sellers, each with an Ohio licence image, a vehicle and photos.
+  - **Accounts:** Kessler Tool & Die (on account with credit, 2 sites) and Buckeye HVAC Services (pay at scale, 1 site). Each was submitted by its own contact and approved by the owner. Also Mahoning Valley Steel (a buyer mill) and Hilltop Youth Robotics (a nonprofit with the campaign "Cans for the state finals").
+  - **Tickets:** 31 over 14 days. Most payouts are paid by check, cash (with a drawer open, then counted and closed) or transfer. Others: 2 ready, 1 converter held for 3 days, 1 police hold, 1 fee ticket (open invoice), 2 donations, 3 on-account tickets, 1 void and 1 still open.
+  - **Settlement:** Kessler's first week, approved and paid by check.
+  - **Market:** 2 listings (`draftListing`). One has an open offer; the other was bought outright, has a shipment loaded on an outbound ticket, and has its invoice.
+  - **Service:** a delivered roll-off at Kessler (driver Ray Dominguez), a pickup request for it, and a lugger box request from Buckeye.
+  - **Logins:** new ones are appended to the logins file outside the repo.
+  - **Dates:** spread over 14 days after the commands run. Append-only rows (audit, weigh, drawer and inventory movements) keep their real time.
+- `draftListing(yardId, materialId, title, estimatedWeight, askUnitPrice?, unit?, form?, allowOffers?, buyNow?, minimumWeight?, terms?, closesAt?, unitIds?)` (needs `canManageSales`, yard access) creates a draft listing. Open it with `setListingStatus`.
 
 ## §9 Staff reads for the dashboard — `features/keystone/commands/staff-boards.ts`
 

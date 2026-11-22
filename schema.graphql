@@ -8104,11 +8104,11 @@ type Mutation {
   deleteAccountApplication(where: AccountApplicationWhereUniqueInput!): AccountApplication
   deleteAccountApplications(where: [AccountApplicationWhereUniqueInput!]!): [AccountApplication]
   createAccountDocument(data: AccountDocumentCreateInput!): AccountDocument
-  createAccountDocuments(data: [AccountDocumentCreateInput!]!): [AccountDocument]
+  createAccountDocumentItems(data: [AccountDocumentCreateInput!]!): [AccountDocument]
   updateAccountDocument(where: AccountDocumentWhereUniqueInput!, data: AccountDocumentUpdateInput!): AccountDocument
-  updateAccountDocuments(data: [AccountDocumentUpdateArgs!]!): [AccountDocument]
+  updateAccountDocumentItems(data: [AccountDocumentUpdateArgs!]!): [AccountDocument]
   deleteAccountDocument(where: AccountDocumentWhereUniqueInput!): AccountDocument
-  deleteAccountDocuments(where: [AccountDocumentWhereUniqueInput!]!): [AccountDocument]
+  deleteAccountDocumentItems(where: [AccountDocumentWhereUniqueInput!]!): [AccountDocument]
   createServiceSite(data: ServiceSiteCreateInput!): ServiceSite
   createServiceSites(data: [ServiceSiteCreateInput!]!): [ServiceSite]
   updateServiceSite(where: ServiceSiteWhereUniqueInput!, data: ServiceSiteUpdateInput!): ServiceSite
@@ -8480,6 +8480,7 @@ type Mutation {
   endCampaign(campaignId: ID!): DonationCampaign
   publishPrices(priceListId: ID!, entries: [PublishPriceInput!]!, effectiveFrom: String, idempotencyKey: String): PublishPricesResult
   runOnboarding(data: RunOnboardingInput!, idempotencyKey: String): OnboardingResult
+  requestTicketCertificate(accountSlug: String!, ticketId: ID!): CertificateRequestResult
   registerCustomer(name: String!, email: String!, phone: String, password: String!): RegisteredCustomer
   upsertMySellerProfile(data: MySellerProfileInput!): MySeller
   submitMyIdentityDocument(data: MyIdentityDocumentInput!): MyIdentityDocument
@@ -8570,8 +8571,8 @@ type Query {
   accountApplications(where: AccountApplicationWhereInput! = {}, orderBy: [AccountApplicationOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: AccountApplicationWhereUniqueInput): [AccountApplication!]
   accountApplicationsCount(where: AccountApplicationWhereInput! = {}): Int
   accountDocument(where: AccountDocumentWhereUniqueInput!): AccountDocument
-  accountDocuments(where: AccountDocumentWhereInput! = {}, orderBy: [AccountDocumentOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: AccountDocumentWhereUniqueInput): [AccountDocument!]
-  accountDocumentsCount(where: AccountDocumentWhereInput! = {}): Int
+  accountDocumentItems(where: AccountDocumentWhereInput! = {}, orderBy: [AccountDocumentOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: AccountDocumentWhereUniqueInput): [AccountDocument!]
+  accountDocumentItemsCount(where: AccountDocumentWhereInput! = {}): Int
   serviceSite(where: ServiceSiteWhereUniqueInput!): ServiceSite
   serviceSites(where: ServiceSiteWhereInput! = {}, orderBy: [ServiceSiteOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ServiceSiteWhereUniqueInput): [ServiceSite!]
   serviceSitesCount(where: ServiceSiteWhereInput! = {}): Int
@@ -8759,6 +8760,9 @@ type Query {
   accountInvoices(accountSlug: String!): [AccountInvoiceView!]!
   accountInvoice(accountSlug: String!, id: ID!): AccountInvoiceView
   accountDiversionReport(accountSlug: String!, year: Int!): DiversionReport
+  accountDocuments(accountSlug: String!, kind: String): AccountDocuments
+  accountTeam(accountSlug: String!): AccountTeam
+  accountVehicles(accountSlug: String!): [AccountVehicleView!]!
   mySellerOverview: MySellerOverview
   myIdentityStatus: MyIdentityStatus
   myVehicles: [MyVehicle!]!
@@ -9796,6 +9800,67 @@ type NonprofitDonationRow {
 type NonprofitDonationPage {
   count: Int!
   items: [NonprofitDonationRow!]!
+}
+
+type AccountDocumentView {
+  id: ID!
+  kind: String!
+  title: String!
+  body: String
+  createdAt: DateTime
+  fileName: String
+  fileSize: Int
+  fileUrl: String
+  ticketId: ID
+  ticketNumber: String
+}
+
+type CertificateRequestView {
+  ticketId: ID!
+  ticketNumber: String!
+  completedAt: DateTime
+}
+
+type AccountDocuments {
+  documents: [AccountDocumentView!]!
+  certificatesRequested: [CertificateRequestView!]!
+}
+
+type CertificateRequestResult {
+  ticketId: ID!
+  certificateRequested: Boolean!
+}
+
+type AccountTeamMember {
+  id: ID!
+  role: String!
+  status: String!
+  isMe: Boolean!
+  since: DateTime
+  name: String
+  email: String
+  phone: String
+}
+
+type AccountTeam {
+  canManage: Boolean!
+  myContactId: ID!
+  members: [AccountTeamMember!]!
+}
+
+type AccountVehicleView {
+  id: ID!
+  plate: String!
+  plateRegion: String
+  make: String
+  model: String
+  color: String
+  kind: String!
+  storedTare: String
+  storedTareExpiresOn: DateTime
+  tareExpired: Boolean!
+  lastTicketAt: DateTime
+  ticketCount: Int!
 }
 
 type AccountSummary {
