@@ -103,6 +103,7 @@ Reads only; every change goes through the existing commands. Each checks a role 
 | Drawer | `drawerState(yardId)` → per drawer: open/counting session (expected, totals by kind, last 25 events, `isMine`) or the last close; `pendingApproval` | canPaySellers, canManageCashDrawers, canManageFinance | Actions: openDrawerSession, moveDrawerCash, countDrawer, recountDrawer, approveDrawerClose |
 | Price board grid | `priceBoardGrid(priceListId)` → every active material with current price, high, unit, public flag, previous price, change, scheduled price | canManagePricing, canManageTickets, canManageMaterials | Publish with `publishPrices(priceListId, entries, effectiveFrom)` |
 | Seller search | `searchSellers(q, limit)` matches name tokens, ID number (normalised), phone digits (4+), plate (on vehicles and past tickets); `matchedOn` says why | canManageTickets, canManageSellers, canManageCompliance, canPaySellers | Returns only the last 4 of the ID number |
+| Collect for fee tickets | `collectQueue(yardId)`: open and partially_paid `fee_ticket` invoices for tickets at the yard, oldest first, with ticket number, seller/account, total, paid and balance. Take payment with `recordInvoicePayment(invoiceId, method, amountCents, drawerSessionId \| reference, idempotencyKey)` | canPaySellers, canManageCashDrawers, canManageFinance + yard | Cashiers cannot read the Invoice list itself; this is their view of what to collect |
 
 ## §8.4 Buyer and §8.5 Nonprofit — `features/keystone/commands/storefront-buyer.ts`
 

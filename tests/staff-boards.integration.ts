@@ -77,6 +77,25 @@ test('scale-house board, drawer, price grid and seller search follow real record
   await assert.rejects(gql(outsider, `query($y: ID!) { drawerState(yardId: $y) { yardId } }`, { y: yard.id }), /yard/)
   await assert.rejects(gql(outsider, `query($l: ID!) { priceBoardGrid(priceListId: $l) { name } }`, { l: list.id }), /yard/)
   await assert.rejects(gql(keystoneContext, `query { searchSellers(q: "okafor") { id } }`), /Staff only/)
+
+  // Collect queue: open and part-paid fee tickets at this yard, oldest first; paid, void, sale and other-yard invoices stay out.
+  const feeTicket = async (yardId: string, n: number) => prisma.scaleTicket.create({ data: { yardId, number: 9000 + n, direction: 'inbound', status: 'completed', sellerId: seller.id, totalCents: -2500, completedAt: new Date() } })
+  const inv = async (ticketId: string, data: any, ago: number) => prisma.invoice.create({ data: { number: Math.floor(Math.random() * 1e9), sellerId: seller.id, ticketId, kind: 'fee_ticket', status: 'open', subtotalCents: 2500, totalCents: 2500, createdAt: new Date(Date.now() - ago * 60_000), ...data } })
+  const [f1, f2, f3, f4, f5] = await Promise.all([1, 2, 3, 4].map((n) => feeTicket(yard.id, n)).concat([feeTicket(other.id, 5)]))
+  const newer = await inv(f1.id, {}, 5)
+  const older = await inv(f2.id, { status: 'partially_paid', paidCents: 1000 }, 30)
+  await inv(f3.id, { status: 'paid', paidCents: 2500 }, 60)
+  await inv(f4.id, { status: 'void' }, 60)
+  await inv(f4.id, { kind: 'sale' }, 60)
+  await inv(f5.id, {}, 90)
+  const cashier = await staff({ canAccessDashboard: true, canPaySellers: true, canManageCashDrawers: true }, [yard.id])
+  const queue = (await gql(cashier, `query($y: ID!) { collectQueue(yardId: $y) { invoiceId ticketId ticketNumber sellerName totalCents paidCents balanceCents } }`, { y: yard.id })).collectQueue
+  assert.deepEqual(queue.map((q: any) => [q.invoiceId, q.ticketId, q.paidCents, q.balanceCents]), [[older.id, f2.id, 1000, 1500], [newer.id, f1.id, 0, 2500]])
+  assert.equal(queue[0].ticketNumber, `${code}-I-009002`)
+  assert.equal(queue[0].sellerName, `Lorraine Okafor${run}`)
+  await assert.rejects(gql(outsider, `query($y: ID!) { collectQueue(yardId: $y) { invoiceId } }`, { y: yard.id }), /yard/)
+  const grader = await staff({ canAccessDashboard: true, canGradeTickets: true }, [yard.id])
+  await assert.rejects(gql(grader, `query($y: ID!) { collectQueue(yardId: $y) { invoiceId } }`, { y: yard.id }), /cannot see/)
 })
 
 test.after(async () => { await prisma.$disconnect() })

@@ -188,6 +188,26 @@ export async function searchSellers(prisma: any, q: string, limit = 25) {
     .sort((a: any, b: any) => rank(new Set(a.matchedOn)) - rank(new Set(b.matchedOn)) || a.name.localeCompare(b.name))
 }
 
+/**
+ * Fee tickets the counter must collect (§9 "Collect for fee tickets"): open or part-paid fee_ticket
+ * invoices for tickets at the yard, oldest first. The cashier takes payment with recordInvoicePayment.
+ */
+export async function collectQueue(prisma: any, yardId: string) {
+  const yard = await prisma.yard.findUnique({ where: { id: yardId }, select: { code: true } })
+  if (!yard) throw new CommandError('Yard not found.', 'NOT_FOUND')
+  const rows = await prisma.invoice.findMany({
+    where: { kind: 'fee_ticket', status: { in: ['open', 'partially_paid'] }, ticket: { yardId } },
+    include: { ticket: { select: { id: true, direction: true, number: true } }, seller: { select: { firstName: true, lastName: true } }, account: { select: { name: true } } },
+    orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    take: 200,
+  })
+  return rows.map((i: any) => ({
+    invoiceId: i.id, number: i.number, ticketId: i.ticketId, ticketNumber: i.ticket ? formatTicketNumber(yard.code, i.ticket.direction, i.ticket.number) : null,
+    sellerName: sellerName(i.seller), accountName: i.account?.name || null,
+    totalCents: i.totalCents, paidCents: i.paidCents, balanceCents: Math.max(0, i.totalCents - i.paidCents), dueOn: i.dueOn, createdAt: i.createdAt,
+  }))
+}
+
 // ---------------------------------------------------------------------------------------------
 // GraphQL
 // ---------------------------------------------------------------------------------------------
@@ -208,6 +228,8 @@ export const staffBoardTypeDefs = `
   type PriceGridRow { materialId: ID!, materialName: String!, code: String, categoryName: String, direction: String!, defaultUnit: String!, materialIsPublic: Boolean!, unit: String!, unitPrice: String, unitPriceHigh: String, isPublic: Boolean!, effectiveFrom: DateTime, publishedByName: String, previousPrice: String, change: String, scheduledPrice: String, scheduledFrom: DateTime }
   type PriceBoardGrid { priceListId: ID!, name: String!, kind: String!, yardId: ID, yardName: String, lastPublishedAt: DateTime, rows: [PriceGridRow!]! }
 
+  type CollectCard { invoiceId: ID!, number: Int, ticketId: ID, ticketNumber: String, sellerName: String, accountName: String, totalCents: Int!, paidCents: Int!, balanceCents: Int!, dueOn: DateTime, createdAt: DateTime! }
+
   type SellerSearchResult { id: ID!, name: String!, phone: String, email: String, city: String, status: String!, idVerification: String!, matchedOn: [String!]!, idKind: String, idLast4: String, idExpiresOn: DateTime, plates: [String!]!, lastTicketAt: DateTime, ticketCount: Int! }
 `
 
@@ -216,6 +238,7 @@ export const staffBoardQueryDefs = `
   drawerState(yardId: ID!): DrawerState
   priceBoardGrid(priceListId: ID!): PriceBoardGrid
   searchSellers(q: String!, limit: Int): [SellerSearchResult!]!
+  collectQueue(yardId: ID!): [CollectCard!]!
 `
 
 export const staffBoardResolvers = {
@@ -237,6 +260,11 @@ export const staffBoardResolvers = {
       if (list.yardId) requireYard(c.session, list.yardId)
       else if (!seesAllYards(c.session) && !hasFlag(c.session, 'canManagePricing')) throw new CommandError('Your role cannot see this list.', 'FORBIDDEN')
       return priceBoardGrid(db(c), priceListId)
+    },
+    collectQueue: async (_: unknown, { yardId }: any, c: any) => {
+      staffOnly(c, 'canPaySellers', 'canManageCashDrawers', 'canManageFinance')
+      requireYard(c.session, yardId)
+      return collectQueue(db(c), yardId)
     },
     searchSellers: async (_: unknown, { q, limit }: any, c: any) => {
       staffOnly(c, 'canManageTickets', 'canManageSellers', 'canManageCompliance', 'canPaySellers')

@@ -8737,6 +8737,7 @@ type Query {
   drawerState(yardId: ID!): DrawerState
   priceBoardGrid(priceListId: ID!): PriceBoardGrid
   searchSellers(q: String!, limit: Int): [SellerSearchResult!]!
+  collectQueue(yardId: ID!): [CollectCard!]!
   accountOffers(accountSlug: String!): [AccountOfferView!]!
   accountSalesOrders(accountSlug: String!): [BuyerOrder!]!
   accountSalesOrder(accountSlug: String!, id: ID!): BuyerOrder
@@ -9578,6 +9579,20 @@ type PriceBoardGrid {
   yardName: String
   lastPublishedAt: DateTime
   rows: [PriceGridRow!]!
+}
+
+type CollectCard {
+  invoiceId: ID!
+  number: Int
+  ticketId: ID
+  ticketNumber: String
+  sellerName: String
+  accountName: String
+  totalCents: Int!
+  paidCents: Int!
+  balanceCents: Int!
+  dueOn: DateTime
+  createdAt: DateTime!
 }
 
 type SellerSearchResult {
