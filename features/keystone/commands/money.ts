@@ -619,7 +619,7 @@ export const moneyMutationDefs = `
 `
 
 export const moneyQueryDefs = `
-  payoutQueue(yardId: ID): [Payout!]
+  payoutQueue(yardId: ID, includeReturned: Boolean): [Payout!]
 `
 
 async function canSeeInvoice(context: any, invoice: any) {
@@ -671,10 +671,10 @@ export const moneyResolvers = {
     voidSettlement: (_: unknown, a: any, c: any) => runCommand(c, { name: 'voidSettlement', input: a, idempotencyKey: cleanKey(a.idempotencyKey), permission: 'canManageFinance' }, (ctx) => voidSettlementTx(ctx, a)).then((r: any) => c.db.Settlement.findOne({ where: { id: r.id } })),
   },
   Query: {
-    payoutQueue: async (_: unknown, { yardId }: any, c: any) => {
+    payoutQueue: async (_: unknown, { yardId, includeReturned }: any, c: any) => {
       if (!hasFlag(c.session, 'canPaySellers') && !hasFlag(c.session, 'canManageFinance')) throw new CommandError('Staff only.', 'FORBIDDEN')
       await refreshDuePayouts(c.sudo().prisma, new Date())
-      return c.db.Payout.findMany({ where: { status: { in: ['ready', 'held'] }, ...(yardId ? { ticket: { yard: { id: { equals: yardId } } } } : {}) }, orderBy: [{ createdAt: 'asc' }] })
+      return c.db.Payout.findMany({ where: { status: { in: includeReturned ? ['ready', 'held', 'returned'] : ['ready', 'held'] }, ...(yardId ? { ticket: { yard: { id: { equals: yardId } } } } : {}) }, orderBy: [{ createdAt: 'asc' }] })
     },
   },
 }

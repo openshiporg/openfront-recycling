@@ -8477,6 +8477,8 @@ type Mutation {
   updateNonprofitProfile(accountId: ID!, nonprofitSummary: String, nonprofitWebsite: String, isPublicNonprofit: Boolean): Account
   upsertCampaign(accountId: ID!, campaignId: ID, name: String!, description: String, goalWeight: String, goalCents: Int, startsOn: String, endsOn: String, isPublic: Boolean, status: String): DonationCampaign
   endCampaign(campaignId: ID!): DonationCampaign
+  publishPrices(priceListId: ID!, entries: [PublishPriceInput!]!, effectiveFrom: String, idempotencyKey: String): PublishPricesResult
+  runOnboarding(data: RunOnboardingInput!, idempotencyKey: String): OnboardingResult
   registerCustomer(name: String!, email: String!, phone: String, password: String!): RegisteredCustomer
   upsertMySellerProfile(data: MySellerProfileInput!): MySeller
   submitMyIdentityDocument(data: MyIdentityDocumentInput!): MyIdentityDocument
@@ -8715,7 +8717,7 @@ type Query {
   validateUserPasswordResetToken(email: String!, token: String!): ValidateUserPasswordResetTokenResult
   redirectToInit: Boolean
   ticketComplianceChecklist(ticketId: ID!): [ComplianceItem!]
-  payoutQueue(yardId: ID): [Payout!]
+  payoutQueue(yardId: ID, includeReturned: Boolean): [Payout!]
   releaseDueHolds(yardId: ID): Int
   theftAlertsForMaterial(materialId: ID!): [TheftAlert!]
   policeLookup(name: String, idNumber: String, plate: String, materialId: ID, from: String, to: String, yardId: ID): [ScaleTicket!]
@@ -8731,6 +8733,10 @@ type Query {
   lookupTicketReceipt(displayNumber: String, lookupCode: String, ticketNumber: String, code: String): TicketReceipt
   publicBusiness: PublicBusiness!
   myDonationReceipt(donationId: ID!): DonationReceipt
+  scaleHouseBoard(yardId: ID!): ScaleHouseBoard
+  drawerState(yardId: ID!): DrawerState
+  priceBoardGrid(priceListId: ID!): PriceBoardGrid
+  searchSellers(q: String!, limit: Int): [SellerSearchResult!]!
   accountOverview(accountSlug: String!): AccountOverview
   accountPrices(accountSlug: String!): AccountPrices
   accountTickets(accountSlug: String!, siteId: ID, materialId: ID, from: String, to: String, take: Int, skip: Int): AccountTicketPage
@@ -9367,6 +9373,221 @@ type PublicBusiness {
   weightUnit: String!
   currencyCode: String!
   marketVisibility: String!
+}
+
+input PublishPriceInput {
+  materialId: ID!
+  unit: String
+  unitPrice: String!
+  unitPriceHigh: String
+  isPublic: Boolean
+}
+
+type PublishPricesResult {
+  id: ID!
+  count: Int!
+  effectiveFrom: DateTime!
+}
+
+input OnboardingBusinessInput {
+  name: String!
+  legalName: String
+  weightUnit: String
+  currencyCode: String
+  timezone: String
+  isNonprofit: Boolean
+  ein: String
+  supportEmail: String
+  supportPhone: String
+  about: String
+}
+
+input OnboardingYardInput {
+  name: String!
+  code: String
+  acceptsPublic: Boolean
+  scaleTypes: [String!]
+  publicNotes: String
+  addressLine1: String
+  city: String
+  region: String
+  postalCode: String
+  country: String
+  phone: String
+  email: String
+  payoutMethods: [String!]
+  hours: JSON
+}
+
+input RunOnboardingInput {
+  template: String!
+  business: OnboardingBusinessInput!
+  yard: OnboardingYardInput!
+  additionalYards: [OnboardingYardInput!]
+  rulesTemplate: String
+  cardProvider: String
+}
+
+type OnboardingResult {
+  id: ID!
+  yardSlug: String!
+  yards: Int!
+  template: String!
+  materials: Int!
+  pricesPublished: Int!
+  roles: Int!
+  containers: Int!
+}
+
+type ScaleHouseVisitCard {
+  visitId: ID!
+  code: String
+  status: String!
+  sellerId: ID
+  sellerName: String
+  plannedDate: DateTime
+  vehiclePlate: String
+  expectedItems: [String!]!
+}
+
+type ScaleHouseTicketCard {
+  ticketId: ID!
+  number: String!
+  direction: String!
+  sellerId: ID
+  sellerName: String
+  accountId: ID
+  accountName: String
+  vehiclePlate: String
+  lineCount: Int!
+  totalCents: Int!
+  payWeight: String!
+  openedAt: DateTime!
+  minutesOpen: Int!
+  missing: [ComplianceItem!]!
+}
+
+type ScaleHousePayoutCard {
+  payoutId: ID!
+  ticketId: ID
+  number: String
+  sellerName: String
+  accountName: String
+  amountCents: Int!
+  status: String!
+  releaseAt: DateTime
+  allowedMethods: [String!]!
+  completedAt: DateTime
+}
+
+type ScaleHouseBoard {
+  yardId: ID!
+  yardName: String!
+  generatedAt: DateTime!
+  checkedIn: [ScaleHouseVisitCard!]!
+  weighing: [ScaleHouseTicketCard!]!
+  readyToComplete: [ScaleHouseTicketCard!]!
+  readyToPay: [ScaleHousePayoutCard!]!
+}
+
+type DrawerEventRow {
+  id: ID!
+  kind: String!
+  amountCents: Int!
+  note: String
+  payoutId: ID
+  ticketId: ID
+  createdAt: DateTime!
+}
+
+type DrawerKindTotal {
+  kind: String!
+  count: Int!
+  amountCents: Int!
+}
+
+type DrawerSessionState {
+  id: ID!
+  status: String!
+  cashierId: ID
+  cashierName: String
+  isMine: Boolean!
+  openingFloatCents: Int!
+  expectedCents: Int!
+  countedCents: Int
+  varianceCents: Int
+  openedAt: DateTime
+  totals: [DrawerKindTotal!]!
+  events: [DrawerEventRow!]!
+}
+
+type DrawerLastClose {
+  id: ID!
+  closedAt: DateTime
+  cashierName: String
+  countedCents: Int
+  varianceCents: Int
+  approvedByName: String
+}
+
+type DrawerStateRow {
+  drawerId: ID!
+  name: String!
+  session: DrawerSessionState
+  lastClosed: DrawerLastClose
+}
+
+type DrawerState {
+  yardId: ID!
+  drawers: [DrawerStateRow!]!
+  pendingApproval: Int!
+}
+
+type PriceGridRow {
+  materialId: ID!
+  materialName: String!
+  code: String
+  categoryName: String
+  direction: String!
+  defaultUnit: String!
+  materialIsPublic: Boolean!
+  unit: String!
+  unitPrice: String
+  unitPriceHigh: String
+  isPublic: Boolean!
+  effectiveFrom: DateTime
+  publishedByName: String
+  previousPrice: String
+  change: String
+  scheduledPrice: String
+  scheduledFrom: DateTime
+}
+
+type PriceBoardGrid {
+  priceListId: ID!
+  name: String!
+  kind: String!
+  yardId: ID
+  yardName: String
+  lastPublishedAt: DateTime
+  rows: [PriceGridRow!]!
+}
+
+type SellerSearchResult {
+  id: ID!
+  name: String!
+  phone: String
+  email: String
+  city: String
+  status: String!
+  idVerification: String!
+  matchedOn: [String!]!
+  idKind: String
+  idLast4: String
+  idExpiresOn: DateTime
+  plates: [String!]!
+  lastTicketAt: DateTime
+  ticketCount: Int!
 }
 
 type AccountSummary {

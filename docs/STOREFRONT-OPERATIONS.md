@@ -91,3 +91,15 @@ Shapes match `features/storefront/lib/data/company.ts` exactly; every storefront
 - **App database `scratch_openfront_recycling` (reset 2026-11-22, then onboarded from `onboarding/riverside-metals.json`):** Riverside Metals, (614) 555-0142, Ohio rules. Yards: `riverside-metals-east` (1840 Joyce Ave, Columbus; truck and floor scale), `riverside-metals-west` (3400 Valleyview Dr, Columbus; floor scale), `riverside-metals-groveport` (5225 Rohr Rd, Groveport; commercial only). 44 materials; each board shows 43 public prices (converters are priced at the counter). One staff owner and one customer; their passwords are kept outside the repo.
 - **Integration tests never touch the app database.** `npm run test:integration` creates and migrates `<app db>_tests` (or `TEST_DATABASE_URL`) and runs the files one at a time there. `tests/db-guard.ts` makes every integration file refuse a database whose name does not end in `_tests`.
 - Not yet: the "starter book" (sellers, accounts, tickets) from §11.
+
+## §9 Staff reads for the dashboard — `features/keystone/commands/staff-boards.ts`
+
+Reads only; every change goes through the existing commands. Each checks a role flag and the yard (§7.2).
+
+| Screen | Query | Flags (any) | Notes |
+|---|---|---|---|
+| Scale-house board | `scaleHouseBoard(yardId)` → `checkedIn` (today's booked/arrived visits without a ticket), `weighing` (open, no lines), `readyToComplete` (open with lines, plus `missing: [ComplianceItem]` from the real checklist), `readyToPay` (ready/held payouts) | canManageTickets, canGradeTickets, canPaySellers | "Today" is the yard's time zone |
+| Payout queue | `payoutQueue(yardId, includeReturned)` (existing; `includeReturned` is new) | canPaySellers, canManageFinance | Held payouts whose time is up become ready on read |
+| Drawer | `drawerState(yardId)` → per drawer: open/counting session (expected, totals by kind, last 25 events, `isMine`) or the last close; `pendingApproval` | canPaySellers, canManageCashDrawers, canManageFinance | Actions: openDrawerSession, moveDrawerCash, countDrawer, recountDrawer, approveDrawerClose |
+| Price board grid | `priceBoardGrid(priceListId)` → every active material with current price, high, unit, public flag, previous price, change, scheduled price | canManagePricing, canManageTickets, canManageMaterials | Publish with `publishPrices(priceListId, entries, effectiveFrom)` |
+| Seller search | `searchSellers(q, limit)` matches name tokens, ID number (normalised), phone digits (4+), plate (on vehicles and past tickets); `matchedOn` says why | canManageTickets, canManageSellers, canManageCompliance, canPaySellers | Returns only the last 4 of the ID number |
