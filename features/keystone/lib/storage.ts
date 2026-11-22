@@ -1,3 +1,4 @@
+import { mkdirSync } from 'node:fs'
 import path from 'node:path'
 import { s3ForcePathStyle } from './s3-storage'
 
@@ -34,11 +35,19 @@ function s3(type: 'image' | 'file', prefix: string, signed: boolean) {
   }
 }
 
+/** Keystone's local adapter writes into storagePath but never creates it; a fresh disk has none. */
+export function ensureLocalDir(dir: string) {
+  mkdirSync(dir, { recursive: true })
+  return dir
+}
+
 function local(type: 'image' | 'file', folder: string, route: string) {
+  const storagePath = path.join(LOCAL_UPLOAD_ROOT, folder)
+  ensureLocalDir(storagePath)
   return {
     kind: 'local' as const,
     type,
-    storagePath: path.join(LOCAL_UPLOAD_ROOT, folder),
+    storagePath,
     serverRoute: null,
     generateUrl: (file: string) => `${route}/${folder}${file}`,
     preserve: true,
