@@ -161,6 +161,22 @@ export async function getAuthenticatedUser() {
             canManageTickets
             canGradeTickets
             canPaySellers
+            canManageCashDrawers
+            canApproveVariances
+            canManagePricing
+            canManageMaterials
+            canManageSellers
+            canManageAccounts
+            canManageInventory
+            canManageSales
+            canManageDispatch
+            canDriveJobs
+            canManageCompliance
+            canManageFinance
+            canViewReports
+            canManageSettings
+            canManageStaff
+            canManageOnboarding
           }
         }
       }

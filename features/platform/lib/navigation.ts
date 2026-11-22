@@ -1,4 +1,4 @@
-import { Scale } from 'lucide-react'
+import { Banknote, Scale } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 /**
@@ -20,6 +20,13 @@ export const platformNavItems: PlatformNavItem[] = [
     description: 'Open tickets, weigh, grade, check compliance and complete.',
     icon: Scale,
     flags: ['canManageTickets', 'canGradeTickets', 'canPaySellers'],
+  },
+  {
+    title: 'Cashier',
+    href: '/platform/cashier',
+    description: 'Payout queue, cash drawers, collections and the check register.',
+    icon: Banknote,
+    flags: ['canPaySellers', 'canManageCashDrawers', 'canManageFinance'],
   },
 ]
 

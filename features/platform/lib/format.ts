@@ -43,3 +43,11 @@ export const humanize = (value: string | null | undefined) => String(value || ''
 const PAYOUT_STATUS: Record<string, string> = { ready: 'Ready to pay', held: 'Held', paid: 'Paid', returned: 'Returned', cancelled: 'Cancelled', void: 'Voided' };
 export const payoutStatus = (value: string | null | undefined) => PAYOUT_STATUS[String(value)] || humanize(value);
 export const titleCase = (value: string | null | undefined) => { const t = humanize(value); return t.charAt(0).toUpperCase() + t.slice(1); };
+
+/** Parses a typed dollar amount ("1,234.5", "$20") into whole cents; null if it is not a number. */
+export function toCents(value: string): number | null {
+  const t = String(value || '').replace(/[$,\s]/g, '');
+  if (!/^\d+(\.\d{0,2})?$/.test(t)) return null;
+  const [d, c = ''] = t.split('.');
+  return Number(d) * 100 + Number((c + '00').slice(0, 2));
+}
