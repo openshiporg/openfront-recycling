@@ -92,7 +92,7 @@ export async function StorefrontShell({ children }: { children: ReactNode }) {
               {main && main.hours ? (
                 <ul>
                   {groupedHours(main.hours).map((g) => <li key={g.days}>{g.days}: {g.text}</li>)}
-                  {today ? <li style={{ marginTop: 4, color: 'var(--sf-footer-text)' }}>{today.closureReason ? `Closed today: ${today.closureReason}` : today.open ? 'Open now' : 'Closed now'}</li> : null}
+                  {today ? <li style={{ marginTop: 4, color: 'var(--sf-footer-text)' }}>{today.closureReason ? `Closed today: ${today.closureReason}` : today.open ? 'Open now' : `Closed now${today.nextOpen ? ` · ${today.nextOpen.replace('Opens', 'opens')}` : ''}`}</li> : null}
                 </ul>
               ) : <p>Hours are on each yard’s page.</p>}
             </div>

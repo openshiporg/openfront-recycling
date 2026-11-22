@@ -342,3 +342,22 @@
 .sf-companynav a { white-space: nowrap; }
 .sf-progress { height: 12px; border-radius: 999px; background: var(--sf-rule); overflow: hidden; }
 .sf-progress > span { display: block; height: 100%; background: var(--sf-rust); border-radius: inherit; }
+
+/* Worn texture on rust surfaces (Capella): fine grain plus soft blotches, purely decorative. */
+.sf-hero-block, .sf-facts, .sf-pagehead, .sf-today-side { isolation: isolate; }
+.sf-hero-block::before, .sf-facts::before, .sf-pagehead::before, .sf-today-side::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: -1;
+  background-image: var(--sf-grain), var(--sf-worn); background-size: 220px 220px, 600px 600px;
+  opacity: var(--sf-grain-opacity); mix-blend-mode: multiply;
+}
+.sf-today-side { position: relative; }
+.sf-facts::before { opacity: calc(var(--sf-grain-opacity) + 0.04); }
+/* Torn bottom edge on the facts band and the page head. */
+.sf-facts { clip-path: var(--sf-torn-edge); padding-bottom: 46px; }
+.sf-pagehead { clip-path: var(--sf-torn-edge); padding-bottom: 8px; }
+.sf-pagehead::after { display: none; }
+/* Today's prices card sizes to its rows. */
+.sf-today-card { align-items: start; }
+.sf-today-card > :first-child { align-self: start; }
+.sf-today-side { align-self: stretch; }
+@media print { .sf-hero-block::before, .sf-facts::before, .sf-pagehead::before, .sf-today-side::before { display: none; } .sf-facts, .sf-pagehead { clip-path: none; } }

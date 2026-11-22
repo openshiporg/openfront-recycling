@@ -72,7 +72,7 @@ export default async function HomePage() {
               <IconBolt size={40} />
               <div>
                 <strong>{today ? (today.closureReason ? 'Closed today' : today.open ? 'Open now' : 'Closed now') : 'Hours'}</strong>
-                <span>{today ? (today.closureReason ? today.closureReason : `Today: ${today.text}`) : 'See each location'}</span>
+                <span>{today ? (today.open ? `Today: ${today.text}` : [today.closureReason, today.nextOpen].filter(Boolean).join(' · ') || `Today: ${today.text}`) : 'See each location'}</span>
               </div>
             </div>
             <div className="sf-fact">

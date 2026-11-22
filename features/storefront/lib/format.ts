@@ -178,7 +178,20 @@ export function todayStatus(hours: Record<string, DayHours> | null | undefined, 
   const o = toMin(h?.open);
   const c = toMin(h?.close);
   const open = !h?.closed && o !== null && c !== null && minutes >= o && minutes < c;
-  return { day, today, open, text: hoursText(h), closureReason: closure?.reason || null, hasHours: Boolean(hours && Object.keys(hours).length) };
+  let nextOpen: string | null = null;
+  if (!open) {
+    if (!h?.closed && o !== null && minutes < o) nextOpen = `Opens today at ${clock(h?.open)}`;
+    else {
+      const closedDates = new Set(closures.filter((x) => !x.isPartial).map((x) => new Intl.DateTimeFormat('en-CA', { timeZone: safeZone(tz), year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(x.date))));
+      for (let i = 1; i <= 7 && !nextOpen; i++) {
+        const at = new Date(Date.now() + i * 86400000);
+        const d = zonedParts(tz, at).day;
+        const dh = hours?.[d];
+        if (dh && !dh.closed && dh.open && dh.close && !closedDates.has(todayIn(tz, i))) nextOpen = `Opens ${i === 1 ? 'tomorrow' : dayName(d).slice(0, 3)} ${clock(dh.open)}`;
+      }
+    }
+  }
+  return { day, today, open, nextOpen, text: hoursText(h), closureReason: closure?.reason || null, hasHours: Boolean(hours && Object.keys(hours).length) };
 }
 
 /** Group weekdays with the same hours: "Mon – Fri: 7:00 AM – 4:30 PM". */
