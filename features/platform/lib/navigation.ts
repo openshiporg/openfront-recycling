@@ -1,4 +1,4 @@
-import { Banknote, Boxes, Scale, Tags, UserRound } from 'lucide-react'
+import { Banknote, Boxes, Building2, Scale, Tags, UserRound } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 /**
@@ -48,6 +48,13 @@ export const platformNavItems: PlatformNavItem[] = [
     description: 'Find walk-in sellers by name, ID, phone or plate; ID, vehicles, tickets, payouts and status.',
     icon: UserRound,
     flags: ['canManageSellers', 'canManageTickets', 'canManageCompliance'],
+  },
+  {
+    title: 'Accounts',
+    href: '/platform/accounts',
+    description: 'Applications, commercial accounts, contacts, sites, terms, charges, settlements and invoices.',
+    icon: Building2,
+    flags: ['canManageAccounts', 'canManageFinance', 'canManageSales'],
   },
 ]
 
