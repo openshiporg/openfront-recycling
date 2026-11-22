@@ -40,6 +40,7 @@ import { Home, Database, ChevronRight, Package } from 'lucide-react'
 import { Logo, LogoIcon } from '@/features/dashboard/components/Logo'
 import { UserProfileClient } from './UserProfileClient'
 import { visibleSidebarLists } from '../lib/sidebarAccess'
+import { visibleNavItems } from '@/features/platform/lib/navigation'
 
 interface User {
   id: string;
@@ -47,7 +48,8 @@ interface User {
   name?: string;
   role?: {
     canAccessDashboard?: boolean;
-  };
+    [flag: string]: boolean | string | null | undefined;
+  } | null;
 }
 
 interface SidebarProps {
@@ -88,6 +90,8 @@ export function Sidebar({ adminMeta, user }: SidebarProps) {
     href: `/dashboard/${list.path}`
   }))
 
+  const platformLinks = visibleNavItems(user?.role as any)
+
   // Dashboard items for the collapsible menu
   const dashboardItems = [
     {
@@ -127,6 +131,24 @@ export function Sidebar({ adminMeta, user }: SidebarProps) {
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarGroup>
+
+        {platformLinks.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Yard</SidebarGroupLabel>
+            <SidebarMenu>
+              {platformLinks.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton asChild isActive={isLinkActive(item.href)} tooltip={item.title}>
+                    <Link href={item.href} onClick={() => setOpenMobile(false)}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroup>
+        )}
 
         {/* Models Dropdown - Collapsible */}
         {dashboardItems.map((dashboardItem) => (

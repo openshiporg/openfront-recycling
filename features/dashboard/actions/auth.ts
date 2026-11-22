@@ -158,6 +158,9 @@ export async function getAuthenticatedUser() {
           name
           role {
             canAccessDashboard
+            canManageTickets
+            canGradeTickets
+            canPaySellers
           }
         }
       }
