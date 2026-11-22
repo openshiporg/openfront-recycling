@@ -2,7 +2,7 @@ import { Notice } from '@/features/platform/lib/ui';
 import { platformRequest } from '@/features/platform/lib/platformRequest';
 import { getTicket } from '../actions';
 import { PrintButton } from '../components/PrintButton';
-import { dateTimeIn, humanize, money, price, weight } from '../utils/format';
+import { dateTimeIn, humanize, payoutStatus, titleCase, money, price, weight } from '../utils/format';
 
 type Props = { params: Promise<{ ticketId: string }> };
 
@@ -79,7 +79,7 @@ export async function TicketPrintPage({ params }: Props) {
         {ticket.payouts.length ? (
           <section className="mb-4 border-t border-black pt-2">
             {ticket.payouts.map((p) => (
-              <p key={p.id}>{humanize(p.status)}{p.method ? ` by ${p.method}` : ''}: {money(p.amountCents)}{p.status === 'held' && p.releaseAt ? ` · held until ${dateTimeIn(p.releaseAt, tz)}` : ''}{p.paidAt ? ` · paid ${dateTimeIn(p.paidAt, tz)}` : ''}</p>
+              <p key={p.id}>{payoutStatus(p.status)}{p.method ? ` by ${p.method}` : ''}: {money(p.amountCents)}{p.status === 'held' && p.releaseAt ? ` · held until ${dateTimeIn(p.releaseAt, tz)}` : ''}{p.paidAt ? ` · paid ${dateTimeIn(p.paidAt, tz)}` : ''}</p>
             ))}
           </section>
         ) : null}

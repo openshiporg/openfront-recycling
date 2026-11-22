@@ -12,7 +12,7 @@ import {
   removeLineAction, splitLineAction, truckWeightAction, updateDetailsAction, voidTicketAction,
 } from '../actions';
 import type { MaterialChoice, ScaleChoice, TicketDetail, TicketLineRow } from '../types';
-import { dateTimeIn, humanize, money, price, timeIn, weight } from '../utils/format';
+import { dateTimeIn, humanize, payoutStatus, titleCase, money, price, timeIn, weight } from '../utils/format';
 import { SignaturePad } from './SignaturePad';
 
 type Props = { ticket: TicketDetail; scales: ScaleChoice[]; materials: MaterialChoice[]; role: Record<string, boolean> };
@@ -49,7 +49,7 @@ export function TicketWorkspace({ ticket, scales, materials, role }: Props) {
         title={<>Ticket <span className="font-mono">{ticket.displayNumber}</span></>}
         tone={statusTone[ticket.status] || 'off'}
         meta={<>
-          {humanize(ticket.status)} · {ticket.direction === 'outbound' ? 'Outbound' : 'Inbound'}{ticket.isAdjustment ? ' adjustment' : ''} · {party}
+          {titleCase(ticket.status)} · {ticket.direction === 'outbound' ? 'Outbound' : 'Inbound'}{ticket.isAdjustment ? ' adjustment' : ''} · {party}
           {ticket.vehiclePlate ? ` · ${ticket.vehiclePlate}${ticket.vehiclePlateRegion ? ` ${ticket.vehiclePlateRegion}` : ''}` : ''} · opened {dateTimeIn(ticket.createdAt, tz)}{ticket.openedBy ? ` by ${ticket.openedBy.name}` : ''}
         </>}
         actions={<Link href={`/dashboard/platform/scale-house/${ticket.id}/print`} className={pillClass('raised')}><Printer />{isOpen ? 'Print ticket' : 'Print receipt'}</Link>}
@@ -526,7 +526,7 @@ function PayoutsSection({ ticket }: { ticket: TicketDetail }) {
         <ul className="flex flex-col gap-2 text-sm">
           {ticket.payouts.map((p) => (
             <li key={p.id} className="flex items-center justify-between gap-2 rounded-[6px] border p-3">
-              <span><StatusDot tone={p.status === 'paid' ? 'live' : p.status === 'held' ? 'wait' : p.status === 'ready' ? 'info' : 'off'} />{humanize(p.status)}{p.method ? ` · ${p.method}` : ''}{p.status === 'held' && p.releaseAt ? ` until ${dateTimeIn(p.releaseAt, tz)}` : ''}{p.paidAt ? ` · ${dateTimeIn(p.paidAt, tz)}` : ''}</span>
+              <span><StatusDot tone={p.status === 'paid' ? 'live' : p.status === 'held' ? 'wait' : p.status === 'ready' ? 'info' : 'off'} />{payoutStatus(p.status)}{p.method ? ` · ${p.method}` : ''}{p.status === 'held' && p.releaseAt ? ` until ${dateTimeIn(p.releaseAt, tz)}` : ''}{p.paidAt ? ` · ${dateTimeIn(p.paidAt, tz)}` : ''}</span>
               <span className="font-semibold tabular-nums">{money(p.amountCents)}</span>
             </li>
           ))}

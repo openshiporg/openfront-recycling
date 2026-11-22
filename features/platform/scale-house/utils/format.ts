@@ -39,3 +39,7 @@ export function dateTimeIn(at: string | Date | null | undefined, timeZone?: stri
 }
 
 export const humanize = (value: string | null | undefined) => String(value || '').replace(/_/g, ' ');
+
+const PAYOUT_STATUS: Record<string, string> = { ready: 'Ready to pay', held: 'Held', paid: 'Paid', returned: 'Returned', cancelled: 'Cancelled', void: 'Voided' };
+export const payoutStatus = (value: string | null | undefined) => PAYOUT_STATUS[String(value)] || humanize(value);
+export const titleCase = (value: string | null | undefined) => { const t = humanize(value); return t.charAt(0).toUpperCase() + t.slice(1); };
