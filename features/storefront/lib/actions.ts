@@ -202,18 +202,18 @@ export async function createVisitAction(_prev: FormState, form: FormData): Promi
   const fields = { yardSlug, plannedDate, vehicleId: vehicleId || '' };
   if (!yardSlug) return { error: 'Choose the yard you are coming to.', fields };
   if (!plannedDate) return { error: 'Choose the day you are coming.', fields };
-  const r = await gql<{ createVisit: { id: string } }>(
-    `mutation($data: CreateVisitInput!, $idempotencyKey: String) { createVisit(data: $data, idempotencyKey: $idempotencyKey) { id } }`,
+  const r = await gql<{ createMyVisit: { id: string } }>(
+    `mutation($data: CreateMyVisitInput!, $idempotencyKey: String) { createMyVisit(data: $data, idempotencyKey: $idempotencyKey) { id } }`,
     { data: { yardSlug, plannedDate, vehicleId, expectedItems }, idempotencyKey: str(form, 'idempotencyKey') || randomUUID() },
   );
   if (!r.ok) return { error: r.error, fields };
   revalidatePath('/account', 'layout');
-  redirect(`/account/visits/${r.data.createVisit.id}?new=1`);
+  redirect(`/account/visits/${r.data.createMyVisit.id}?new=1`);
 }
 
 export async function cancelVisitAction(_prev: FormState, form: FormData): Promise<FormState> {
   const id = str(form, 'id');
-  const r = await gql(`mutation($id: ID!) { cancelVisit(id: $id) { id } }`, { id });
+  const r = await gql(`mutation($id: ID!) { cancelMyVisit(id: $id) { id } }`, { id });
   if (!r.ok) return { error: r.error };
   revalidatePath('/account', 'layout');
   return { error: null, success: 'Your visit is cancelled.' };

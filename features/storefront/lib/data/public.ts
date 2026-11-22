@@ -274,18 +274,43 @@ export type TicketLineView = {
 export type PayoutView = { id?: string; amountCents: number; status: string; method: string | null; allowedMethods: string[] | null; checkNumber: string | null; releaseAt: string | null; paidAt: string | null };
 export type HoldView = { materialName: string | null; weight: string | null; status: string; releaseAt: string | null };
 
-export const RECEIPT_FIELDS = `displayNumber status completedAt yard { name timezone phone } sellerName maskedIdNumber vehiclePlate currencyCode weightUnit
-  lines { materialName direction grossWeight tareWeight netWeight deductionWeight deductionPercent deductionReason payWeight quantity unit unitPrice amountCents }
+/** Fields of the backend TicketReceipt type, shared by lookupTicketReceipt and myTicket. */
+export const RECEIPT_FIELDS = `id displayNumber direction status yardName yardAddress sellerName accountName vehiclePlate completedAt createdAt businessName weightUnit paymentMode donatePercent
+  lines { id materialName grossWeight tareWeight netWeight deductionWeight deductionPercent deductionReason payWeight quantity unit unitPrice amountCents direction }
   fees { label amountCents } materialTotalCents feeTotalCents taxCents totalCents
-  payouts { amountCents status method allowedMethods checkNumber releaseAt paidAt }
-  holdTags { materialName weight status releaseAt } lookupCode`;
+  payouts { id amountCents status method allowedMethods releaseAt checkNumber paidAt returnReason }
+  holds { id status releaseAt weight } adjustments { id displayNumber status totalCents } adjustsDisplayNumber photoIds`;
+
+export type RawReceipt = {
+  id: string; displayNumber: string; status: string; yardName: string; yardAddress: string | null; sellerName: string | null; vehiclePlate: string | null;
+  completedAt: string | null; createdAt: string | null; weightUnit: string; lines: TicketLineView[]; fees: Array<{ label: string; amountCents: number }>;
+  materialTotalCents: number; feeTotalCents: number; taxCents: number; totalCents: number; payouts: PayoutView[];
+  holds: Array<{ id: string; status: string; releaseAt: string | null; weight: string }>; adjustments: Array<{ id: string; displayNumber: string }>; adjustsDisplayNumber: string | null;
+};
+
+/** Shape a backend receipt for ReceiptView; the zone and currency come from the business settings. */
+export async function toReceipt(raw: RawReceipt, lookupCode: string | null = null): Promise<Receipt & { id: string }> {
+  const b = await getBusiness();
+  const biz = businessOrDefaults(b.ok ? b.data : null);
+  const yards = await getYards();
+  const yard = yards.ok ? yards.data.find((y) => y.name === raw.yardName) : undefined;
+  return {
+    id: raw.id, displayNumber: raw.displayNumber, status: raw.status, completedAt: raw.completedAt,
+    yard: { name: raw.yardName, timezone: yard?.timezone || biz.timezone, phone: yard?.phone || null },
+    sellerName: raw.sellerName, maskedIdNumber: null, vehiclePlate: raw.vehiclePlate, currencyCode: biz.currencyCode,
+    weightUnit: (raw.weightUnit || biz.weightUnit) as 'lb' | 'kg', lines: raw.lines, fees: raw.fees,
+    materialTotalCents: raw.materialTotalCents, feeTotalCents: raw.feeTotalCents, taxCents: raw.taxCents, totalCents: raw.totalCents,
+    payouts: raw.payouts, holdTags: raw.holds.map((h) => ({ materialName: null, weight: h.weight, status: h.status, releaseAt: h.releaseAt })), lookupCode,
+  };
+}
 
 export async function lookupReceipt(displayNumber: string, lookupCode: string): Promise<GqlResult<Receipt | null>> {
-  const r = await gql<{ lookupTicketReceipt: Receipt | null }>(
+  const r = await gql<{ lookupTicketReceipt: RawReceipt | null }>(
     `query($displayNumber: String!, $lookupCode: String!) { lookupTicketReceipt(displayNumber: $displayNumber, lookupCode: $lookupCode) { ${RECEIPT_FIELDS} } }`,
     { displayNumber, lookupCode },
   );
-  return r.ok ? { ok: true, data: r.data.lookupTicketReceipt } : r;
+  if (!r.ok) return r.notFound ? { ok: true, data: null } : r;
+  return { ok: true, data: r.data.lookupTicketReceipt ? await toReceipt(r.data.lookupTicketReceipt, lookupCode.toUpperCase()) : null };
 }
 
 /** Default business settings when publicBusiness cannot be reached: never a name, only units. */

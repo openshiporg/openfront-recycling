@@ -1,6 +1,6 @@
 import { cache } from 'react';
 import { gql, type GqlResult } from './client';
-import { RECEIPT_FIELDS, type HoldView, type PayoutView, type Receipt, type TicketLineView } from './public';
+import { RECEIPT_FIELDS, toReceipt, type PayoutView, type RawReceipt, type Receipt } from './public';
 
 /**
  * Signed-in seller data (matrix §8.2). Every call is a custom operation that proves the seller belongs
@@ -126,18 +126,29 @@ export type TicketDetail = Receipt & {
   attachments: Array<{ kind: string; imageUrl: string | null }>;
   adjustments: Array<{ id: string; displayNumber: string }>;
   adjusts: { id: string; displayNumber: string } | null;
-  lines: (TicketLineView & { id: string })[];
-  payouts: (PayoutView & { id: string })[];
-  holdTags: HoldView[];
   amountDueCents: number | null;
 };
 
 export const getTicket = cache(async (id: string): Promise<GqlResult<TicketDetail | null>> => {
-  const r = await gql<{ myTicket: TicketDetail | null }>(
-    `query($id: ID!) { myTicket(id: $id) { id ${RECEIPT_FIELDS} lines { id } payouts { id } attachments { kind imageUrl } adjustments { id displayNumber } adjusts { id displayNumber } amountDueCents } }`,
+  const r = await gql<{ myTicket: (RawReceipt & { lookupCode?: string | null; amountDueCents?: number | null; adjustsId?: string | null }) | null }>(
+    `query($id: ID!) { myTicket(id: $id) { ${RECEIPT_FIELDS} } }`,
     { id },
   );
-  return r.ok ? { ok: true, data: r.data.myTicket } : r;
+  if (!r.ok) return r.notFound ? { ok: true, data: null } : r;
+  const t = r.data.myTicket;
+  if (!t) return { ok: true, data: null };
+  const base = await toReceipt(t, t.lookupCode || null);
+  return {
+    ok: true,
+    data: {
+      ...base,
+      attachments: [],
+      adjustments: t.adjustments,
+      adjusts: t.adjustsDisplayNumber ? { id: t.adjustsId || '', displayNumber: t.adjustsDisplayNumber } : null,
+      // Charge tickets (the seller owes a fee) carry the amount still due once the backend exposes it.
+      amountDueCents: t.amountDueCents ?? null,
+    },
+  };
 });
 
 export type PayoutRow = PayoutView & { id: string; ticket: { id: string; displayNumber: string } | null; yard: { name: string; timezone: string | null } | null };
