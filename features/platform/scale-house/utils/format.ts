@@ -33,7 +33,7 @@ export function timeIn(at: string | Date | null | undefined, timeZone?: string |
 
 export function dateTimeIn(at: string | Date | null | undefined, timeZone?: string | null) {
   if (!at) return '—';
-  const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' };
+  const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' };
   try { return new Date(at).toLocaleString('en-US', { ...opts, ...(timeZone ? { timeZone } : {}) }); }
   catch { return new Date(at).toLocaleString('en-US', opts); }
 }

@@ -22,7 +22,8 @@ export function NewTicketDrawer({ yardId, yardName, visit }: { yardId: string; y
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [direction, setDirection] = useState<'inbound' | 'outbound'>('inbound');
-  const [mode, setMode] = useState<'retail' | 'commercial'>('retail');
+  const [mode, setMode] = useState<'retail' | 'commercial' | 'pass'>('retail');
+  const [passCode, setPassCode] = useState('');
   const [party, setParty] = useState<Party>(visit?.sellerId ? { kind: 'seller', id: visit.sellerId, name: visit.sellerName || 'Seller' } : null);
   const [plate, setPlate] = useState(visit?.plate || '');
   const [region, setRegion] = useState('');
@@ -35,6 +36,9 @@ export function NewTicketDrawer({ yardId, yardName, visit }: { yardId: string; y
 
   const submit = () => {
     setError(null);
+    // A pass shown as QR text may be a link or a prefixed code; keep the code itself.
+    const code = mode === 'pass' ? passCode.trim().split(/[/?=#:]/).filter(Boolean).pop() || '' : '';
+    if (mode === 'pass' && !code) { setError('Scan or type the pass code.'); return; }
     if (direction === 'inbound' && mode === 'retail' && !party && !visit) { setError('Find or add the seller first.'); return; }
     if (direction === 'inbound' && mode === 'commercial' && !party) { setError('Pick the account.'); return; }
     if (!keyRef.current) keyRef.current = `open:${crypto.randomUUID()}`;
@@ -43,7 +47,7 @@ export function NewTicketDrawer({ yardId, yardName, visit }: { yardId: string; y
         yardId, direction,
         sellerId: party?.kind === 'seller' ? party.id : undefined,
         accountId: party?.kind === 'account' ? party.id : undefined,
-        vehiclePlate: plate, vehiclePlateRegion: region, visitCode: visit?.code || undefined, notes,
+        vehiclePlate: plate, vehiclePlateRegion: region, visitCode: visit?.code || code || undefined, notes,
         idempotencyKey: keyRef.current,
       });
       if (!r.ok) { setError(r.error); keyRef.current = ''; return; }
@@ -79,10 +83,17 @@ export function NewTicketDrawer({ yardId, yardName, visit }: { yardId: string; y
                     <Track label="Seller type">
                       <Pill variant="flat" aria-pressed={mode === 'retail'} onClick={() => { setMode('retail'); setParty(null); }}>Retail seller</Pill>
                       <Pill variant="flat" aria-pressed={mode === 'commercial'} onClick={() => { setMode('commercial'); setParty(null); }}>Commercial account</Pill>
+                      <Pill variant="flat" aria-pressed={mode === 'pass'} onClick={() => { setMode('pass'); setParty(null); }}>Pass code</Pill>
                     </Track>
                   </div>
                 ) : null}
-                {party ? (
+                {mode === 'pass' && direction === 'inbound' ? (
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="nt-pass">Pass code</Label>
+                    <Input id="nt-pass" autoFocus value={passCode} onChange={(e) => setPassCode(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') submit(); }} placeholder="Scan the QR or type the code" autoComplete="off" className="font-mono uppercase" />
+                    <p className="text-xs text-muted-foreground">The seller’s booked visit fills in the seller, vehicle and donation.</p>
+                  </div>
+                ) : party ? (
                   <div className="flex items-center justify-between gap-2 rounded-[6px] border p-3 text-sm">
                     <span><StatusDot tone={party.kind === 'seller' && party.status === 'flagged' ? 'wait' : 'live'} />{party.name}{party.kind === 'seller' && party.status && party.status !== 'active' ? ` · ${humanize(party.status)}` : ''}</span>
                     <Pill size="sm" variant="flat" onClick={() => setParty(null)}>Change</Pill>

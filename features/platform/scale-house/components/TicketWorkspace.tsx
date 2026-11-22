@@ -2,10 +2,11 @@
 
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Camera, Check, Gauge, Scissors, Trash2, X } from 'lucide-react';
+import Link from 'next/link';
+import { Camera, Check, Gauge, Printer, Scissors, Trash2, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { DataTable, Empty, Notice, PageHeader, Pill, Readouts, Section, StatusCell, StatusDot, Td, Track, selectClass, type Tone } from '@/features/platform/lib/ui';
+import { DataTable, Empty, Notice, PageHeader, Pill, pillClass, Readouts, Section, StatusCell, StatusDot, Td, Track, selectClass, type Tone } from '@/features/platform/lib/ui';
 import {
   addAttachmentAction, addLineAction, adjustmentTicketAction, completeTicketAction, gradeLineAction, readScaleAction,
   removeLineAction, splitLineAction, truckWeightAction, updateDetailsAction, voidTicketAction,
@@ -51,6 +52,7 @@ export function TicketWorkspace({ ticket, scales, materials, role }: Props) {
           {humanize(ticket.status)} · {ticket.direction === 'outbound' ? 'Outbound' : 'Inbound'}{ticket.isAdjustment ? ' adjustment' : ''} · {party}
           {ticket.vehiclePlate ? ` · ${ticket.vehiclePlate}${ticket.vehiclePlateRegion ? ` ${ticket.vehiclePlateRegion}` : ''}` : ''} · opened {dateTimeIn(ticket.createdAt, tz)}{ticket.openedBy ? ` by ${ticket.openedBy.name}` : ''}
         </>}
+        actions={<Link href={`/dashboard/platform/scale-house/${ticket.id}/print`} className={pillClass('raised')}><Printer />{isOpen ? 'Print ticket' : 'Print receipt'}</Link>}
       />
       {ticket.seller && ticket.seller.status !== 'active' ? <Notice tone="alert">Seller is {humanize(ticket.seller.status)}.</Notice> : null}
       {ticket.status === 'void' ? <Notice tone="alert">Voided {dateTimeIn(ticket.voidedAt, tz)}: {ticket.voidReason}</Notice> : null}

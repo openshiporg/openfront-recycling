@@ -137,7 +137,7 @@ export function Pager({ page, pages, prev, next, label }: { page: number; pages:
 
 /** Last-refresh time in the yard's timezone (server and browser agree on it). */
 export function liveStamp(at: Date, timeZone?: string | null) {
-  try { return at.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', ...(timeZone ? { timeZone } : {}) }); }
+  try { return at.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short', ...(timeZone ? { timeZone } : {}) }); }
   catch { return at.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }); }
 }
 
