@@ -75,8 +75,8 @@ export async function PickupDetailPage({ id, isNew, paid }: { id: string; isNew?
   if (!p) return <StateCard title="We can’t find that pickup" action={<Link className="sf-btn sf-btn-sm" href="/account/pickups">Your pickups</Link>} />;
   const cur = businessOrDefaults(b.ok ? b.data : null).currencyCode;
   const tz = p.yard?.timezone || null;
-  const quoted = p.status === 'requested' && p.kind === 'public_pickup' && !p.quoteAcceptedAt && (p.feeCents > 0 || Boolean(p.quoteNote));
-  const canCancel = ['requested', 'awaiting_payment', 'approved', 'scheduled'].includes(p.status) && !['en_route', 'on_site'].includes(p.job?.status || '');
+  const quoted = p.canAcceptQuote ?? (p.status === 'requested' && p.kind === 'public_pickup' && !p.quoteAcceptedAt && (p.feeCents > 0 || Boolean(p.quoteNote)));
+  const canCancel = p.canCancel ?? (['requested', 'awaiting_payment', 'approved', 'scheduled'].includes(p.status) && !['en_route', 'on_site'].includes(p.job?.status || ''));
   return (
     <>
       <AccountTitle title={`Pickup${p.number ? ` no. ${p.number}` : ''}`} lead={p.itemsDescription || undefined} />
@@ -97,7 +97,7 @@ export async function PickupDetailPage({ id, isNew, paid }: { id: string; isNew?
         </dl>
         {p.quoteNote ? <p className="sf-note" style={{ margin: 0 }}><strong>Our quote:</strong> {p.quoteNote}</p> : null}
         {quoted ? <div className="sf-cluster"><AcceptQuoteButton id={p.id} /><span className="sf-small sf-muted">{p.feeCents > 0 ? `You then pay ${money(p.feeCents, cur)} by card.` : 'No fee; we book the truck.'}</span></div> : null}
-        {p.status === 'awaiting_payment' ? (
+        {(p.canPay ?? p.status === 'awaiting_payment') ? (
           <div className="sf-cluster"><PayByCardButton kind="request" id={p.id} label={`Pay ${money(p.feeCents, cur)} by card`} returnPath={`/account/pickups/${p.id}?paid=1`} idempotencyKey={randomUUID()} /><span className="sf-small sf-muted">Refunded in full if you cancel before the truck leaves.</span></div>
         ) : null}
         <p className="sf-small sf-muted" style={{ margin: 0 }}>Asked {dateTime(p.createdAt, tz)}.</p>
@@ -124,7 +124,7 @@ export async function ApplicationsPage({ sent }: { sent?: boolean }) {
                 <strong>{a.businessName}</strong>
                 <div className="sf-small sf-muted">{label('applicationKind', a.kind)} · sent {shortDate(a.createdAt, null)}</div>
                 {a.decisionReason && a.status === 'declined' ? <div className="sf-small">{a.decisionReason}</div> : null}
-                {a.status === 'approved' ? <div className="sf-small"><Link className="sf-link" href="/account/company">Open the company portal</Link></div> : null}
+                {a.status === 'approved' && a.kind === 'supplier' ? <div className="sf-small"><Link className="sf-link" href={a.accountSlug ? `/account/company/${a.accountSlug}` : '/account/company'}>Open the company portal</Link></div> : null}
               </div>
               <div className="sf-cluster">
                 <span className={`sf-badge ${a.status === 'approved' ? 'sf-badge-ok' : a.status === 'declined' ? 'sf-badge-alert' : a.status === 'submitted' ? 'sf-badge-warn' : ''}`}>{label('application', a.status)}</span>
