@@ -22,7 +22,7 @@ export function CollectTable({ rows, mySessionId, timeZone }: { rows: CollectRow
         <tr key={r.id}>
           <Td className="whitespace-nowrap">No. {r.number}<div className="text-xs text-muted-foreground">{dateTimeIn(r.createdAt, timeZone)}</div></Td>
           <Td>{r.ticket ? <Link href={`/dashboard/platform/scale-house/${r.ticket.id}`} className="font-mono text-xs underline-offset-4 hover:underline">{r.ticket.displayNumber}</Link> : '—'}</Td>
-          <Td>{r.seller ? `${r.seller.firstName} ${r.seller.lastName}` : r.account?.name || '—'}</Td>
+          <Td>{r.sellerName || r.accountName || '—'}</Td>
           <Td className="text-right font-semibold tabular-nums">{money(r.totalCents - r.paidCents)}{r.paidCents ? <div className="text-xs font-normal text-muted-foreground">of {money(r.totalCents)}</div> : null}</Td>
           <Td className="text-right"><Pill size="sm" variant={openId === r.id ? 'flat' : 'primary'} onClick={() => setOpenId(openId === r.id ? null : r.id)}>{openId === r.id ? 'Close' : 'Collect'}</Pill></Td>
         </tr>,

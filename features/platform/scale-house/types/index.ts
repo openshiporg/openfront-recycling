@@ -35,7 +35,7 @@ export type TicketDetail = {
   materialTotalCents: number | null; feeTotalCents: number | null; taxCents: number | null; totalCents: number | null; donatePercent: number | null;
   completedAt: string | null; voidedAt: string | null; voidReason: string | null; createdAt: string; fees: Array<{ label: string; amountCents: number }> | null;
   yard: YardChoice | null;
-  seller: { id: string; firstName: string; lastName: string; status: string; idVerification: string; phone: string | null } | null;
+  seller: { id: string; firstName: string; lastName: string; status: string; idVerification: string; phone: string | null; identityDocuments?: Array<{ id: string }> } | null;
   account: { id: string; name: string; accountNumber: string | null } | null;
   vehicle: { id: string; plate: string; plateRegion: string | null } | null;
   openedBy: { name: string } | null; completedBy: { name: string } | null;

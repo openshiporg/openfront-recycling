@@ -65,7 +65,7 @@ export async function TicketPrintPage({ params }: Props) {
                 <td className="py-1 pr-2 text-right">{l.unit === 'each' ? '' : weight(l.tareWeight, unit)}</td>
                 <td className="py-1 pr-2 text-right">{l.unit === 'each' ? `${l.quantity} each` : weight(l.payWeight, unit)}</td>
                 <td className="py-1 pr-2 text-right">{price(l.unitPrice, l.unit)}</td>
-                <td className="py-1 text-right">{l.direction === 'charge_customer' ? '−' : ''}{money(l.amountCents)}</td>
+                <td className="py-1 text-right">{(l.amountCents ?? 0) < 0 ? '−' : ''}{money(Math.abs(l.amountCents ?? 0))}</td>
               </tr>
             ))}
           </tbody>

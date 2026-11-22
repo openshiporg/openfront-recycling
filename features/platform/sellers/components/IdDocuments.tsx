@@ -8,6 +8,7 @@ import { useCommand } from '@/features/platform/lib/useCommand';
 import { dateTimeIn } from '@/features/platform/lib/format';
 import { addIdAction, verifyIdAction } from '../actions';
 import { ID_KINDS, type IdDoc } from '../types';
+import { IdPhotoButton } from './IdPhotoButton';
 
 const dateOnly = (v: string | null) => (v ? new Date(v).toLocaleDateString('en-US', { timeZone: 'UTC', year: 'numeric', month: 'short', day: 'numeric' }) : null);
 
@@ -28,6 +29,12 @@ export function IdDocuments({ sellerId, docs, canEdit, tz }: { sellerId: string;
               {d.frontImage || d.backImage ? (
                 <div className="mt-2 flex gap-2">
                   {[d.frontImage, d.backImage].filter(Boolean).map((img, i) => <a key={i} href={img!.url} target="_blank" rel="noreferrer"><img src={img!.url} alt={i ? 'ID back' : 'ID front'} className="h-16 w-24 rounded-[4px] border object-cover" /></a>)}
+                </div>
+              ) : null}
+              {canEdit && d.isCurrent ? (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <IdPhotoButton sellerId={sellerId} documentId={d.id} side="front" label={d.frontImage ? 'Retake front' : 'Photo of the front'} />
+                  <IdPhotoButton sellerId={sellerId} documentId={d.id} side="back" label={d.backImage ? 'Retake back' : 'Photo of the back'} />
                 </div>
               ) : null}
             </div>

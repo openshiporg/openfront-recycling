@@ -1,5 +1,6 @@
 'use client';
 
+import { IdPhotoButton } from '@/features/platform/sellers/components/IdPhotoButton';
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -318,7 +319,7 @@ function LineRow({ line, ticket, materials, canEdit, canOverride, missing, editi
         <Td className="text-right tabular-nums">{deduction}</Td>
         <Td className="text-right tabular-nums">{each ? `${line.quantity ?? 0} each` : weight(line.payWeight)}</Td>
         <Td className="text-right tabular-nums">{price(line.unitPrice, line.unit)}<p className="text-xs text-muted-foreground">{humanize(line.priceSource)}</p></Td>
-        <Td className="text-right font-medium tabular-nums">{line.direction === 'charge_customer' ? '−' : ''}{money(line.amountCents)}</Td>
+        <Td className="text-right font-medium tabular-nums">{(line.amountCents ?? 0) < 0 ? '−' : ''}{money(Math.abs(line.amountCents ?? 0))}</Td>
         <Td className="whitespace-nowrap text-right">
           {canEdit ? (
             <Track>
@@ -500,7 +501,12 @@ function CompleteSection({ ticket, canManage }: { ticket: TicketDetail; canManag
     <Section title="Compliance checklist" tone={items.length ? 'alert' : 'live'} count={items.length ? `${items.length} missing` : 'complete'}>
       {items.length ? (
         <ul className="mb-4 flex flex-col gap-1.5 text-sm">
-          {items.map((i, n) => <li key={`${i.code}-${i.lineId || n}`}><StatusDot tone={i.overridable ? 'wait' : 'alert'} />{i.message}{i.overridable ? <span className="ml-1 text-xs text-muted-foreground">(manager can override)</span> : null}</li>)}
+          {items.map((i, n) => (
+            <li key={`${i.code}-${i.lineId || n}`}>
+              <StatusDot tone={i.overridable ? 'wait' : 'alert'} />{i.message}{i.overridable ? <span className="ml-1 text-xs text-muted-foreground">(manager can override)</span> : null}
+              {i.code === 'id_photo' && ticket.status === 'open' && ticket.seller?.identityDocuments?.[0] ? <div className="mt-1.5 ml-4"><IdPhotoButton sellerId={ticket.seller.id} documentId={ticket.seller.identityDocuments[0].id} label="Photo of the ID" /></div> : null}
+            </li>
+          ))}
         </ul>
       ) : <p className="mb-4 text-sm"><StatusDot tone="live" />Everything the yard’s rules need is on the ticket.</p>}
       {soft.length && !hard.length ? (

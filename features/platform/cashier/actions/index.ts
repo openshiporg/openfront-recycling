@@ -64,15 +64,19 @@ export async function getRegister(yardId: string, method: 'check' | 'transfer', 
   return r.ok ? { ok: true as const, rows: r.data.payouts, count: r.data.payoutsCount, pages: Math.max(1, Math.ceil(r.data.payoutsCount / REGISTER_PAGE)) } : { ok: false as const, error: r.error };
 }
 
-/** Fee tickets waiting for the customer to pay (needs a role that can read invoices). */
+/** Fee tickets waiting for the customer to pay at this yard, oldest first (collectQueue). */
 export async function getCollectList(yardId: string) {
-  const r = await platformRequest<{ invoices: CollectRow[] }>(`
+  type Card = { invoiceId: string; number: number | null; ticketId: string | null; ticketNumber: string | null; sellerName: string | null; accountName: string | null; totalCents: number; paidCents: number; balanceCents: number; dueOn: string | null; createdAt: string };
+  const r = await platformRequest<{ collectQueue: Card[] }>(`
     query CashierCollect($yardId: ID!) {
-      invoices(where: { kind: { equals: "fee_ticket" }, status: { in: ["open", "partially_paid"] }, ticket: { yard: { id: { equals: $yardId } } } }, orderBy: [{ createdAt: asc }], take: 100) {
-        id number status totalCents paidCents dueOn createdAt ticket { id displayNumber } seller { firstName lastName } account { name }
-      }
+      collectQueue(yardId: $yardId) { invoiceId number ticketId ticketNumber sellerName accountName totalCents paidCents balanceCents dueOn createdAt }
     }`, { yardId });
-  return r.ok ? { ok: true as const, rows: r.data.invoices } : { ok: false as const, error: r.error };
+  if (!r.ok) return { ok: false as const, error: r.error };
+  const rows: CollectRow[] = r.data.collectQueue.map((c) => ({
+    id: c.invoiceId, number: c.number, status: c.paidCents ? 'partially_paid' : 'open', totalCents: c.totalCents, paidCents: c.paidCents, dueOn: c.dueOn, createdAt: c.createdAt,
+    ticket: c.ticketId ? { id: c.ticketId, displayNumber: c.ticketNumber || '' } : null, sellerName: c.sellerName, accountName: c.accountName,
+  }));
+  return { ok: true as const, rows };
 }
 
 // ---------------------------------------------------------------------------------------------

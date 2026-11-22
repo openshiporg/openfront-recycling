@@ -28,7 +28,7 @@ export async function CashierPage({ searchParams }: Props) {
 
   const tab: Tab = (TABS as readonly string[]).includes(String(params.tab)) ? (params.tab as Tab) : 'queue';
   const page = Math.max(1, Number.parseInt(String(params.page || '1'), 10) || 1);
-  const canCollect = Boolean(role.canManageFinance);
+  const canCollect = Boolean(role.canPaySellers || role.canManageCashDrawers || role.canManageFinance);
   const [drawers, queue, register, collect] = await Promise.all([
     getDrawerState(yard.id),
     getPayoutQueue(yard.id),

@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { platformRequest, trimmed } from '@/features/platform/lib/platformRequest';
+import { formImage, platformRequest, platformUpload, trimmed } from '@/features/platform/lib/platformRequest';
 import type { DoNotBuy, SellerDetail, SellerHit, SellerPayout, SellerRow } from '../types';
 import { ID_KINDS, VEHICLE_KINDS } from '../types';
 
@@ -107,4 +107,18 @@ export async function addVehicleAction(input: { sellerId: string; plate: string;
 
 export async function removeVehicleAction(input: { sellerId: string; vehicleId: string; removed: boolean }) {
   return done(await platformRequest(`mutation RemoveVehicle($id: ID!, $removed: Boolean!) { updateVehicle(where: { id: $id }, data: { isRemoved: $removed }) { id } }`, { id: input.vehicleId, removed: input.removed }), input.sellerId);
+}
+
+/** Photo of an ID document (front or back), saved to private storage on the document itself. */
+export async function uploadIdPhotoAction(form: FormData) {
+  const documentId = trimmed(form.get('documentId'), 64);
+  const sellerId = trimmed(form.get('sellerId'), 64);
+  const side = form.get('side') === 'back' ? 'backImage' : 'frontImage';
+  const image = formImage(form, 'image');
+  if (!documentId) return { ok: false as const, error: 'ID not found.' };
+  if (!image) return { ok: false as const, error: 'Take or choose a photo of the ID.' };
+  if ('error' in image) return { ok: false as const, error: image.error };
+  const r = await platformUpload(`mutation IdPhoto($id: ID!, $data: IdentityDocumentUpdateInput!) { updateIdentityDocument(where: { id: $id }, data: $data) { id } }`, { id: documentId, data: { [side]: { upload: null } } }, { [`data.${side}.upload`]: image });
+  if (r.ok) revalidatePath('/dashboard/platform/scale-house', 'layout');
+  return done(r, sellerId || undefined);
 }

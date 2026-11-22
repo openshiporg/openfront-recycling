@@ -62,7 +62,7 @@ const TICKET_FIELDS = `
   id displayNumber direction status paymentMode isAdjustment vehiclePlate vehiclePlateRegion vehicleDescription notes overrideReason
   materialTotalCents feeTotalCents taxCents totalCents donatePercent completedAt voidedAt voidReason createdAt fees
   yard { id name code timezone }
-  seller { id firstName lastName status idVerification phone }
+  seller { id firstName lastName status idVerification phone identityDocuments(where: { isCurrent: { equals: true } }, orderBy: [{ createdAt: desc }], take: 1) { id } }
   account { id name accountNumber }
   vehicle { id plate plateRegion }
   openedBy { name }

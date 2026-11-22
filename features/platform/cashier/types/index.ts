@@ -29,5 +29,5 @@ export type RegisterRow = {
 
 export type CollectRow = {
   id: string; number: number | null; status: string; totalCents: number; paidCents: number; dueOn: string | null; createdAt: string;
-  ticket: { id: string; displayNumber: string } | null; seller: { firstName: string; lastName: string } | null; account: { name: string } | null;
+  ticket: { id: string; displayNumber: string } | null; sellerName: string | null; accountName: string | null;
 };
