@@ -41,8 +41,8 @@ test('a contact reads only their own account: overview, prices, tickets, contain
   const t = await prisma.scaleTicket.create({ data: { yardId: yard.id, number: 3, direction: 'inbound', status: 'completed', accountId: acct.id, siteId: site.id, paymentMode: 'on_account', lookupCode: `PA${run}`, totalCents: 91500, completedAt: new Date() } })
   await prisma.ticketLine.create({ data: { ticketId: t.id, materialId: mat.id, materialName: mat.name, unit: 'gt', grossWeight: '3', tareWeight: '0', netWeight: '3', payWeight: '3', unitPrice: '305', amountCents: 91500, direction: 'pay_seller' } })
   await prisma.accountCharge.create({ data: { accountId: acct.id, kind: 'haul', description: 'Haul R30', amountCents: 17500, status: 'open', serviceDate: new Date() } })
-  const inv = await prisma.invoice.create({ data: { number: Math.floor(Math.random() * 1e9), accountId: acct.id, kind: 'charges', status: 'open', subtotalCents: 4000, totalCents: 4000, paidCents: 1000, dueOn: new Date(Date.now() + 30 * DAY) } })
-  await prisma.invoiceLine.create({ data: { invoiceId: inv.id, description: 'Dry run', amountCents: 4000, kind: 'charge' } })
+  const inv = await prisma.invoice.create({ data: { number: Math.floor(Math.random() * 1e9), accountId: acct.id, kind: 'service', status: 'open', subtotalCents: 4000, totalCents: 4000, paidCents: 1000, dueOn: new Date(Date.now() + 30 * DAY) } })
+  await prisma.invoiceLine.create({ data: { invoiceId: inv.id, description: 'Dry run', amountCents: 4000, kind: 'fee' } })
   const req = await prisma.serviceRequest.create({ data: { accountId: acct.id, requestedById: admin.id, yardId: yard.id, siteId: site.id, kind: 'swap', status: 'requested', preferredDate: new Date(Date.now() + DAY) } })
 
   const me = as(admin)

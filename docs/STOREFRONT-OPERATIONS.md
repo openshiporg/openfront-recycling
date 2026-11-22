@@ -81,3 +81,11 @@ Shapes match `features/storefront/lib/data/company.ts` exactly; every storefront
 | C9 | `accountCharges(unsettledOnly)` | **Schema change:** the generated AccountCharge list is renamed (`accountChargeItems`, `AccountChargeItems*`) so this name is the portal's. Dashboard uses list metadata, so nothing else changes. |
 | C10 | `accountInvoices`, `accountInvoice(id)` | Excludes void. Payments list succeeded/reversed only. Pay with `payInvoiceByCard`. |
 | C11 | `accountDiversionReport(year)` | Rows by `YYYY-MM` × material; CSV is built in the storefront. |
+
+## §11 Onboarding — `features/keystone/commands/onboarding.ts`, `features/recycling/templates.ts`
+
+- `runOnboarding(data: RunOnboardingInput!, idempotencyKey)` (needs `canManageOnboarding`). Steps: business → roles (10) → rules template (general / ohio / florida / custom) → first yard (hours, payout methods, `acceptsPublic`) → 44 scrap materials (or 51 for `community_centre`, which also makes the business a nonprofit) → board prices published today via `publishPrices` → tier lists "Standard Commercial" and "Wholesale Tier A" → 5 container types and 12 containers → 2 trucks, truck and floor scale, cash drawer → Stripe provider row. Running again adds nothing.
+- `publishPrices(priceListId, entries, effectiveFrom, idempotencyKey)` (needs `canManagePricing`): append-only; closes the open entry per material.
+- CLI for a fresh database: `node --import tsx scripts/onboard.ts onboarding.json`.
+- **Scratch DB (2026-11-22):** onboarded as **Riverside Metals**, yard `riverside-metals-columbus` (code MAIN, Columbus OH, Ohio rules). The old yards left by integration tests were set to `closed`, so the storefront shows only this yard. Catalytic Converters are priced at the counter (`isPublic: false`), so the board shows 43 of 44.
+- Not yet: the "starter book" (sellers, accounts, tickets) from §11.
