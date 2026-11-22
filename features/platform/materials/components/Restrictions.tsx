@@ -24,18 +24,20 @@ function effects(r: Restriction) {
 /** Rules that apply to this material in each rules profile (its own and its category's). */
 export function Restrictions({ materialId, restrictions, profiles, canEdit }: { materialId: string; restrictions: Restriction[]; profiles: Profile[]; canEdit: boolean }) {
   const cmd = useCommand();
+  const [removedIds, setRemovedIds] = useState<string[]>([]);
+  const visible = restrictions.filter((r) => !removedIds.includes(r.id));
   return (
     <div className="flex flex-col gap-4">
-      {restrictions.length ? (
+      {visible.length ? (
         <DataTable label="Rules" head={[{ label: 'Rule' }, { label: 'Kind' }, { label: 'Profile' }, { label: 'Effect' }, { label: 'Applies through' }, { label: '' }]}>
-          {restrictions.map((r) => (
+          {visible.map((r) => (
             <tr key={r.id}>
               <Td><span className="font-medium">{r.label}</span>{r.publicNote ? <div className="text-xs text-muted-foreground">{r.publicNote}</div> : null}</Td>
               <Td><StatusCell tone={tone[r.kind] || 'off'}>{RESTRICTION_KINDS[r.kind] || r.kind}</StatusCell></Td>
               <Td>{r.profile?.name || '—'}</Td>
               <Td className="text-muted-foreground">{effects(r)}</Td>
               <Td>{r.material?.id === materialId ? 'This material' : r.category ? `Category: ${r.category.name}` : '—'}</Td>
-              <Td className="text-right">{canEdit && r.material?.id === materialId ? <Pill size="sm" variant="flat" disabled={cmd.pending} onClick={() => cmd.run(() => removeRestrictionAction({ id: r.id, materialId }))}>Remove</Pill> : null}</Td>
+              <Td className="text-right">{canEdit && r.material?.id === materialId ? <Pill size="sm" variant="flat" disabled={cmd.pending} onClick={() => cmd.run(() => removeRestrictionAction({ id: r.id, materialId }), (data) => { if (data?.deleteMaterialRestriction?.id === r.id) setRemovedIds((ids) => [...ids, r.id]); })}>Remove</Pill> : null}</Td>
             </tr>
           ))}
         </DataTable>

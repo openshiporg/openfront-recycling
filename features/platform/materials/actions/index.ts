@@ -92,7 +92,10 @@ export async function createMaterialAction(input: MaterialInput) {
 export async function updateMaterialAction(id: string, input: MaterialInput) {
   const data = materialData(input, false);
   if ('error' in data) return { ok: false as const, error: String(data.error) };
-  return done(await platformRequest(`mutation UpdateMaterial($id: ID!, $data: MaterialUpdateInput!) { updateMaterial(where: { id: $id }, data: $data) { id } }`, { id, data }), id);
+  // These pages are force-dynamic. Return the saved record first; useCommand refreshes
+  // them separately, so this response doesn't wait for a full page render.
+  const r = await platformRequest<{ updateMaterial: MaterialDetail }>(`mutation UpdateMaterial($id: ID!, $data: MaterialUpdateInput!) { updateMaterial(where: { id: $id }, data: $data) { ${FIELDS} description preparationTips minimumWeight standardContainerTare updatedAt } }`, { id, data });
+  return r.ok ? { ok: true as const, data: r.data.updateMaterial } : r;
 }
 
 export async function uploadMaterialImageAction(form: FormData) {
@@ -130,5 +133,6 @@ export async function addRestrictionAction(input: { materialId: string; profileI
 }
 
 export async function removeRestrictionAction(input: { id: string; materialId: string }) {
-  return done(await platformRequest(`mutation RemoveRestriction($id: ID!) { deleteMaterialRestriction(where: { id: $id }) { id } }`, { id: input.id }), input.materialId);
+  // The client removes only the ID confirmed by the mutation, then refreshes.
+  return platformRequest<{ deleteMaterialRestriction: { id: string } | null }>(`mutation RemoveRestriction($id: ID!) { deleteMaterialRestriction(where: { id: $id }) { id } }`, { id: input.id });
 }
