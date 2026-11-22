@@ -112,7 +112,7 @@ export async function DonatePage() {
     <>
       {head}
       <div className="sf-wrap sf-section sf-stack">
-        {r.data.length === 0 ? <StateCard title="No nonprofit partners yet" /> : (
+        {r.data.length === 0 ? <StateCard title="No nonprofit partners yet">When a local cause joins, you can choose it at check-in or tell the cashier.</StateCard> : (
           <div className="sf-grid sf-grid-2">
             {r.data.map((n) => (
               <article key={n.id} className="sf-card sf-stack" style={{ gap: 8 }}>

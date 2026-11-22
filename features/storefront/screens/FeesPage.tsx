@@ -1,11 +1,11 @@
 import Link from 'next/link';
-import { getPriceBoard, getYards } from '../lib/data/public';
+import { getPriceBoard, getPublicYards } from '../lib/data/public';
 import { dateTime, perUnit, zoneName } from '../lib/format';
 import { LoadError, PageHead, StateCard } from '../components/ui';
 import { priceText } from './PricesPage';
 
 export default async function FeesPage({ yard }: { yard?: string | null }) {
-  const [boardR, yardsR] = await Promise.all([getPriceBoard(yard || null), getYards()]);
+  const [boardR, yardsR] = await Promise.all([getPriceBoard(yard || null), getPublicYards()]);
   const head = <PageHead title="Drop-off fees" crumbs={[{ href: '/', label: 'Home' }, { label: 'Drop-off fees' }]} lead="Some items cost money to recycle safely, such as tires and appliances with refrigerant. The fee is charged at the scale and shown on your ticket." />;
   if (!boardR.ok) return (<>{head}<LoadError what="the fees" /></>);
   const board = boardR.data;

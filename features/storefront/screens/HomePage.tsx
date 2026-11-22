@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { getBusiness, getCatalog, getPriceBoard, getYardRules, getYards, type PriceRow } from '../lib/data/public';
-import { dateTime, methodsText, perUnit, todayStatus, unitPriceText, zoneName } from '../lib/format';
+import { dateTime, methodsText, perUnit, shortDate, todayStatus, unitPriceText, zoneName } from '../lib/format';
 import { IconArrow, IconBolt, IconBuilding, IconCash, IconClock, IconContainer, IconLaptopCheck, IconQr, IconTag, IconTruckScale } from '../components/icons';
 import { LoadError, NotOpenYet, Qr } from '../components/ui';
 
@@ -79,7 +79,7 @@ export default async function HomePage() {
               <IconTag size={40} />
               <div>
                 <strong>{materialCount ? `${materialCount} materials` : 'Materials'}</strong>
-                <span>{board?.publishedAt ? `Prices published ${dateTime(board.publishedAt, tz)}` : 'Bought by weight at the scale'}</span>
+                <span>{board?.publishedAt ? `Prices updated ${shortDate(board.publishedAt, tz)}` : 'Bought by weight at the scale'}</span>
               </div>
             </div>
             <div className="sf-fact">

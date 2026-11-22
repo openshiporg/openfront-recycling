@@ -5,6 +5,7 @@ import { LoadError, PageHead, StateCard } from '../components/ui';
 import { priceText } from './PricesPage';
 
 const FALLBACK_IMAGE: Record<string, string> = { ferrous: '/storefront/steel.jpg', non_ferrous: '/storefront/nonferrous.jpg' };
+const CATEGORY_IMAGE: Record<string, string> = { copper: '/storefront/copper.jpg' };
 
 export default async function MaterialsPage({ q, category }: { q?: string | null; category?: string | null }) {
   const [catalogR, boardR] = await Promise.all([getCatalog(), getPriceBoard(null)]);
@@ -46,7 +47,7 @@ export default async function MaterialsPage({ q, category }: { q?: string | null
           <div className="sf-grid sf-grid-4">
             {shown.map((m) => {
               const p = priceBy.get(m.id);
-              const img = m.imageUrl || FALLBACK_IMAGE[m.category?.kind || ''] || '/storefront/yard-gate.jpg';
+              const img = m.imageUrl || CATEGORY_IMAGE[m.category?.slug || ''] || FALLBACK_IMAGE[m.category?.kind || ''] || '/storefront/yard-gate.jpg';
               return (
                 <Link key={m.id} href={`/materials/${m.slug}`} className="sf-card sf-matcard">
                   <div className="sf-matcard-img">

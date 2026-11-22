@@ -126,7 +126,7 @@ export async function CompanyTicketsPage({ slug, siteId, from, to, page }: { slu
   const qs = (n: number) => `${base(slug)}/tickets?${new URLSearchParams({ ...(siteId ? { site: siteId } : {}), ...(from ? { from } : {}), ...(to ? { to } : {}), page: String(n) })}`;
   return (
     <>
-      <form className="sf-card sf-card-flat sf-cluster" action={`${base(slug)}/tickets`} style={{ alignItems: 'end' }}>
+      <form className="sf-card sf-card-flat sf-cluster sf-filters" action={`${base(slug)}/tickets`} style={{ alignItems: 'end' }}>
         {sites.ok && sites.data.length > 1 ? (
           <div className="sf-field"><label htmlFor="st">Site</label><select id="st" name="site" className="sf-select" defaultValue={siteId || ''}><option value="">All sites</option>{sites.data.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></div>
         ) : null}
@@ -362,7 +362,7 @@ export async function CompanyInvoicesPage({ slug }: { slug: string }) {
   const r = await getAccountInvoices(slug);
   if (!r.ok) return <LoadError what="your invoices" />;
   const { items, currencyCode: cur } = r.data;
-  if (!items.length) return <StateCard title="No invoices" />;
+  if (!items.length) return <StateCard title="No invoices">Invoices for container rental and service fees appear here.</StateCard>;
   return (
     <div className="sf-card sf-table-scroll" style={{ padding: 0 }}>
       <table className="sf-table">

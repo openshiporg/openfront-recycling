@@ -22,7 +22,7 @@ export async function TicketsPage({ status, from, to, page }: { status?: string 
   return (
     <>
       <AccountTitle title="Tickets" lead={count ? `${count} ticket${count === 1 ? '' : 's'}` : undefined} />
-      <form className="sf-card sf-card-flat sf-cluster" action="/account/tickets" style={{ alignItems: 'end' }}>
+      <form className="sf-card sf-card-flat sf-cluster sf-filters" action="/account/tickets" style={{ alignItems: 'end' }}>
         <div className="sf-field"><label htmlFor="st">Status</label>
           <select id="st" name="status" className="sf-select" defaultValue={status || ''}>
             <option value="">All</option>{STATUSES.map((s) => <option key={s} value={s}>{label('ticket', s)}</option>)}

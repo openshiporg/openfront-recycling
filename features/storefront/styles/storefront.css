@@ -353,11 +353,20 @@
 .sf-today-side { position: relative; }
 .sf-facts::before { opacity: calc(var(--sf-grain-opacity) + 0.04); }
 /* Torn bottom edge on the facts band and the page head. */
-.sf-facts { clip-path: var(--sf-torn-edge); padding-bottom: 46px; }
-.sf-pagehead { clip-path: var(--sf-torn-edge); padding-bottom: 8px; }
+.sf-facts { clip-path: var(--sf-torn-edge); padding-bottom: 44px; }
+.sf-pagehead { clip-path: var(--sf-torn-edge); padding-bottom: 28px; }
 .sf-pagehead::after { display: none; }
 /* Today's prices card sizes to its rows. */
 .sf-today-card { align-items: start; }
 .sf-today-card > :first-child { align-self: start; }
 .sf-today-side { align-self: stretch; }
 @media print { .sf-hero-block::before, .sf-facts::before, .sf-pagehead::before, .sf-today-side::before { display: none; } .sf-facts, .sf-pagehead { clip-path: none; } }
+
+/* Ticket filters: even two-column grid on phones */
+@media (max-width: 560px) {
+  .sf-filters { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .sf-filters .sf-field { margin: 0; min-width: 0; }
+  .sf-filters .sf-field:has(select) { grid-column: 1 / -1; }
+  .sf-filters .sf-input, .sf-filters .sf-select { width: 100%; }
+  .sf-filters .sf-btn { grid-column: 1 / -1; }
+}

@@ -2,7 +2,6 @@ import Link from 'next/link';
 import { getBusiness, getContainerTypes, businessOrDefaults, type ContainerType } from '../lib/data/public';
 import { label, money } from '../lib/format';
 import { LoadError, PageHead, StateCard } from '../components/ui';
-import { IconContainer } from '../components/icons';
 
 function Fees({ c, cur }: { c: ContainerType; cur: string }) {
   const rows: Array<[string, string]> = [];
@@ -42,12 +41,8 @@ export default async function ContainersPage() {
           <div className="sf-grid sf-grid-3">
             {r.data.map((c) => (
               <article key={c.id} className="sf-card sf-stack" style={{ gap: 12 }}>
-                {c.imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={c.imageUrl} alt="" style={{ width: '100%', aspectRatio: '3/2', objectFit: 'cover', borderRadius: 'var(--sf-radius-tile)' }} />
-                ) : (
-                  <div aria-hidden style={{ aspectRatio: '3/2', borderRadius: 'var(--sf-radius-tile)', background: 'var(--sf-band)', color: 'var(--sf-on-rust)', display: 'grid', placeItems: 'center' }}><IconContainer size={64} /></div>
-                )}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={c.imageUrl || (c.kind === 'roll_off' ? '/storefront/container.jpg' : '/storefront/nonferrous.jpg')} alt="" loading="lazy" style={{ width: '100%', aspectRatio: '3/2', objectFit: 'cover', borderRadius: 'var(--sf-radius-tile)' }} />
                 <div>
                   <div className="sf-small sf-muted">{label('containerKind', c.kind)}{c.capacityLabel ? ` · ${c.capacityLabel}` : ''}</div>
                   <h2 className="sf-h3" style={{ margin: '2px 0 0' }}><Link className="sf-link" href={`/containers/${c.slug}`}>{c.name}</Link></h2>
@@ -82,11 +77,9 @@ export async function ContainerPage({ slug }: { slug: string }) {
       <PageHead title={c.name} crumbs={[{ href: '/', label: 'Home' }, { href: '/containers', label: 'Containers' }, { label: c.name }]} lead={[label('containerKind', c.kind), c.capacityLabel, c.dimensions].filter(Boolean).join(' · ')} />
       <div className="sf-wrap sf-section sf-split">
         <div className="sf-stack">
-          {c.imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={c.imageUrl} alt="" style={{ width: '100%', aspectRatio: '3/2', objectFit: 'cover', borderRadius: 'var(--sf-radius-card)' }} />
-          ) : null}
-          {c.description ? <p style={{ margin: 0 }}>{c.description}</p> : null}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={c.imageUrl || (c.kind === 'roll_off' ? '/storefront/container.jpg' : '/storefront/nonferrous.jpg')} alt="" style={{ width: '100%', aspectRatio: '3/2', objectFit: 'cover', borderRadius: 'var(--sf-radius-card)' }} />
+          {c.description && c.description !== c.suitableFor ? <p style={{ margin: 0 }}>{c.description}</p> : null}
           {c.suitableFor ? (<section className="sf-card sf-card-flat"><h2 className="sf-h3" style={{ marginTop: 0 }}>What fits</h2><p style={{ margin: 0, whiteSpace: 'pre-line' }}>{c.suitableFor}</p></section>) : null}
         </div>
         <aside className="sf-card sf-stack">

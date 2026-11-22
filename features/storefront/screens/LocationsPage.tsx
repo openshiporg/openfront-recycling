@@ -41,7 +41,7 @@ export async function LocationsPage() {
             <article key={y.id} className="sf-card sf-stack" style={{ gap: 10 }}>
               <div className="sf-between"><h2 className="sf-h3"><Link href={`/locations/${y.slug}`} style={{ textDecoration: 'none' }}>{y.name}</Link></h2><OpenBadge y={y} /></div>
               {a.oneLine ? <p style={{ margin: 0 }}><IconPin size={18} /> {a.oneLine}</p> : null}
-              {t.hasHours ? <p style={{ margin: 0 }}><IconClock size={18} /> Today: {t.closureReason ? `closed (${t.closureReason})` : t.text}</p> : null}
+              {t.hasHours ? <p style={{ margin: 0 }}><IconClock size={18} /> {t.open ? `Today: ${t.text}` : [t.closureReason ? `Closed today (${t.closureReason})` : 'Closed now', t.nextOpen].filter(Boolean).join(' · ')}</p> : null}
               {y.phone ? <p style={{ margin: 0 }}><IconPhone size={16} /> <a href={telHref(y.phone)}>{y.phone}</a></p> : null}
               {y.acceptsPublic === false ? <span className="sf-badge sf-badge-warn">Business accounts only</span> : null}
               <div className="sf-cluster"><Link className="sf-btn sf-btn-sm" href={`/locations/${y.slug}`}>Hours and details</Link><Link className="sf-link" href={`/prices?yard=${y.slug}`}>Prices</Link></div>
