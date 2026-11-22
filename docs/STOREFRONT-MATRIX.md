@@ -49,9 +49,9 @@ schema (checked 2026-11-22). **not built** = deliberately left out of this store
 | S10 | `/account/payouts` | built (`myPayouts`) |
 | S11 | on `/account/tickets/[id]` | built (`myTicket`) |
 | S12 | `/account/tickets/[id]/pay` | built (`payInvoiceByCard`, hosted checkout), waits on `myTicket` |
-| S13 | Donations list and receipts | not built (tier 3). A donation shows on the ticket and its receipt. |
+| S13 | `/account/statements` (donations), `/account/donations/[id]/receipt` | built (`myDonations`, `myDonationReceipt`) |
 | S14 | `/account/pickups`, `/account/pickups/[id]` | built (`acceptServiceQuote`, `payServiceRequestByCard`, `cancelServiceRequest`), waits on `myServiceRequests`, `myServiceRequest` |
-| S15 | Yearly statement CSV | not built (tier 3) |
+| S15 | `/account/statements`, `/account/statements/csv` | built (`mySellerYearSummary`; the CSV is built in the storefront with the formula guard) |
 | S16 | `/account/applications` | built (`withdrawApplication`), waits on `myApplications` |
 
 ## Company portal (`/account/company/[accountSlug]/`)

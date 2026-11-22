@@ -90,6 +90,7 @@ export function todayIn(tz: string | null | undefined, offsetDays = 0) {
 const LABELS: Record<string, Record<string, string>> = {
   ticket: { open: 'In progress', completed: 'Completed', settled: 'Paid in full', voided: 'Cancelled' },
   payout: { pending: 'Being prepared', held: 'On hold', ready: 'Ready to collect', paid: 'Paid', cancelled: 'Cancelled', returned: 'Returned' },
+  donation: { pledged: 'Pledged', credited: 'Credited', disbursed: 'Paid to the cause', cancelled: 'Cancelled' },
   payoutMethod: { cash: 'Cash', check: 'Check', transfer: 'Bank transfer' },
   visit: { booked: 'Booked', arrived: 'Arrived', cancelled: 'Cancelled', expired: 'Expired' },
   hold: { held: 'On hold', released: 'Released', police_hold: 'Held by police request', seized: 'Seized', cancelled: 'Cancelled' },

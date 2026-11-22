@@ -161,3 +161,32 @@ export const getPayouts = cache(async (): Promise<GqlResult<{ items: PayoutRow[]
   } }`);
   return r.ok ? { ok: true, data: r.data.myPayouts || { items: [], currencyCode: 'USD' } } : r;
 });
+
+// S13 donations and S15 yearly statement
+
+export type DonationRow = { id: string; receiptNumber: string | null; status: string; kind: string; amountCents: number | null; weight: string; nonprofitName: string | null; campaignName: string | null; date: string | null; ticket: { id: string; displayNumber: string } | null };
+export const getDonations = cache(async (year: number | null = null): Promise<GqlResult<DonationRow[]>> => {
+  const r = await gql<{ myDonations: DonationRow[] }>(`query($year: Int) { myDonations(year: $year) { id receiptNumber status kind amountCents weight nonprofitName campaignName date ticket { id displayNumber } } }`, { year });
+  return r.ok ? { ok: true, data: r.data.myDonations || [] } : r;
+});
+
+export type DonationReceipt = {
+  id: string; receiptNumber: string; issuedAt: string | null; status: string; kind: string; donorName: string | null; date: string | null; yardName: string | null;
+  nonprofitLegalName: string | null; nonprofitEin: string | null; campaignName: string | null; items: Array<{ material: string | null; weight: string | null; unit: string | null; quantity: number | null }>;
+  amountCreditedCents: number | null; goodsOrServicesProvided: boolean; statement: string;
+};
+export const getDonationReceipt = cache(async (id: string): Promise<GqlResult<DonationReceipt | null>> => {
+  const r = await gql<{ myDonationReceipt: DonationReceipt | null }>(`query($id: ID!) { myDonationReceipt(donationId: $id) {
+    id receiptNumber issuedAt status kind donorName date yardName nonprofitLegalName nonprofitEin campaignName items { material weight unit quantity } amountCreditedCents goodsOrServicesProvided statement
+  } }`, { id });
+  if (!r.ok) return r.notFound ? { ok: true, data: null } : r;
+  return { ok: true, data: r.data.myDonationReceipt };
+});
+
+export type YearSummary = { year: number; currencyCode: string; weightUnit: string; ticketCount: number; totalWeight: string; totalCents: number; paidCents: number; donatedCents: number; materials: Array<{ materialName: string; unit: string; weight: string; quantity: number; amountCents: number }>; csv: string };
+export const getYearSummary = cache(async (year: number): Promise<GqlResult<YearSummary>> => {
+  const r = await gql<{ mySellerYearSummary: YearSummary }>(`query($year: Int!) { mySellerYearSummary(year: $year) {
+    year currencyCode weightUnit ticketCount totalWeight totalCents paidCents donatedCents materials { materialName unit weight quantity amountCents } csv
+  } }`, { year });
+  return r.ok ? { ok: true, data: r.data.mySellerYearSummary } : r;
+});

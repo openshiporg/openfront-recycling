@@ -10,6 +10,7 @@ const ITEMS = [
   { href: '/account/visits', label: 'Visits' },
   { href: '/account/tickets', label: 'Tickets' },
   { href: '/account/payouts', label: 'Payouts' },
+  { href: '/account/statements', label: 'Statements' },
   { href: '/account/pickups', label: 'Pickups' },
   { href: '/account/profile', label: 'My details' },
   { href: '/account/identity', label: 'ID' },
