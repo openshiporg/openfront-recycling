@@ -71,7 +71,7 @@
 .sf-btn:disabled, .sf-btn[aria-disabled='true'] { opacity: 0.55; cursor: not-allowed; }
 .sf-btn-ghost { background: transparent; color: var(--sf-rust); border: 2px solid var(--sf-rust); box-shadow: none; }
 .sf-btn-ghost:hover { background: var(--sf-rust); color: var(--sf-on-rust); }
-.sf-btn-light { background: var(--sf-card); color: var(--sf-rust); }
+.sf-btn-light, [data-storefront] a.sf-btn-light { background: var(--sf-card); color: var(--sf-rust); }
 .sf-btn-sm { min-height: 44px; font-size: 16px; padding: 0 16px; }
 .sf-link { color: var(--sf-rust); font-weight: 700; text-underline-offset: 3px; }
 
