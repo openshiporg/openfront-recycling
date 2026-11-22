@@ -5,6 +5,9 @@ var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __esm = (fn, res) => function __init() {
+  return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+};
 var __export = (target, all) => {
   for (var name in all)
     __defProp(target, name, { get: all[name], enumerable: true });
@@ -26,6 +29,187 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   mod
 ));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+
+// features/integrations/payment/manual.ts
+var manual_exports = {};
+__export(manual_exports, {
+  capturePaymentFunction: () => capturePaymentFunction,
+  createPaymentFunction: () => createPaymentFunction,
+  generatePaymentLinkFunction: () => generatePaymentLinkFunction,
+  getPaymentStatusFunction: () => getPaymentStatusFunction,
+  handleWebhookFunction: () => handleWebhookFunction,
+  refundPaymentFunction: () => refundPaymentFunction
+});
+function asNumber(value, fallback = 0) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+}
+function asString(value, fallback = "") {
+  return typeof value === "string" && value.length > 0 ? value : fallback;
+}
+async function handleWebhookFunction() {
+  throw new Error("Pay-in-person payments do not accept webhooks.");
+}
+async function createPaymentFunction({ amount, currency }) {
+  return {
+    status: "pending",
+    data: {
+      status: "pending",
+      amount: asNumber(amount),
+      currency: asString(currency, "usd").toLowerCase(),
+      provider: "manual",
+      settlement: "offline"
+    }
+  };
+}
+async function capturePaymentFunction() {
+  throw new Error("Pay-in-person payments are not captured by a processor. Record the payment at checkout.");
+}
+async function refundPaymentFunction() {
+  throw new Error("Pay-in-person payments are not refunded by a processor. Record a cash refund from the checkout receipt.");
+}
+async function getPaymentStatusFunction() {
+  throw new Error("Pay-in-person payments have no processor status to check.");
+}
+async function generatePaymentLinkFunction() {
+  return null;
+}
+var init_manual = __esm({
+  "features/integrations/payment/manual.ts"() {
+    "use strict";
+  }
+});
+
+// features/integrations/payment/stripe.ts
+var stripe_exports = {};
+__export(stripe_exports, {
+  capturePaymentFunction: () => capturePaymentFunction2,
+  createPaymentFunction: () => createPaymentFunction2,
+  generatePaymentLinkFunction: () => generatePaymentLinkFunction2,
+  getPaymentStatusFunction: () => getPaymentStatusFunction2,
+  handleWebhookFunction: () => handleWebhookFunction2,
+  refundPaymentFunction: () => refundPaymentFunction2,
+  stripeConfigured: () => stripeConfigured,
+  verifyStripeSignature: () => verifyStripeSignature
+});
+function stripeConfigured() {
+  return Boolean(process.env.STRIPE_SECRET_KEY);
+}
+function secretKey() {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) throw new Error("Card payments are not set up yet. Add the Stripe secret key in Settings \u2192 Payments, or take payment in person.");
+  return key;
+}
+function form(values) {
+  const body = new URLSearchParams();
+  for (const [key, value] of Object.entries(values)) if (value !== void 0 && value !== "") body.append(key, String(value));
+  return body;
+}
+async function stripe(path2, init = {}) {
+  const response = await fetch(`${API}${path2}`, {
+    method: init.method || "GET",
+    headers: {
+      Authorization: `Bearer ${secretKey()}`,
+      ...init.body ? { "Content-Type": "application/x-www-form-urlencoded" } : {},
+      ...init.idempotencyKey ? { "Idempotency-Key": init.idempotencyKey } : {}
+    },
+    body: init.body,
+    redirect: "error"
+  });
+  const json4 = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(json4.error?.message || `Stripe request failed (${response.status}).`);
+  return json4;
+}
+function sessionStatus(session) {
+  if (session.payment_status === "paid" || session.payment_status === "no_payment_required") return "captured";
+  if (session.status === "expired") return "expired";
+  return "pending";
+}
+function asString2(value) {
+  return typeof value === "string" ? value : "";
+}
+async function createPaymentFunction2({ amount, currency, successUrl, cancelUrl, description, idempotencyKey, metadata, customerEmail }) {
+  const cents = Math.round(Number(amount));
+  if (!Number.isSafeInteger(cents) || cents <= 0) throw new Error("Payment amount must be greater than zero.");
+  const meta = metadata && typeof metadata === "object" ? metadata : {};
+  const session = await stripe("/checkout/sessions", {
+    method: "POST",
+    idempotencyKey: asString2(idempotencyKey) || void 0,
+    body: form({
+      mode: "payment",
+      success_url: asString2(successUrl),
+      cancel_url: asString2(cancelUrl),
+      .../^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(asString2(customerEmail)) ? { customer_email: asString2(customerEmail) } : {},
+      "line_items[0][quantity]": 1,
+      "line_items[0][price_data][currency]": asString2(currency || "usd").toLowerCase(),
+      "line_items[0][price_data][unit_amount]": cents,
+      "line_items[0][price_data][product_data][name]": asString2(description) || "Payment",
+      ...Object.fromEntries(Object.entries(meta).map(([key, value]) => [`metadata[${key}]`, asString2(value)])),
+      ...Object.fromEntries(Object.entries(meta).map(([key, value]) => [`payment_intent_data[metadata][${key}]`, asString2(value)]))
+    })
+  });
+  return { status: sessionStatus(session), id: session.id, url: session.url, data: { id: session.id, url: session.url, status: session.status, amount: session.amount_total, provider: "stripe" } };
+}
+async function getPaymentStatusFunction2({ paymentId }) {
+  const session = await stripe(`/checkout/sessions/${encodeURIComponent(asString2(paymentId))}?expand[]=payment_intent.latest_charge`);
+  const intent = session.payment_intent && typeof session.payment_intent === "object" ? session.payment_intent : null;
+  const charge = intent && intent.latest_charge && typeof intent.latest_charge === "object" ? intent.latest_charge : null;
+  const refundedAmount = charge ? charge.amount_refunded : 0;
+  let status2 = sessionStatus(session);
+  if (status2 === "captured" && refundedAmount > 0) status2 = refundedAmount >= (session.amount_total || 0) ? "refunded" : "partially_refunded";
+  return {
+    status: status2,
+    amount: session.amount_total,
+    currency: session.currency,
+    refundedAmount,
+    data: { id: session.id, status: session.status, paymentStatus: session.payment_status, paymentIntent: intent?.id || session.payment_intent, amount: session.amount_total }
+  };
+}
+async function capturePaymentFunction2(args) {
+  return getPaymentStatusFunction2(args);
+}
+async function refundPaymentFunction2({ paymentId, amount, idempotencyKey }) {
+  const session = await stripe(`/checkout/sessions/${encodeURIComponent(asString2(paymentId))}`);
+  const intentId = typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id;
+  if (!intentId) throw new Error("This payment has nothing to refund.");
+  const refund = await stripe("/refunds", {
+    method: "POST",
+    idempotencyKey: asString2(idempotencyKey) || void 0,
+    body: form({ payment_intent: intentId, amount: amount == null ? void 0 : Math.round(Number(amount)) })
+  });
+  return { status: refund.status === "succeeded" ? "refunded" : refund.status, id: refund.id, amount: refund.amount, failureMessage: refund.failure_reason || "", data: refund };
+}
+function verifyStripeSignature(rawBody, header, secret2, toleranceSeconds = 300, now = Date.now()) {
+  if (!header || !secret2) return false;
+  const parts = Object.fromEntries(header.split(",").map((p) => p.trim().split("=")).filter((p) => p.length === 2).map(([k, v]) => [k, v]));
+  const timestamp4 = Number(parts.t);
+  if (!Number.isFinite(timestamp4) || Math.abs(now / 1e3 - timestamp4) > toleranceSeconds) return false;
+  const expected = (0, import_node_crypto6.createHmac)("sha256", secret2).update(`${parts.t}.${rawBody}`, "utf8").digest();
+  const signatures = header.split(",").map((p) => p.trim()).filter((p) => p.startsWith("v1=")).map((p) => p.slice(3));
+  return signatures.some((sig) => {
+    if (!/^[a-f0-9]{64}$/i.test(sig)) return false;
+    const received = Buffer.from(sig, "hex");
+    return received.length === expected.length && (0, import_node_crypto6.timingSafeEqual)(received, expected);
+  });
+}
+async function handleWebhookFunction2({ event, headers, rawBody }) {
+  const secret2 = process.env.STRIPE_WEBHOOK_SECRET || "";
+  const signature = asString2(headers?.["stripe-signature"]);
+  if (!verifyStripeSignature(asString2(rawBody), signature, secret2)) return { isValid: false };
+  const record = event || {};
+  const object = record.data?.object || {};
+  const checkoutSessionId = object.object === "checkout.session" ? object.id : "";
+  return { isValid: true, eventId: record.id, type: record.type, checkoutSessionId, paymentIntentId: object.object === "payment_intent" ? object.id : object.payment_intent || "", metadata: object.metadata || {} };
+}
+var import_node_crypto6, API, generatePaymentLinkFunction2;
+var init_stripe = __esm({
+  "features/integrations/payment/stripe.ts"() {
+    "use strict";
+    import_node_crypto6 = require("node:crypto");
+    API = "https://api.stripe.com/v1";
+    generatePaymentLinkFunction2 = createPaymentFunction2;
+  }
+});
 
 // keystone.ts
 var keystone_exports = {};
@@ -2403,6 +2587,28 @@ async function doNotBuyMatch(tx, input, now = /* @__PURE__ */ new Date()) {
 async function currentIdentity(tx, sellerId) {
   return tx.identityDocument.findFirst({ where: { sellerId, isCurrent: true }, orderBy: [{ expiresOn: "desc" }, { createdAt: "desc" }] });
 }
+async function refreshDuePayouts(tx, now = /* @__PURE__ */ new Date(), where = {}) {
+  const params = [now];
+  let filter = "";
+  if (where.ticketId) {
+    params.push(where.ticketId);
+    filter += ` AND p."ticket" = $${params.length}`;
+  }
+  if (where.payoutId) {
+    params.push(where.payoutId);
+    filter += ` AND p."id" = $${params.length}`;
+  }
+  await tx.$executeRawUnsafe(
+    `UPDATE "Payout" p SET "status" = 'ready', "updatedAt" = NOW()
+     WHERE p."status" = 'held' AND p."releaseAt" IS NOT NULL AND p."releaseAt" <= $1 ${filter}
+       AND NOT EXISTS (SELECT 1 FROM "HoldTag" h WHERE h."ticket" = p."ticket" AND h."status" = 'police_hold')`,
+    ...params
+  );
+}
+async function hasPoliceHold(tx, ticketId) {
+  if (!ticketId) return false;
+  return Boolean(await tx.holdTag.findFirst({ where: { ticketId, status: "police_hold" } }));
+}
 async function maybeSettleTicket(tx, ticketId, now = /* @__PURE__ */ new Date()) {
   const ticket = await tx.scaleTicket.findUnique({ where: { id: ticketId }, include: { payouts: true, settlement: true } });
   if (!ticket || ticket.status !== "completed") return false;
@@ -2484,7 +2690,7 @@ function computeLine(line, base = "lb") {
     const gross2 = dec(line.grossWeight);
     const tare2 = dec(line.tareWeight);
     const net2 = gross2.gt(0) ? gross2.minus(tare2) : new import_decimal4.Decimal(0);
-    const amount2 = roundCents(price.times(quantity));
+    const amount2 = roundCents(price.times(quantity).times(100));
     const signed2 = line.direction === "charge_customer" ? -amount2 : amount2;
     return { netWeight: net2.toDecimalPlaces(2), deduction: new import_decimal4.Decimal(0), payWeight: new import_decimal4.Decimal(quantity), amountCents: amount2, signedAmountCents: signed2 };
   }
@@ -2515,6 +2721,9 @@ function computeTicketTotals(lines, fees = [], feeTaxRatePercent = 0) {
   const chargeBase = lines.filter((l) => l.signedAmountCents < 0).reduce((s, l) => s - l.signedAmountCents, 0) + fees.filter((f) => f.amountCents < 0).reduce((s, f) => s - f.amountCents, 0);
   const taxCents = roundCents(new import_decimal4.Decimal(chargeBase).times(dec(feeTaxRatePercent)).div(100));
   return { materialTotalCents, feeTotalCents, taxCents, totalCents: materialTotalCents + feeTotalCents - taxCents };
+}
+function roundCashUpToNickel(cents) {
+  return Math.ceil(cents / 5) * 5;
 }
 function sequentialLineWeights(weights) {
   if (weights.length < 2) throw new TicketMathError("Truck-scale weighing needs a full weight and at least one weight after unloading.");
@@ -2729,6 +2938,22 @@ async function maybeFulfilOrder(tx, orderId) {
   if (!done) return false;
   const won = await tx.salesOrder.updateMany({ where: { id: orderId, status: "in_fulfilment" }, data: { status: "fulfilled" } });
   return won.count === 1;
+}
+async function maybeCloseOrder(tx, orderId) {
+  const order = await tx.salesOrder.findUnique({ where: { id: orderId }, include: { shipments: { include: { invoice: true } } } });
+  if (!order || order.status !== "fulfilled") return false;
+  const live = order.shipments.filter((s) => s.status !== "cancelled");
+  if (!live.length || live.some((s) => !s.invoice || s.invoice.status !== "paid")) return false;
+  const openClaim = await tx.claim.findFirst({ where: { shipmentId: { in: live.map((s) => s.id) }, status: "open" } });
+  if (openClaim) return false;
+  const won = await tx.salesOrder.updateMany({ where: { id: orderId, status: "fulfilled" }, data: { status: "closed" } });
+  return won.count === 1;
+}
+async function afterSaleInvoicePaid(tx, invoice, now = /* @__PURE__ */ new Date()) {
+  if (!invoice.shipmentId) return;
+  await tx.shipment.updateMany({ where: { id: invoice.shipmentId, status: "loaded" }, data: { status: "released", releasedAt: now } });
+  const shipment = await tx.shipment.findUnique({ where: { id: invoice.shipmentId } });
+  if (shipment?.orderId) await maybeCloseOrder(tx, shipment.orderId);
 }
 
 // features/keystone/commands/tickets.ts
@@ -3477,9 +3702,606 @@ var ticketResolvers = {
   }
 };
 
+// features/keystone/commands/money.ts
+var import_node_crypto8 = require("node:crypto");
+
+// features/integrations/payment/index.ts
+var paymentProviderAdapters = {
+  manual: { load: () => Promise.resolve().then(() => (init_manual(), manual_exports)), settlement: "offline", webhook: null },
+  stripe: { load: () => Promise.resolve().then(() => (init_stripe(), stripe_exports)), settlement: "processor", webhook: { secretEnv: "STRIPE_WEBHOOK_SECRET", signatureHeader: "stripe-signature" } }
+};
+function isPaymentProviderAdapterCode(value) {
+  return Object.prototype.hasOwnProperty.call(paymentProviderAdapters, value);
+}
+function getPaymentProviderRegistration(code) {
+  const bare = code.replace(/^pp_/, "");
+  return isPaymentProviderAdapterCode(bare) ? paymentProviderAdapters[bare] : null;
+}
+async function paymentAdapter(code) {
+  const registration = getPaymentProviderRegistration(code);
+  if (!registration) throw new Error(`Payment adapter ${code} is not registered.`);
+  return { registration, adapter: await registration.load() };
+}
+
+// features/keystone/lib/paymentWebhookSecurity.ts
+var import_node_crypto7 = require("node:crypto");
+
+// features/keystone/commands/money.ts
+var hashKey = (value) => (0, import_node_crypto8.createHash)("sha256").update(value).digest("hex");
+async function drawerExpectedCents(tx, sessionId) {
+  const events = await tx.cashDrawerEvent.findMany({ where: { sessionId }, select: { kind: true, amountCents: true } });
+  return events.reduce((sum, e) => sum + (e.kind === "payout" || e.kind === "drop" ? -e.amountCents : e.amountCents), 0);
+}
+async function lockOpenDrawerSession(ctx, sessionId, { mine = true } = {}) {
+  const row = await lockRow(ctx.tx, "CashDrawerSession", sessionId);
+  if (!row) refuse("Drawer session not found.");
+  if (row.status !== "open") refuse("This drawer session is not open.");
+  if (mine && row.cashier !== ctx.actorId && !hasFlag(ctx.session, "canManageCashDrawers")) refuse("This is another cashier\u2019s drawer.");
+  const drawer = await ctx.tx.cashDrawer.findUnique({ where: { id: row.drawer } });
+  requireYard(ctx.session, drawer?.yardId);
+  return { row, drawer };
+}
+async function drawerEvent(ctx, sessionId, kind, amountCents, referenceKey, extra = {}) {
+  if (!Number.isSafeInteger(amountCents) || amountCents <= 0) refuse("The amount must be above zero.");
+  await ctx.tx.cashDrawerEvent.create({ data: { sessionId, kind, amountCents, referenceKey, createdById: ctx.actorId, note: "", ...extra } });
+  const expected = await drawerExpectedCents(ctx.tx, sessionId);
+  await ctx.tx.cashDrawerSession.update({ where: { id: sessionId }, data: { expectedCents: expected } });
+  return expected;
+}
+async function openDrawerSessionTx(ctx, input) {
+  const drawer = await ctx.tx.cashDrawer.findUnique({ where: { id: input.drawerId } });
+  if (!drawer || !drawer.isActive) refuse("Drawer not found.");
+  requireYard(ctx.session, drawer.yardId);
+  const float = Math.trunc(Number(input.openingFloatCents));
+  if (!Number.isSafeInteger(float) || float < 0) refuse("Count the opening float.");
+  if (await ctx.tx.cashDrawerSession.findFirst({ where: { drawerId: drawer.id, status: { in: ["open", "counting"] } } })) refuse("This drawer already has an open session.");
+  if (await ctx.tx.cashDrawerSession.findFirst({ where: { cashierId: ctx.actorId, status: { in: ["open", "counting"] } } })) refuse("You already have a drawer open.");
+  const session = await ctx.tx.cashDrawerSession.create({ data: { drawerId: drawer.id, cashierId: ctx.actorId, status: "open", openingFloatCents: float, expectedCents: float, openedAt: ctx.now } });
+  if (float > 0) await ctx.tx.cashDrawerEvent.create({ data: { sessionId: session.id, kind: "open", amountCents: float, referenceKey: `drawer:${session.id}:open`, createdById: ctx.actorId, note: "Opening float" } });
+  await ctx.audit({ eventType: "drawer.opened", aggregateType: "CashDrawerSession", aggregateId: session.id, yardId: drawer.yardId, after: { openingFloatCents: float } });
+  return session;
+}
+async function moveDrawerCashTx(ctx, input, key) {
+  if (input.kind !== "add" && input.kind !== "drop") refuse("Choose add or drop.");
+  const { row, drawer } = await lockOpenDrawerSession(ctx, input.sessionId);
+  const amount = Math.trunc(Number(input.amountCents));
+  if (input.kind === "drop" && amount > row.expectedCents) refuse("You cannot drop more cash than the drawer holds.");
+  const expected = await drawerEvent(ctx, row.id, input.kind, amount, `drawer:${row.id}:${input.kind}:${key}`, { note: input.note || "" });
+  await ctx.audit({ eventType: `drawer.${input.kind}`, aggregateType: "CashDrawerSession", aggregateId: row.id, yardId: drawer.yardId, after: { amountCents: amount, expectedCents: expected } });
+  return ctx.tx.cashDrawerSession.findUnique({ where: { id: row.id } });
+}
+async function countDrawerTx(ctx, input) {
+  const { row, drawer } = await lockOpenDrawerSession(ctx, input.sessionId);
+  const counted = Math.trunc(Number(input.countedCents));
+  if (!Number.isSafeInteger(counted) || counted < 0) refuse("Enter the counted cash.");
+  const expected = await drawerExpectedCents(ctx.tx, row.id);
+  const variance = counted - expected;
+  const closes = variance === 0;
+  await compareAndSet(ctx.tx, "cashDrawerSession", row.id, "open", { status: closes ? "closed" : "counting", countedCents: counted, varianceCents: variance, expectedCents: expected, ...closes ? { closedAt: ctx.now } : {} });
+  await ctx.audit({ eventType: closes ? "drawer.closed" : "drawer.counted", aggregateType: "CashDrawerSession", aggregateId: row.id, yardId: drawer.yardId, after: { countedCents: counted, expectedCents: expected, varianceCents: variance } });
+  return ctx.tx.cashDrawerSession.findUnique({ where: { id: row.id } });
+}
+async function approveDrawerCloseTx(ctx, input) {
+  const row = await lockRow(ctx.tx, "CashDrawerSession", input.sessionId);
+  if (!row) refuse("Drawer session not found.");
+  const drawer = await ctx.tx.cashDrawer.findUnique({ where: { id: row.drawer } });
+  requireYard(ctx.session, drawer?.yardId);
+  if (row.status !== "counting") refuse("Only a counted drawer with a variance waits for approval.");
+  const note = String(input.note || "").trim();
+  if (note.length < 3) refuse("Write a note explaining the variance.");
+  if (row.cashier === ctx.actorId && !hasFlag(ctx.session, "canManageSettings")) refuse("Another manager must approve your own drawer variance.");
+  await compareAndSet(ctx.tx, "cashDrawerSession", row.id, "counting", { status: "closed", closedAt: ctx.now, approvedById: ctx.actorId, approvalNote: note });
+  await ctx.audit({ eventType: "drawer.variance_approved", aggregateType: "CashDrawerSession", aggregateId: row.id, yardId: drawer?.yardId, after: { varianceCents: row.varianceCents }, reason: note });
+  return ctx.tx.cashDrawerSession.findUnique({ where: { id: row.id } });
+}
+async function recountDrawerTx(ctx, input) {
+  const row = await lockRow(ctx.tx, "CashDrawerSession", input.sessionId);
+  if (!row || row.status !== "counting") refuse("Only a counted drawer can be recounted.");
+  if (row.cashier !== ctx.actorId && !hasFlag(ctx.session, "canManageCashDrawers")) refuse("This is another cashier\u2019s drawer.");
+  await compareAndSet(ctx.tx, "cashDrawerSession", row.id, "counting", { status: "open", countedCents: null, varianceCents: null });
+  return ctx.tx.cashDrawerSession.findUnique({ where: { id: row.id } });
+}
+async function cashPaidToday(tx, payout, now) {
+  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const where = { status: "paid", method: "cash", paidAt: { gte: start }, id: { not: payout.id } };
+  if (payout.sellerId) where.sellerId = payout.sellerId;
+  else if (payout.accountId) where.accountId = payout.accountId;
+  else return 0;
+  const agg = await tx.payout.aggregate({ where, _sum: { amountCents: true } });
+  return agg._sum.amountCents || 0;
+}
+async function payPayoutTx(ctx, input) {
+  const { tx, now } = ctx;
+  await refreshDuePayouts(tx, now, { payoutId: input.payoutId });
+  const payout = await lockRow(tx, "Payout", input.payoutId);
+  if (!payout) refuse("Payout not found.");
+  const ticket = payout.ticket ? await tx.scaleTicket.findUnique({ where: { id: payout.ticket } }) : null;
+  const yardId = ticket?.yardId || null;
+  if (yardId) requireYard(ctx.session, yardId);
+  if (payout.status === "paid") refuse("This payout is already paid.");
+  if (payout.status === "held") {
+    if (await hasPoliceHold(tx, payout.ticket)) refuse("A police hold is on this ticket. The payout cannot be paid.");
+    refuse(`This payout is held until ${new Date(payout.releaseAt).toISOString()}.`);
+  }
+  if (payout.status !== "ready") refuse(`This payout is ${payout.status}.`);
+  if (await hasPoliceHold(tx, payout.ticket)) refuse("A police hold is on this ticket. The payout cannot be paid.");
+  const allowed = Array.isArray(payout.allowedMethods) && payout.allowedMethods.length ? payout.allowedMethods : ["cash", "check", "transfer"];
+  if (!allowed.includes(input.method)) refuse(`This payout can be paid only by ${allowed.join(" or ")}.`);
+  const data = { status: "paid", method: input.method, paidById: ctx.actorId, paidAt: now };
+  let cashCents = payout.amountCents;
+  if (input.method === "cash") {
+    if (!input.drawerSessionId) refuse("Open your drawer to pay cash.");
+    const { row } = await lockOpenDrawerSession(ctx, input.drawerSessionId);
+    const { profile } = yardId ? await yardRules(tx, yardId) : { profile: {} };
+    if (profile.cashRounding === "nickel_up") cashCents = roundCashUpToNickel(payout.amountCents);
+    if (profile.cashLimitPerTicketCents && cashCents > profile.cashLimitPerTicketCents) refuse(`Cash over ${(profile.cashLimitPerTicketCents / 100).toFixed(2)} per ticket is not allowed here. Pay by check or transfer.`);
+    if (profile.cashLimitPerDayCents && await cashPaidToday(tx, payout, now) + cashCents > profile.cashLimitPerDayCents) refuse("This seller has reached today\u2019s cash limit. Pay by check or transfer.");
+    const expected = await drawerExpectedCents(tx, row.id);
+    if (cashCents > expected) refuse(`The drawer holds ${(expected / 100).toFixed(2)}; add cash from the safe or pay by check.`);
+    data.drawerSessionId = row.id;
+  } else if (input.method === "check") {
+    const checkNumber = String(input.checkNumber || "").trim();
+    if (!checkNumber) refuse("Enter the check number.");
+    data.checkNumber = checkNumber;
+    data.bankAccountLabel = String(input.bankAccountLabel || "Operating").trim();
+    const used = await tx.payout.findFirst({ where: { checkNumber, bankAccountLabel: data.bankAccountLabel, id: { not: payout.id } } });
+    if (used) refuse(`Check ${checkNumber} on ${data.bankAccountLabel} is already used.`);
+  } else {
+    const reference = String(input.transferReference || "").trim();
+    if (!reference) refuse("Enter the bank transfer reference.");
+    data.transferReference = reference;
+  }
+  await compareAndSet(tx, "payout", payout.id, "ready", data, "This payout was just paid by someone else.");
+  if (input.method === "cash") {
+    await drawerEvent(ctx, String(data.drawerSessionId), "payout", cashCents, `payout:${payout.id}`, { payoutId: payout.id, ticketId: payout.ticket, note: cashCents !== payout.amountCents ? `Rounded up from ${payout.amountCents} cents` : "" });
+  }
+  await ctx.audit({ eventType: "payout.paid", aggregateType: "Payout", aggregateId: payout.id, yardId, after: { method: input.method, amountCents: payout.amountCents, cashCents: input.method === "cash" ? cashCents : void 0, checkNumber: data.checkNumber, transferReference: data.transferReference } });
+  if (payout.ticket) await maybeSettleTicket(tx, payout.ticket, now);
+  if (payout.settlement) await settleIfPaid(ctx, payout.settlement);
+  return tx.payout.findUnique({ where: { id: payout.id } });
+}
+async function returnPayoutTx(ctx, input) {
+  const reason = String(input.reason || "").trim();
+  if (reason.length < 3) refuse("Give the reason the payment came back.");
+  const payout = await lockRow(ctx.tx, "Payout", input.payoutId);
+  if (!payout) refuse("Payout not found.");
+  if (payout.status !== "paid") refuse("Only a paid payout can be returned.");
+  if (payout.method === "cash") refuse("A cash payout cannot be returned; record cash received with an adjustment ticket.");
+  await compareAndSet(ctx.tx, "payout", payout.id, "paid", { status: "returned", returnReason: reason });
+  const replacement = await ctx.tx.payout.create({
+    data: {
+      ticketId: payout.ticket,
+      settlementId: payout.settlement,
+      sellerId: payout.seller,
+      accountId: payout.account,
+      amountCents: payout.amountCents,
+      status: "ready",
+      allowedMethods: payout.allowedMethods,
+      mailToAddress: payout.mailToAddress,
+      replacesId: payout.id
+    }
+  });
+  const lines = await ctx.tx.ticketLine.findMany({ where: { payouts: { some: { id: payout.id } } }, select: { id: true } });
+  if (lines.length) await ctx.tx.payout.update({ where: { id: replacement.id }, data: { lines: { connect: lines } } });
+  await ctx.audit({ eventType: "payout.returned", aggregateType: "Payout", aggregateId: payout.id, after: { replacementId: replacement.id }, reason });
+  return replacement;
+}
+async function cancelPayoutTx(ctx, input) {
+  const reason = String(input.reason || "").trim();
+  if (reason.length < 3) refuse("Give a reason.");
+  const payout = await lockRow(ctx.tx, "Payout", input.payoutId);
+  if (!payout) refuse("Payout not found.");
+  await compareAndSet(ctx.tx, "payout", payout.id, ["ready", "held", "pending"], { status: "cancelled", cancelReason: reason }, "Only an unpaid payout can be cancelled.");
+  await ctx.audit({ eventType: "payout.cancelled", aggregateType: "Payout", aggregateId: payout.id, reason });
+  return ctx.tx.payout.findUnique({ where: { id: payout.id } });
+}
+async function applyPaymentToInvoice(ctx, invoiceId, amountCents) {
+  const invoice = await lockRow(ctx.tx, "Invoice", invoiceId);
+  if (!invoice) refuse("Invoice not found.");
+  if (invoice.status === "void") refuse("This invoice is void.");
+  if (invoice.status === "paid") refuse("This invoice is already paid.");
+  const balance = invoice.totalCents - invoice.paidCents;
+  if (amountCents > balance) refuse(`The balance due is ${(balance / 100).toFixed(2)}.`);
+  const paid = invoice.paidCents + amountCents;
+  const status2 = paid >= invoice.totalCents ? "paid" : "partially_paid";
+  await compareAndSet(ctx.tx, "invoice", invoice.id, ["open", "partially_paid"], { paidCents: paid, status: status2 });
+  if (status2 === "paid") await afterInvoicePaid(ctx, { ...invoice, id: invoice.id, status: status2, paidCents: paid });
+  return status2;
+}
+async function afterInvoicePaid(ctx, invoice) {
+  const full = await ctx.tx.invoice.findUnique({ where: { id: invoice.id } });
+  if (full.kind === "sale") await afterSaleInvoicePaid(ctx.tx, full, ctx.now);
+  if (full.ticketId) await maybeSettleTicket(ctx.tx, full.ticketId, ctx.now);
+  if (full.settlementId) await settleIfPaid(ctx, full.settlementId);
+  if (full.kind === "service" || full.serviceRequestId) {
+    const request = await ctx.tx.serviceRequest.findFirst({ where: { OR: [{ invoiceId: full.id }, ...full.serviceRequestId ? [{ id: full.serviceRequestId }] : []] } });
+    if (request?.status === "awaiting_payment") await ctx.tx.serviceRequest.updateMany({ where: { id: request.id, status: "awaiting_payment" }, data: { status: "requested" } });
+  }
+  await ctx.tx.accountCharge.updateMany({ where: { invoiceLine: { invoiceId: full.id }, status: "invoiced" }, data: { status: "settled" } });
+}
+async function recordInvoicePaymentTx(ctx, input, key) {
+  const amount = Math.trunc(Number(input.amountCents));
+  if (!Number.isSafeInteger(amount) || amount <= 0) refuse("The amount must be above zero.");
+  if (!["wire", "ach", "check", "cash"].includes(input.method)) refuse("Choose wire, ACH, check or cash.");
+  const reference = String(input.reference || "").trim();
+  if (input.method !== "cash" && !reference) refuse("Enter the payment reference (wire, ACH or check number).");
+  const status2 = await applyPaymentToInvoice(ctx, input.invoiceId, amount);
+  const payment = await ctx.tx.payment.create({
+    data: { invoiceId: input.invoiceId, method: input.method, amountCents: amount, reference, referenceKey: `manual:${input.method}:${reference || key}:${input.invoiceId}`, receivedAt: input.receivedAt ? new Date(input.receivedAt) : ctx.now, recordedById: ctx.actorId, status: "succeeded" }
+  }).catch((error) => {
+    if (error?.code === "P2002") refuse("This payment reference is already recorded on this invoice.");
+    throw error;
+  });
+  if (input.method === "cash") {
+    if (!input.drawerSessionId) refuse("Open your drawer to take cash.");
+    const { row } = await lockOpenDrawerSession(ctx, input.drawerSessionId);
+    const invoice = await ctx.tx.invoice.findUnique({ where: { id: input.invoiceId } });
+    await drawerEvent(ctx, row.id, "collect", amount, `payment:${payment.id}`, { ticketId: invoice.ticketId, note: `Invoice ${invoice.number}` });
+    if (invoice.ticketId) {
+      await ctx.tx.$executeRawUnsafe(`UPDATE "ScaleTicket" SET "collectedCents" = "collectedCents" + $1 WHERE "id" = $2`, amount, invoice.ticketId);
+      await maybeSettleTicket(ctx.tx, invoice.ticketId, ctx.now);
+    }
+  }
+  await ctx.audit({ eventType: "invoice.payment_recorded", aggregateType: "Invoice", aggregateId: input.invoiceId, after: { paymentId: payment.id, method: input.method, amountCents: amount, reference, status: status2 } });
+  return payment;
+}
+async function voidInvoiceTx(ctx, input) {
+  const reason = String(input.reason || "").trim();
+  if (reason.length < 3) refuse("Give a reason.");
+  const invoice = await lockRow(ctx.tx, "Invoice", input.invoiceId);
+  if (!invoice) refuse("Invoice not found.");
+  if (invoice.paidCents > 0) refuse("Money was received on this invoice; refund it first.");
+  await compareAndSet(ctx.tx, "invoice", invoice.id, "open", { status: "void", voidReason: reason }, "Only an open invoice can be voided.");
+  await ctx.tx.accountCharge.updateMany({ where: { invoiceLine: { invoiceId: invoice.id }, status: "invoiced" }, data: { status: "open", invoiceLineId: null } });
+  await ctx.audit({ eventType: "invoice.voided", aggregateType: "Invoice", aggregateId: invoice.id, reason });
+  return ctx.tx.invoice.findUnique({ where: { id: invoice.id } });
+}
+async function invoiceAccountChargesTx(ctx, input) {
+  const account = await ctx.tx.account.findUnique({ where: { id: input.accountId } });
+  if (!account) refuse("Account not found.");
+  const charges = await ctx.tx.accountCharge.findMany({ where: { accountId: account.id, status: "open", settlementId: null } });
+  if (!charges.length) refuse("This account has no open charges.");
+  const total = charges.reduce((s, c) => s + c.amountCents, 0);
+  if (total <= 0) refuse("The open charges do not add up to an amount due.");
+  const number = await ctx.sequence("business", "invoice");
+  const invoice = await ctx.tx.invoice.create({ data: { number, accountId: account.id, kind: "service", status: "open", subtotalCents: total, taxCents: 0, totalCents: total, dueOn: new Date(ctx.now.getTime() + Number(input.netDays ?? account.netDays ?? 30) * 864e5) } });
+  for (const charge of charges) {
+    const line = await ctx.tx.invoiceLine.create({ data: { invoiceId: invoice.id, description: charge.description || charge.kind, amountCents: charge.amountCents, kind: "fee" } });
+    const won = await ctx.tx.accountCharge.updateMany({ where: { id: charge.id, status: "open" }, data: { status: "invoiced", invoiceLineId: line.id } });
+    if (won.count !== 1) refuse("A charge changed while invoicing. Try again.");
+  }
+  await ctx.audit({ eventType: "invoice.issued", aggregateType: "Invoice", aggregateId: invoice.id, after: { totalCents: total, charges: charges.length } });
+  return invoice;
+}
+function publicBaseUrl() {
+  return (process.env.PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL || (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : "http://localhost:3000")).replace(/\/$/, "");
+}
+async function activeCardProvider(tx) {
+  const provider = await tx.paymentProvider.findFirst({ where: { code: "pp_stripe", isInstalled: true } });
+  if (!provider) refuse("Card payments are not switched on. Install the Stripe provider in Settings \u2192 Payments.");
+  return provider;
+}
+async function createCardSessionTx(ctx, target, key) {
+  const { tx } = ctx;
+  let amountCents = 0;
+  let description = "";
+  let payerEmail = "";
+  if (target.invoiceId) {
+    const invoice = await lockRow(tx, "Invoice", target.invoiceId);
+    if (!invoice || !["open", "partially_paid"].includes(invoice.status)) refuse("This invoice is not open.");
+    amountCents = invoice.totalCents - invoice.paidCents;
+    description = `Invoice ${invoice.number}`;
+  } else if (target.serviceRequestId) {
+    const request = await lockRow(tx, "ServiceRequest", target.serviceRequestId);
+    if (!request || request.status !== "awaiting_payment") refuse("This request has nothing to pay.");
+    amountCents = request.feeCents;
+    description = `Service request ${request.number}`;
+  } else refuse("Choose what to pay.");
+  if (amountCents <= 0) refuse("Nothing is due.");
+  const existing = await tx.paymentSession.findFirst({ where: { ...target.invoiceId ? { invoiceId: target.invoiceId } : { serviceRequestId: target.serviceRequestId }, status: "pending", amountCents, expiresAt: { gt: ctx.now } } });
+  if (existing?.providerPaymentId) return { session: existing, reuse: true, description, payerEmail };
+  const provider = await activeCardProvider(tx);
+  const settings = await businessSettings(tx);
+  const session = existing || await tx.paymentSession.create({
+    data: {
+      providerId: provider.id,
+      invoiceId: target.invoiceId || null,
+      serviceRequestId: target.serviceRequestId || null,
+      payerId: ctx.actorId,
+      amountCents,
+      currencyCode: settings.currencyCode || "USD",
+      status: "pending",
+      idempotencyKeyHash: hashKey(`card-session:${key}`),
+      expiresAt: new Date(ctx.now.getTime() + 23 * 36e5)
+    }
+  });
+  if (ctx.actorId) payerEmail = (await tx.user.findUnique({ where: { id: ctx.actorId } }))?.email || "";
+  return { session, reuse: false, description, payerEmail };
+}
+async function startProviderCheckout(prisma, sessionId, input) {
+  const session = await prisma.paymentSession.findUnique({ where: { id: sessionId }, include: { provider: true } });
+  if (session.providerPaymentId) {
+    const meta = session.metadata || {};
+    return { sessionId, url: meta.url || null };
+  }
+  const { adapter } = await paymentAdapter(session.provider.code);
+  const base = publicBaseUrl();
+  const sep = input.returnPath.includes("?") ? "&" : "?";
+  const result = await adapter.createPaymentFunction({
+    provider: { code: session.provider.code },
+    amount: session.amountCents,
+    currency: session.currencyCode,
+    description: input.description,
+    customerEmail: input.payerEmail,
+    idempotencyKey: `recycling-session-${session.id}`,
+    metadata: { paymentSessionId: session.id },
+    successUrl: `${base}${input.returnPath}${sep}payment=${session.id}`,
+    cancelUrl: `${base}${input.returnPath}${sep}payment=${session.id}&cancelled=1`
+  });
+  await prisma.paymentSession.updateMany({ where: { id: session.id, providerPaymentId: null }, data: { providerPaymentId: result.id, metadata: { url: result.url } } });
+  return { sessionId, url: result.url };
+}
+var SESSION_FORWARD = {
+  pending: ["captured", "failed", "cancelled", "expired"],
+  requires_action: ["captured", "failed", "cancelled", "expired"],
+  authorized: ["captured", "failed", "cancelled"]
+};
+async function reconcileCardSession(context, sessionId) {
+  const prisma = context.sudo().prisma;
+  const session = await prisma.paymentSession.findUnique({ where: { id: sessionId }, include: { provider: true } });
+  if (!session) throw new CommandError("Payment not found.", "NOT_FOUND");
+  const registration = getPaymentProviderRegistration(session.provider?.code || "");
+  if (!registration || registration.settlement !== "processor" || !session.providerPaymentId) return session;
+  if (!["pending", "requires_action", "authorized"].includes(session.status)) return session;
+  const { adapter } = await paymentAdapter(session.provider.code);
+  const remote = await adapter.getPaymentStatusFunction({ provider: { code: session.provider.code }, paymentId: session.providerPaymentId });
+  const observed = String(remote.status || "");
+  if (remote.amount != null && Number(remote.amount) !== session.amountCents) throw new CommandError("The provider reported a different amount. Review this payment with the provider.");
+  const next = observed === "expired" ? "cancelled" : observed === "refunded" || observed === "partially_refunded" ? "captured" : observed;
+  if (!SESSION_FORWARD[session.status]?.includes(next)) return session;
+  return runCommand(context.sudo(), { name: "captureCardSession", input: { sessionId }, idempotencyKey: `${sessionId}:${next}` }, async (ctx) => {
+    const row = await lockRow(ctx.tx, "PaymentSession", sessionId);
+    if (!SESSION_FORWARD[row.status]?.includes(next)) return ctx.tx.paymentSession.findUnique({ where: { id: sessionId } });
+    if (next !== "captured") {
+      await compareAndSet(ctx.tx, "paymentSession", sessionId, row.status, { status: next });
+      return ctx.tx.paymentSession.findUnique({ where: { id: sessionId } });
+    }
+    await compareAndSet(ctx.tx, "paymentSession", sessionId, row.status, { status: "captured", capturedAt: ctx.now, capturedCents: row.amountCents });
+    const payment = await ctx.tx.payment.create({ data: { invoiceId: row.invoice, sessionId, method: "card", amountCents: row.amountCents, reference: row.providerPaymentId, referenceKey: `card:${row.providerPaymentId}`, receivedAt: ctx.now, status: "succeeded" } });
+    if (row.invoice) {
+      const invoice = await lockRow(ctx.tx, "Invoice", row.invoice);
+      const room = invoice.totalCents - invoice.paidCents;
+      if (invoice.status === "void" || room < row.amountCents) {
+        await ctx.audit({ eventType: "payment.overpaid", aggregateType: "PaymentSession", aggregateId: sessionId, after: { invoiceId: row.invoice, amountCents: row.amountCents, balanceCents: room }, reason: "Card payment captured after the invoice was settled or voided; refund it." });
+      } else {
+        await applyPaymentToInvoice(ctx, row.invoice, row.amountCents);
+      }
+    }
+    if (row.serviceRequest) {
+      await ctx.tx.serviceRequest.updateMany({ where: { id: row.serviceRequest, status: "awaiting_payment" }, data: { status: "requested" } });
+    }
+    await ctx.audit({ eventType: "payment.captured", aggregateType: "PaymentSession", aggregateId: sessionId, after: { paymentId: payment.id, amountCents: row.amountCents } });
+    return ctx.tx.paymentSession.findUnique({ where: { id: sessionId } });
+  });
+}
+async function reserveRefundTx(ctx, input, key) {
+  const amount = Math.trunc(Number(input.amountCents));
+  if (!Number.isSafeInteger(amount) || amount <= 0) refuse("The refund must be above zero.");
+  const reason = String(input.reason || "").trim();
+  if (reason.length < 3) refuse("Give a reason for the refund.");
+  const payment = await lockRow(ctx.tx, "Payment", input.paymentId);
+  if (!payment || payment.status !== "succeeded") refuse("Payment not found.");
+  const pending = await ctx.tx.refund.aggregate({ where: { paymentId: payment.id, status: "pending" }, _sum: { amountCents: true } });
+  const room = payment.amountCents - payment.refundedCents - (pending._sum.amountCents || 0);
+  if (amount > room) refuse(`At most ${(room / 100).toFixed(2)} can be refunded on this payment.`);
+  const refund = await ctx.tx.refund.create({ data: { paymentId: payment.id, sessionId: payment.session, amountCents: amount, reason, status: "pending", claimId: input.claimId || null, serviceRequestId: input.serviceRequestId || null, createdById: ctx.actorId, idempotencyKeyHash: hashKey(`refund:${key}`) } });
+  if (payment.method !== "card") {
+    await finishRefund(ctx, refund.id, { ok: true, providerRefundId: null });
+  }
+  await ctx.audit({ eventType: "refund.created", aggregateType: "Refund", aggregateId: refund.id, after: { paymentId: payment.id, amountCents: amount, method: payment.method }, reason });
+  return ctx.tx.refund.findUnique({ where: { id: refund.id } });
+}
+async function finishRefund(ctx, refundId, outcome) {
+  const refund = await lockRow(ctx.tx, "Refund", refundId);
+  if (!refund || refund.status !== "pending") return;
+  if (!outcome.ok) {
+    await compareAndSet(ctx.tx, "refund", refundId, "pending", { status: "failed", failureMessage: outcome.failureMessage || "The provider refused the refund." });
+    return;
+  }
+  await compareAndSet(ctx.tx, "refund", refundId, "pending", { status: "succeeded", providerRefundId: outcome.providerRefundId });
+  const payment = await lockRow(ctx.tx, "Payment", refund.payment);
+  await ctx.tx.payment.update({ where: { id: payment.id }, data: { refundedCents: payment.refundedCents + refund.amountCents } });
+  if (payment.session) {
+    const s = await lockRow(ctx.tx, "PaymentSession", payment.session);
+    const refunded = s.refundedCents + refund.amountCents;
+    await ctx.tx.paymentSession.update({ where: { id: s.id }, data: { refundedCents: refunded, status: refunded >= s.capturedCents ? "refunded" : "partially_refunded" } });
+  }
+  if (payment.invoice && !refund.claim) {
+    const invoice = await lockRow(ctx.tx, "Invoice", payment.invoice);
+    await ctx.tx.invoice.update({ where: { id: invoice.id }, data: { refundedCents: invoice.refundedCents + refund.amountCents } });
+  }
+}
+async function runProviderRefund(context, refundId) {
+  const prisma = context.sudo().prisma;
+  const refund = await prisma.refund.findUnique({ where: { id: refundId }, include: { session: { include: { provider: true } } } });
+  if (!refund || refund.status !== "pending" || !refund.session?.providerPaymentId) return refund;
+  const { adapter } = await paymentAdapter(refund.session.provider.code);
+  let outcome;
+  try {
+    const result = await adapter.refundPaymentFunction({ provider: { code: refund.session.provider.code }, paymentId: refund.session.providerPaymentId, amount: refund.amountCents, idempotencyKey: `recycling-refund-${refund.id}` });
+    outcome = { ok: result.status === "refunded" || result.status === "pending", providerRefundId: result.id || null, failureMessage: result.failureMessage };
+  } catch (error) {
+    outcome = { ok: false, providerRefundId: null, failureMessage: error instanceof Error ? error.message : String(error) };
+  }
+  await runCommand(context.sudo(), { name: "finishRefund", input: { refundId }, idempotencyKey: `finish:${refundId}` }, async (ctx) => {
+    await finishRefund(ctx, refundId, outcome);
+    return { id: refundId };
+  });
+  return prisma.refund.findUnique({ where: { id: refundId } });
+}
+async function buildSettlementTx(ctx, input) {
+  const { tx } = ctx;
+  const account = await tx.account.findUnique({ where: { id: input.accountId } });
+  if (!account) refuse("Account not found.");
+  const start = new Date(input.periodStart);
+  const end = new Date(input.periodEnd);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) refuse("The period is not valid.");
+  await tx.$executeRawUnsafe("SELECT pg_advisory_xact_lock(hashtext($1), hashtext($2))", "recycling-settlement", account.id);
+  const tickets = await tx.scaleTicket.findMany({ where: { accountId: account.id, paymentMode: "on_account", status: "completed", settlementId: null, completedAt: { gte: start, lt: end } } });
+  const charges = await tx.accountCharge.findMany({ where: { accountId: account.id, status: "open", settlementId: null, OR: [{ serviceDate: null }, { serviceDate: { lt: end } }] } });
+  const donations = account.isNonprofit ? await tx.donation.findMany({ where: { accountId: account.id, status: "credited", settlementId: null, kind: "payout_donation" } }) : [];
+  if (!tickets.length && !charges.length && !donations.length) refuse("Nothing is due for this account in that period.");
+  const ticketTotal = tickets.reduce((s, t) => s + t.totalCents, 0);
+  const chargeTotal = charges.reduce((s, c) => s + c.amountCents, 0);
+  const donationTotal = donations.reduce((s, d) => s + d.amountCents, 0);
+  const number = await ctx.sequence("business", "settlement");
+  const settlement = await tx.settlement.create({
+    data: { accountId: account.id, number, status: "draft", periodStart: start, periodEnd: end, ticketTotalCents: ticketTotal, chargeTotalCents: chargeTotal, donationTotalCents: donationTotal, netCents: ticketTotal - chargeTotal + donationTotal }
+  });
+  for (const t of tickets) if ((await tx.scaleTicket.updateMany({ where: { id: t.id, settlementId: null, status: "completed" }, data: { settlementId: settlement.id } })).count !== 1) refuse("A ticket joined another settlement. Try again.");
+  for (const c of charges) if ((await tx.accountCharge.updateMany({ where: { id: c.id, settlementId: null, status: "open" }, data: { settlementId: settlement.id } })).count !== 1) refuse("A charge joined another settlement. Try again.");
+  for (const d of donations) if ((await tx.donation.updateMany({ where: { id: d.id, settlementId: null, status: "credited" }, data: { settlementId: settlement.id } })).count !== 1) refuse("A donation joined another settlement. Try again.");
+  await ctx.audit({ eventType: "settlement.built", aggregateType: "Settlement", aggregateId: settlement.id, after: { tickets: tickets.length, charges: charges.length, donations: donations.length, netCents: settlement.netCents } });
+  return settlement;
+}
+async function approveSettlementTx(ctx, input) {
+  const { tx, now } = ctx;
+  const s = await lockRow(tx, "Settlement", input.settlementId);
+  if (!s) refuse("Settlement not found.");
+  const account = await tx.account.findUnique({ where: { id: s.account } });
+  const data = { status: "approved", approvedById: ctx.actorId, approvedAt: now };
+  if (s.netCents > 0) {
+    const payout = await tx.payout.create({ data: { settlementId: s.id, accountId: s.account, amountCents: s.netCents, status: "ready", allowedMethods: ["check", "transfer"] } });
+    data.payoutId = payout.id;
+  } else if (s.netCents < 0) {
+    const number = await ctx.sequence("business", "invoice");
+    const invoice = await tx.invoice.create({ data: { number, accountId: s.account, kind: "settlement_balance", status: "open", subtotalCents: -s.netCents, taxCents: 0, totalCents: -s.netCents, settlementId: s.id, dueOn: new Date(now.getTime() + Number(account?.netDays ?? 30) * 864e5), lines: { create: [{ description: `Settlement ${s.number} balance`, amountCents: -s.netCents, kind: "adjustment" }] } } });
+    data.invoiceId = invoice.id;
+  }
+  await compareAndSet(tx, "settlement", s.id, "draft", data, "Only a draft settlement can be approved.");
+  await tx.accountCharge.updateMany({ where: { settlementId: s.id, status: "open" }, data: { status: "settled" } });
+  if (s.netCents === 0) await markSettlementPaid(ctx, s.id);
+  await ctx.audit({ eventType: "settlement.approved", aggregateType: "Settlement", aggregateId: s.id, after: { netCents: s.netCents, payoutId: data.payoutId, invoiceId: data.invoiceId } });
+  return tx.settlement.findUnique({ where: { id: s.id } });
+}
+async function markSettlementPaid(ctx, settlementId) {
+  const won = await ctx.tx.settlement.updateMany({ where: { id: settlementId, status: "approved" }, data: { status: "paid", paidAt: ctx.now } });
+  if (won.count !== 1) return;
+  await ctx.tx.donation.updateMany({ where: { settlementId, status: "credited" }, data: { status: "disbursed" } });
+  const tickets = await ctx.tx.scaleTicket.findMany({ where: { settlementId }, select: { id: true } });
+  for (const t of tickets) await maybeSettleTicket(ctx.tx, t.id, ctx.now);
+  await ctx.audit({ eventType: "settlement.paid", aggregateType: "Settlement", aggregateId: settlementId });
+}
+async function settleIfPaid(ctx, settlementId) {
+  const s = await ctx.tx.settlement.findUnique({ where: { id: settlementId }, include: { payout: true, invoice: true } });
+  if (!s || s.status !== "approved") return;
+  if (s.payout && s.payout.status === "paid" || s.invoice && s.invoice.status === "paid") await markSettlementPaid(ctx, settlementId);
+}
+async function voidSettlementTx(ctx, input) {
+  const reason = String(input.reason || "").trim();
+  if (reason.length < 3) refuse("Give a reason.");
+  const s = await lockRow(ctx.tx, "Settlement", input.settlementId);
+  if (!s) refuse("Settlement not found.");
+  if (s.status === "approved") {
+    const payout = s.payout ? await ctx.tx.payout.findUnique({ where: { id: s.payout } }) : null;
+    const invoice = s.invoice ? await ctx.tx.invoice.findUnique({ where: { id: s.invoice } }) : null;
+    if (payout?.status === "paid" || invoice && invoice.paidCents > 0) refuse("Money moved on this settlement; it cannot be voided.");
+    if (payout) await compareAndSet(ctx.tx, "payout", payout.id, ["ready", "held", "pending"], { status: "cancelled", cancelReason: `Settlement voided: ${reason}` });
+    if (invoice) await compareAndSet(ctx.tx, "invoice", invoice.id, "open", { status: "void", voidReason: `Settlement voided: ${reason}` });
+    await ctx.tx.accountCharge.updateMany({ where: { settlementId: s.id, status: "settled" }, data: { status: "open" } });
+  }
+  await compareAndSet(ctx.tx, "settlement", s.id, ["draft", "approved"], { status: "void", voidReason: reason }, "A paid settlement cannot be voided.");
+  await ctx.tx.scaleTicket.updateMany({ where: { settlementId: s.id }, data: { settlementId: null } });
+  await ctx.tx.accountCharge.updateMany({ where: { settlementId: s.id }, data: { settlementId: null } });
+  await ctx.tx.donation.updateMany({ where: { settlementId: s.id }, data: { settlementId: null } });
+  await ctx.audit({ eventType: "settlement.voided", aggregateType: "Settlement", aggregateId: s.id, reason });
+  return ctx.tx.settlement.findUnique({ where: { id: s.id } });
+}
+var moneyTypeDefs = `
+  type CardCheckout { paymentSessionId: ID!, url: String }
+`;
+var moneyMutationDefs = `
+  openDrawerSession(drawerId: ID!, openingFloatCents: Int!, idempotencyKey: String): CashDrawerSession
+  moveDrawerCash(sessionId: ID!, kind: String!, amountCents: Int!, note: String, idempotencyKey: String!): CashDrawerSession
+  countDrawer(sessionId: ID!, countedCents: Int!, idempotencyKey: String): CashDrawerSession
+  recountDrawer(sessionId: ID!): CashDrawerSession
+  approveDrawerClose(sessionId: ID!, note: String!, idempotencyKey: String): CashDrawerSession
+  payPayout(payoutId: ID!, method: String!, drawerSessionId: ID, checkNumber: String, bankAccountLabel: String, transferReference: String, idempotencyKey: String): Payout
+  returnPayout(payoutId: ID!, reason: String!, idempotencyKey: String): Payout
+  cancelPayout(payoutId: ID!, reason: String!, idempotencyKey: String): Payout
+  recordInvoicePayment(invoiceId: ID!, method: String!, amountCents: Int!, reference: String, drawerSessionId: ID, receivedAt: String, idempotencyKey: String!): Payment
+  voidInvoice(invoiceId: ID!, reason: String!, idempotencyKey: String): Invoice
+  invoiceAccountCharges(accountId: ID!, netDays: Int, idempotencyKey: String): Invoice
+  payInvoiceByCard(invoiceId: ID!, returnPath: String, idempotencyKey: String!): CardCheckout
+  reconcilePaymentSession(paymentSessionId: ID!): PaymentSession
+  refundPayment(paymentId: ID!, amountCents: Int!, reason: String!, idempotencyKey: String!): Refund
+  buildSettlement(accountId: ID!, periodStart: String!, periodEnd: String!, idempotencyKey: String): Settlement
+  approveSettlement(settlementId: ID!, idempotencyKey: String): Settlement
+  voidSettlement(settlementId: ID!, reason: String!, idempotencyKey: String): Settlement
+`;
+var moneyQueryDefs = `
+  payoutQueue(yardId: ID): [Payout!]
+`;
+async function canSeeInvoice(context, invoice) {
+  const session = context.session;
+  if (hasFlag(session, "canManageFinance") || hasFlag(session, "canPaySellers")) return true;
+  if (!session?.itemId) return false;
+  const prisma = context.sudo().prisma;
+  if (invoice.accountId && await prisma.accountContact.findFirst({ where: { accountId: invoice.accountId, userId: session.itemId, status: "active", role: { in: ["owner", "billing", "admin"] } } })) return true;
+  if (invoice.sellerId && await prisma.seller.findFirst({ where: { id: invoice.sellerId, userId: session.itemId } })) return true;
+  return false;
+}
+var moneyResolvers = {
+  Mutation: {
+    openDrawerSession: (_, a, c) => runCommand(c, { name: "openDrawerSession", input: a, idempotencyKey: cleanKey(a.idempotencyKey), permission: ["canPaySellers", "canManageCashDrawers"], aggregateType: "CashDrawerSession" }, (ctx) => openDrawerSessionTx(ctx, a)).then((r) => c.db.CashDrawerSession.findOne({ where: { id: r.id } })),
+    moveDrawerCash: (_, a, c) => runCommand(c, { name: "moveDrawerCash", input: a, idempotencyKey: cleanKey(a.idempotencyKey), permission: ["canPaySellers", "canManageCashDrawers"] }, (ctx) => moveDrawerCashTx(ctx, a, String(cleanKey(a.idempotencyKey)))).then((r) => c.db.CashDrawerSession.findOne({ where: { id: r.id } })),
+    countDrawer: (_, a, c) => runCommand(c, { name: "countDrawer", input: a, idempotencyKey: cleanKey(a.idempotencyKey), permission: ["canPaySellers", "canManageCashDrawers"] }, (ctx) => countDrawerTx(ctx, a)).then((r) => c.db.CashDrawerSession.findOne({ where: { id: r.id } })),
+    recountDrawer: (_, a, c) => runCommand(c, { name: "recountDrawer", input: a, permission: ["canPaySellers", "canManageCashDrawers"] }, (ctx) => recountDrawerTx(ctx, a)).then((r) => c.db.CashDrawerSession.findOne({ where: { id: r.id } })),
+    approveDrawerClose: (_, a, c) => runCommand(c, { name: "approveDrawerClose", input: a, idempotencyKey: cleanKey(a.idempotencyKey), permission: ["canApproveVariances"] }, (ctx) => approveDrawerCloseTx(ctx, a)).then((r) => c.db.CashDrawerSession.findOne({ where: { id: r.id } })),
+    payPayout: (_, a, c) => runCommand(c, { name: "payPayout", input: { ...a, idempotencyKey: void 0 }, idempotencyKey: cleanKey(a.idempotencyKey), permission: "canPaySellers", aggregateType: "Payout" }, (ctx) => payPayoutTx(ctx, a)).then((r) => c.db.Payout.findOne({ where: { id: r.id } })),
+    returnPayout: (_, a, c) => runCommand(c, { name: "returnPayout", input: a, idempotencyKey: cleanKey(a.idempotencyKey), permission: "canManageFinance" }, (ctx) => returnPayoutTx(ctx, a)).then((r) => c.db.Payout.findOne({ where: { id: r.id } })),
+    cancelPayout: (_, a, c) => runCommand(c, { name: "cancelPayout", input: a, idempotencyKey: cleanKey(a.idempotencyKey), permission: "canApproveVariances" }, (ctx) => cancelPayoutTx(ctx, a)).then((r) => c.db.Payout.findOne({ where: { id: r.id } })),
+    recordInvoicePayment: (_, a, c) => runCommand(c, { name: "recordInvoicePayment", input: a, idempotencyKey: cleanKey(a.idempotencyKey), permission: ["canManageFinance", "canPaySellers"] }, (ctx) => recordInvoicePaymentTx(ctx, a, String(cleanKey(a.idempotencyKey)))).then((r) => c.db.Payment.findOne({ where: { id: r.id } })),
+    voidInvoice: (_, a, c) => runCommand(c, { name: "voidInvoice", input: a, idempotencyKey: cleanKey(a.idempotencyKey), permission: "canManageFinance" }, (ctx) => voidInvoiceTx(ctx, a)).then((r) => c.db.Invoice.findOne({ where: { id: r.id } })),
+    invoiceAccountCharges: (_, a, c) => runCommand(c, { name: "invoiceAccountCharges", input: a, idempotencyKey: cleanKey(a.idempotencyKey), permission: "canManageFinance" }, (ctx) => invoiceAccountChargesTx(ctx, a)).then((r) => c.db.Invoice.findOne({ where: { id: r.id } })),
+    payInvoiceByCard: async (_, a, c) => {
+      const invoice = await c.sudo().prisma.invoice.findUnique({ where: { id: a.invoiceId } });
+      if (!invoice || !await canSeeInvoice(c, invoice)) throw new CommandError("Invoice not found.", "NOT_FOUND");
+      const created = await runCommand(c, { name: "payInvoiceByCard", input: { invoiceId: a.invoiceId }, idempotencyKey: cleanKey(a.idempotencyKey), requireSignIn: true }, (ctx) => createCardSessionTx(ctx, { invoiceId: a.invoiceId }, String(cleanKey(a.idempotencyKey))));
+      const returnPath = typeof a.returnPath === "string" && a.returnPath.startsWith("/") && !a.returnPath.startsWith("//") ? a.returnPath : `/account/invoices/${a.invoiceId}`;
+      const checkout = await startProviderCheckout(c.sudo().prisma, created.session.id, { description: created.description, payerEmail: created.payerEmail, returnPath });
+      return { paymentSessionId: checkout.sessionId, url: checkout.url };
+    },
+    reconcilePaymentSession: async (_, a, c) => {
+      const session = await c.sudo().prisma.paymentSession.findUnique({ where: { id: a.paymentSessionId } });
+      if (!session) throw new CommandError("Payment not found.", "NOT_FOUND");
+      const staff = hasFlag(c.session, "canManageFinance");
+      if (!staff && session.payerId !== c.session?.itemId) throw new CommandError("Payment not found.", "NOT_FOUND");
+      const result = await reconcileCardSession(c, a.paymentSessionId);
+      return staff ? c.db.PaymentSession.findOne({ where: { id: result.id } }) : { id: result.id, status: result.status, amountCents: result.amountCents };
+    },
+    refundPayment: async (_, a, c) => {
+      const r = await runCommand(c, { name: "refundPayment", input: a, idempotencyKey: cleanKey(a.idempotencyKey), permission: "canManageFinance" }, (ctx) => reserveRefundTx(ctx, a, String(cleanKey(a.idempotencyKey))));
+      if (r.status === "pending") await runProviderRefund(c, r.id);
+      return c.db.Refund.findOne({ where: { id: r.id } });
+    },
+    buildSettlement: (_, a, c) => runCommand(c, { name: "buildSettlement", input: a, idempotencyKey: cleanKey(a.idempotencyKey), permission: "canManageFinance" }, (ctx) => buildSettlementTx(ctx, a)).then((r) => c.db.Settlement.findOne({ where: { id: r.id } })),
+    approveSettlement: (_, a, c) => runCommand(c, { name: "approveSettlement", input: a, idempotencyKey: cleanKey(a.idempotencyKey), permission: "canManageFinance" }, (ctx) => approveSettlementTx(ctx, a)).then((r) => c.db.Settlement.findOne({ where: { id: r.id } })),
+    voidSettlement: (_, a, c) => runCommand(c, { name: "voidSettlement", input: a, idempotencyKey: cleanKey(a.idempotencyKey), permission: "canManageFinance" }, (ctx) => voidSettlementTx(ctx, a)).then((r) => c.db.Settlement.findOne({ where: { id: r.id } }))
+  },
+  Query: {
+    payoutQueue: async (_, { yardId }, c) => {
+      if (!hasFlag(c.session, "canPaySellers") && !hasFlag(c.session, "canManageFinance")) throw new CommandError("Staff only.", "FORBIDDEN");
+      await refreshDuePayouts(c.sudo().prisma, /* @__PURE__ */ new Date());
+      return c.db.Payout.findMany({ where: { status: { in: ["ready", "held"] }, ...yardId ? { ticket: { yard: { id: { equals: yardId } } } } : {} }, orderBy: [{ createdAt: "asc" }] });
+    }
+  }
+};
+
 // features/keystone/commands/index.ts
 var commandModules = [
-  { typeDefs: ticketTypeDefs, mutationDefs: ticketMutationDefs, queryDefs: ticketQueryDefs, resolvers: ticketResolvers }
+  { typeDefs: ticketTypeDefs, mutationDefs: ticketMutationDefs, queryDefs: ticketQueryDefs, resolvers: ticketResolvers },
+  { typeDefs: moneyTypeDefs, mutationDefs: moneyMutationDefs, queryDefs: moneyQueryDefs, resolvers: moneyResolvers }
 ];
 
 // features/keystone/mutations/index.ts

@@ -8408,6 +8408,23 @@ type Mutation {
   voidTicket(ticketId: ID!, reason: String!, idempotencyKey: String): ScaleTicket
   createAdjustmentTicket(ticketId: ID!, reason: String!, idempotencyKey: String): ScaleTicket
   issueScaleKey(scaleId: ID!): ScaleKeyResult
+  openDrawerSession(drawerId: ID!, openingFloatCents: Int!, idempotencyKey: String): CashDrawerSession
+  moveDrawerCash(sessionId: ID!, kind: String!, amountCents: Int!, note: String, idempotencyKey: String!): CashDrawerSession
+  countDrawer(sessionId: ID!, countedCents: Int!, idempotencyKey: String): CashDrawerSession
+  recountDrawer(sessionId: ID!): CashDrawerSession
+  approveDrawerClose(sessionId: ID!, note: String!, idempotencyKey: String): CashDrawerSession
+  payPayout(payoutId: ID!, method: String!, drawerSessionId: ID, checkNumber: String, bankAccountLabel: String, transferReference: String, idempotencyKey: String): Payout
+  returnPayout(payoutId: ID!, reason: String!, idempotencyKey: String): Payout
+  cancelPayout(payoutId: ID!, reason: String!, idempotencyKey: String): Payout
+  recordInvoicePayment(invoiceId: ID!, method: String!, amountCents: Int!, reference: String, drawerSessionId: ID, receivedAt: String, idempotencyKey: String!): Payment
+  voidInvoice(invoiceId: ID!, reason: String!, idempotencyKey: String): Invoice
+  invoiceAccountCharges(accountId: ID!, netDays: Int, idempotencyKey: String): Invoice
+  payInvoiceByCard(invoiceId: ID!, returnPath: String, idempotencyKey: String!): CardCheckout
+  reconcilePaymentSession(paymentSessionId: ID!): PaymentSession
+  refundPayment(paymentId: ID!, amountCents: Int!, reason: String!, idempotencyKey: String!): Refund
+  buildSettlement(accountId: ID!, periodStart: String!, periodEnd: String!, idempotencyKey: String): Settlement
+  approveSettlement(settlementId: ID!, idempotencyKey: String): Settlement
+  voidSettlement(settlementId: ID!, reason: String!, idempotencyKey: String): Settlement
 }
 
 union UserAuthenticationWithPasswordResult = UserAuthenticationWithPasswordSuccess | UserAuthenticationWithPasswordFailure
@@ -8639,6 +8656,7 @@ type Query {
   validateUserPasswordResetToken(email: String!, token: String!): ValidateUserPasswordResetTokenResult
   redirectToInit: Boolean
   ticketComplianceChecklist(ticketId: ID!): [ComplianceItem!]
+  payoutQueue(yardId: ID): [Payout!]
 }
 
 union AuthenticatedItem = User
@@ -8881,4 +8899,9 @@ type ComplianceItem {
   message: String!
   lineId: ID
   overridable: Boolean!
+}
+
+type CardCheckout {
+  paymentSessionId: ID!
+  url: String
 }

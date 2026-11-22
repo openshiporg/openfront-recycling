@@ -68,7 +68,7 @@ export function computeLine(line: LineInput, base: WeightUnitBase = 'lb'): LineR
     const gross = dec(line.grossWeight)
     const tare = dec(line.tareWeight)
     const net = gross.gt(0) ? gross.minus(tare) : new Decimal(0)
-    const amount = roundCents(price.times(quantity))
+    const amount = roundCents(price.times(quantity).times(100))
     const signed = line.direction === 'charge_customer' ? -amount : amount
     return { netWeight: net.toDecimalPlaces(2), deduction: new Decimal(0), payWeight: new Decimal(quantity), amountCents: amount, signedAmountCents: signed }
   }
