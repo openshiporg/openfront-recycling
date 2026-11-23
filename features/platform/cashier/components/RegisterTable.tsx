@@ -4,9 +4,10 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Input } from '@/components/ui/input';
 import { DataTable, Empty, Notice, Pill, StatusCell, Td } from '@/features/platform/lib/ui';
-import { useCommand, newKey } from '@/features/platform/lib/useCommand';
+import { useCommand } from '@/features/platform/lib/useCommand';
 import { dateTimeIn, money, payoutStatus } from '@/features/platform/lib/format';
 import { returnPayoutAction } from '../actions';
+import { useMoneyIntent } from '@/features/platform/lib/useMoneyIntent';
 import type { RegisterRow } from '../types';
 
 /** Check or transfer register. Finance can mark a check or transfer as come back, which reissues it to the queue. */
@@ -33,13 +34,14 @@ export function RegisterTable({ rows, method, timeZone, canReturn }: { rows: Reg
 
 function ReturnForm({ id, onDone }: { id: string; onDone: () => void }) {
   const cmd = useCommand();
+  const intent = useMoneyIntent(`payout-return:${id}`);
   const [reason, setReason] = useState('');
   return (
     <div className="flex flex-col gap-2 py-1">
       <p className="text-sm text-muted-foreground">Marks the payment as returned and puts a new payout for the same amount back in the queue.</p>
       <div className="flex flex-wrap items-center gap-2">
         <Input aria-label="Reason" className="w-80" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Stop payment, check lost, transfer rejected" />
-        <Pill size="sm" variant="danger" disabled={cmd.pending} onClick={() => cmd.run(() => returnPayoutAction({ payoutId: id, reason, idempotencyKey: newKey('pay-return') }), onDone)}>{cmd.pending ? 'Saving…' : 'Mark returned and reissue'}</Pill>
+        <Pill size="sm" variant="danger" disabled={cmd.pending} onClick={() => cmd.run(() => intent({ payoutId: id, reason }, returnPayoutAction), onDone)}>{cmd.pending ? 'Saving…' : 'Mark returned and reissue'}</Pill>
       </div>
       {cmd.error ? <Notice tone="alert">{cmd.error}</Notice> : null}
     </div>

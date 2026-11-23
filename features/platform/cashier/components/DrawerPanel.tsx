@@ -5,9 +5,10 @@ import Link from 'next/link';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DataTable, Empty, Notice, Pill, Readouts, Section, StatusCell, Td, Track, type Tone } from '@/features/platform/lib/ui';
-import { useCommand, newKey } from '@/features/platform/lib/useCommand';
+import { useCommand } from '@/features/platform/lib/useCommand';
 import { dateTimeIn, money, timeIn, toCents } from '@/features/platform/lib/format';
 import { approveCloseAction, countDrawerAction, moveCashAction, openDrawerAction, recountDrawerAction } from '../actions';
+import { useMoneyIntent } from '@/features/platform/lib/useMoneyIntent';
 import type { DrawerRow } from '../types';
 
 const KIND: Record<string, string> = { open: 'Opening float', payout: 'Paid out', collect: 'Taken in', add: 'Added from safe', drop: 'Dropped to safe' };
@@ -58,6 +59,7 @@ export function DrawerPanel({ drawer, timeZone, role, iHaveOpen }: Props) {
 
 function OpenDrawer({ drawer, timeZone, disabled }: { drawer: DrawerRow; timeZone: string | null; disabled: boolean }) {
   const cmd = useCommand();
+  const intent = useMoneyIntent(`drawer-open:${drawer.drawerId}`);
   const [float, setFloat] = useState('');
   const id = `float-${drawer.drawerId}`;
   const last = drawer.lastClosed;
@@ -69,7 +71,7 @@ function OpenDrawer({ drawer, timeZone, disabled }: { drawer: DrawerRow; timeZon
           e.preventDefault();
           const c = toCents(float);
           if (c === null) return cmd.setError('Enter the counted float in dollars.');
-          cmd.run(() => openDrawerAction({ drawerId: drawer.drawerId, openingFloatCents: c, idempotencyKey: newKey('drawer-open') }), () => setFloat(''));
+          cmd.run(() => intent({ drawerId: drawer.drawerId, openingFloatCents: c }, openDrawerAction), () => setFloat(''));
         }}>
           <div className="grid gap-1.5"><Label htmlFor={id}>Counted opening float ($)</Label><Input id={id} inputMode="decimal" className="w-44" value={float} onChange={(e) => setFloat(e.target.value)} placeholder="500.00" /></div>
           <Pill type="submit" variant="primary" disabled={cmd.pending}>{cmd.pending ? 'Opening…' : 'Open drawer'}</Pill>
@@ -82,6 +84,7 @@ function OpenDrawer({ drawer, timeZone, disabled }: { drawer: DrawerRow; timeZon
 
 function MoveCash({ sessionId }: { sessionId: string }) {
   const cmd = useCommand();
+  const intent = useMoneyIntent(`drawer-move:${sessionId}`);
   const [kind, setKind] = useState<'add' | 'drop'>('drop');
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
@@ -90,7 +93,7 @@ function MoveCash({ sessionId }: { sessionId: string }) {
       e.preventDefault();
       const c = toCents(amount);
       if (!c) return cmd.setError('Enter the amount in dollars.');
-      cmd.run(() => moveCashAction({ sessionId, kind, amountCents: c, note, idempotencyKey: newKey('drawer-move') }), () => { setAmount(''); setNote(''); });
+      cmd.run(() => intent({ sessionId, kind, amountCents: c, note }, moveCashAction), () => { setAmount(''); setNote(''); });
     }}>
       <h3 className="text-sm font-medium">Safe</h3>
       <Track label="Movement">
@@ -109,13 +112,14 @@ function MoveCash({ sessionId }: { sessionId: string }) {
 
 function CountDrawer({ sessionId }: { sessionId: string }) {
   const cmd = useCommand();
+  const intent = useMoneyIntent(`drawer-count:${sessionId}`);
   const [counted, setCounted] = useState('');
   return (
     <form className="flex flex-col gap-2 rounded-[6px] border p-3" onSubmit={(e) => {
       e.preventDefault();
       const c = toCents(counted);
       if (c === null) return cmd.setError('Enter the counted cash in dollars.');
-      cmd.run(() => countDrawerAction({ sessionId, countedCents: c, idempotencyKey: newKey('drawer-count') }), () => setCounted(''));
+      cmd.run(() => intent({ sessionId, countedCents: c }, countDrawerAction), () => setCounted(''));
     }}>
       <h3 className="text-sm font-medium">Close drawer</h3>
       <p className="text-xs text-muted-foreground">Count every note and coin in the drawer. A drawer that balances closes; any difference waits for a manager to approve with a note.</p>
@@ -128,6 +132,7 @@ function CountDrawer({ sessionId }: { sessionId: string }) {
 
 function Variance({ sessionId, counted, expected, variance, canRecount, canApprove, mine }: { sessionId: string; counted: number | null; expected: number; variance: number | null; canRecount: boolean; canApprove: boolean; mine: boolean }) {
   const cmd = useCommand();
+  const intent = useMoneyIntent(`drawer-approve:${sessionId}`);
   const [note, setNote] = useState('');
   const v = variance || 0;
   return (
@@ -141,7 +146,7 @@ function Variance({ sessionId, counted, expected, variance, canRecount, canAppro
         </div>
       ) : <p className="text-sm text-muted-foreground">A manager approves the close with a note.</p>}
       <Track>
-        {canApprove ? <Pill size="sm" variant="primary" disabled={cmd.pending} onClick={() => cmd.run(() => approveCloseAction({ sessionId, note, idempotencyKey: newKey('drawer-approve') }), () => setNote(''))}>{cmd.pending ? 'Saving…' : 'Approve close'}</Pill> : null}
+        {canApprove ? <Pill size="sm" variant="primary" disabled={cmd.pending} onClick={() => cmd.run(() => intent({ sessionId, note }, approveCloseAction), () => setNote(''))}>{cmd.pending ? 'Saving…' : 'Approve close'}</Pill> : null}
         {canRecount ? <Pill size="sm" disabled={cmd.pending} onClick={() => cmd.run(() => recountDrawerAction({ sessionId }))}>Recount</Pill> : null}
       </Track>
       {cmd.error ? <Notice tone="alert">{cmd.error}</Notice> : null}

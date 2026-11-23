@@ -5,8 +5,9 @@ import Link from 'next/link';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DataTable, Empty, Notice, Pill, Td, Track } from '@/features/platform/lib/ui';
-import { useCommand, newKey } from '@/features/platform/lib/useCommand';
+import { useCommand } from '@/features/platform/lib/useCommand';
 import { dateTimeIn, money, toCents } from '@/features/platform/lib/format';
+import { useMoneyIntent } from '@/features/platform/lib/useMoneyIntent';
 import { collectAction } from '../actions';
 import type { CollectRow } from '../types';
 
@@ -38,7 +39,7 @@ function CollectForm({ row, mySessionId, onDone }: { row: CollectRow; mySessionI
   const [method, setMethod] = useState('cash');
   const [amount, setAmount] = useState((balance / 100).toFixed(2));
   const [reference, setReference] = useState('');
-  const [k] = useState(() => newKey('collect'));
+  const intent = useMoneyIntent(`invoice-collect:${row.id}`);
   return (
     <div className="flex flex-col gap-3 py-1">
       <Track label="Method">{METHODS.map((m) => <Pill key={m.v} size="sm" variant={method === m.v ? 'primary' : 'flat'} aria-pressed={method === m.v} onClick={() => setMethod(m.v)}>{m.l}</Pill>)}</Track>
@@ -50,7 +51,7 @@ function CollectForm({ row, mySessionId, onDone }: { row: CollectRow; mySessionI
       <Pill variant="primary" className="self-start" disabled={cmd.pending || (method === 'cash' && !mySessionId)} onClick={() => {
         const c = toCents(amount);
         if (!c) return cmd.setError('Enter the amount received.');
-        cmd.run(() => collectAction({ invoiceId: row.id, method, amountCents: c, reference, drawerSessionId: mySessionId || undefined, idempotencyKey: k }), onDone);
+        cmd.run(() => intent({ invoiceId: row.id, method, amountCents: c, reference, drawerSessionId: mySessionId || undefined }, collectAction), onDone);
       }}>{cmd.pending ? 'Saving…' : 'Record payment'}</Pill>
       {cmd.error ? <Notice tone="alert">{cmd.error}</Notice> : null}
     </div>

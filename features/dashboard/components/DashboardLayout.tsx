@@ -5,7 +5,7 @@
 
 'use client'
 
-import React, { createContext, useContext, useState } from 'react'
+import React, { createContext, useContext, useEffect, useState } from 'react'
 import { AdminMetaProvider } from '../hooks/useAdminMeta'
 import { SidebarProvider, SidebarInset, useSidebarWithSide } from '@/components/ui/sidebar'
 import { Sidebar } from './Sidebar'
@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils'
 import { AiConfigProvider } from '../hooks/use-ai-config'
 import { QueryProvider } from '../providers/QueryProvider'
 import type { DashboardBusiness } from '../lib/business'
+import { clearMoneyIntents, MONEY_PREFIX } from '@/features/platform/lib/moneyIntent'
 
 // Shared Message type
 interface Message {
@@ -100,6 +101,12 @@ function DashboardLayoutContent({ children, adminMeta, authenticatedItem, busine
 }
 
 function ChatModeProvider({ children, user }: { children: React.ReactNode; user?: any }) {
+  useEffect(() => {
+    try {
+      const owner = sessionStorage.getItem(`${MONEY_PREFIX}owner`);
+      if (!user?.id || (owner && owner !== user.id)) clearMoneyIntents(sessionStorage);
+    } catch { /* Money commands fail closed if sessionStorage isn't available. */ }
+  }, [user?.id]);
   // Shared chat state
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(false)

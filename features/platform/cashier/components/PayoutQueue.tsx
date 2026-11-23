@@ -5,9 +5,10 @@ import Link from 'next/link';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DataTable, Empty, Notice, Pill, StatusCell, Td, Track, type Tone } from '@/features/platform/lib/ui';
-import { useCommand, newKey } from '@/features/platform/lib/useCommand';
+import { useCommand } from '@/features/platform/lib/useCommand';
 import { dateTimeIn, money, payoutStatus } from '@/features/platform/lib/format';
 import { cancelPayoutAction, payPayoutAction } from '../actions';
+import { useMoneyIntent } from '@/features/platform/lib/useMoneyIntent';
 import type { QueuePayout } from '../types';
 
 const tone: Record<string, Tone> = { ready: 'live', held: 'wait', returned: 'alert' };
@@ -58,6 +59,7 @@ export function PayoutQueue({ payouts, mySessionId, myExpectedCents, timeZone, r
 
 function PayForm({ payout, methods, mySessionId, myExpectedCents, canCancel, onDone }: { payout: QueuePayout; methods: string[]; mySessionId: string | null; myExpectedCents: number | null; canCancel: boolean; onDone: () => void }) {
   const cmd = useCommand();
+  const cancelIntent = useMoneyIntent(`payout-cancel:${payout.id}`);
   const preferred = payout.seller?.preferredPayout && methods.includes(payout.seller.preferredPayout) ? payout.seller.preferredPayout : methods[0];
   const [method, setMethod] = useState(preferred);
   const [checkNumber, setCheckNumber] = useState('');
@@ -66,9 +68,9 @@ function PayForm({ payout, methods, mySessionId, myExpectedCents, canCancel, onD
   const [cancelling, setCancelling] = useState(false);
   const [reason, setReason] = useState('');
   // One key per payout form: a double press or a retry after a dropped response pays once.
-  const [payKey] = useState(() => newKey('pay'));
+  const payIntent = useMoneyIntent(`payout-pay:${payout.id}`);
 
-  const pay = () => cmd.run(() => payPayoutAction({ payoutId: payout.id, method, drawerSessionId: mySessionId || undefined, checkNumber, bankAccountLabel: bank, transferReference: reference, idempotencyKey: payKey }), onDone);
+  const pay = () => cmd.run(() => payIntent({ payoutId: payout.id, method, drawerSessionId: mySessionId || undefined, checkNumber, bankAccountLabel: bank, transferReference: reference }, payPayoutAction), onDone);
 
   return (
     <div className="flex flex-col gap-3 py-1">
@@ -96,7 +98,7 @@ function PayForm({ payout, methods, mySessionId, myExpectedCents, canCancel, onD
       {cancelling ? (
         <div className="flex flex-wrap items-end gap-2">
           <div className="grid gap-1.5"><Label htmlFor={`cx-${payout.id}`}>Reason</Label><Input id={`cx-${payout.id}`} className="w-80" value={reason} onChange={(e) => setReason(e.target.value)} /></div>
-          <Pill variant="danger" size="sm" disabled={cmd.pending} onClick={() => cmd.run(() => cancelPayoutAction({ payoutId: payout.id, reason, idempotencyKey: newKey('pay-cancel') }), onDone)}>Cancel payout</Pill>
+          <Pill variant="danger" size="sm" disabled={cmd.pending} onClick={() => cmd.run(() => cancelIntent({ payoutId: payout.id, reason }, cancelPayoutAction), onDone)}>Cancel payout</Pill>
         </div>
       ) : null}
       {cmd.error ? <Notice tone="alert">{cmd.error}</Notice> : null}

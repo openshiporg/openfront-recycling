@@ -3,6 +3,7 @@
 import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { flushSync } from 'react-dom';
+import { MoneyIntentError } from './moneyIntent';
 
 /** Show a confirmed command result before refreshing server-rendered data in the background. */
 export function useCommand() {
@@ -26,9 +27,9 @@ export function useCommand() {
       requestAnimationFrame(() => {
         setTimeout(() => startRefresh(() => router.refresh()), 0);
       });
-    } catch {
+    } catch (error) {
       // A disconnected request may already have committed: don't retry automatically.
-      setError('The result could not be confirmed. Refresh before trying again.');
+      setError(error instanceof MoneyIntentError ? error.message : 'The result could not be confirmed. Refresh before trying again.');
     } finally {
       busy.current = false;
       setPending(false);
