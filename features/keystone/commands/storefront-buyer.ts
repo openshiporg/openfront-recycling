@@ -2,6 +2,7 @@ import { Decimal } from 'decimal.js'
 import { CommandError } from '../lib/command'
 import { businessSettings } from '../lib/domain'
 import { requireContact } from './storefront-account'
+import { estimateValueCents, type WeightUnitBase } from '../../recycling/ticketMath'
 
 /**
  * Buyer (dissertation §8.4 B3, B4, B5, B7, B8) and nonprofit (§8.5 N1 to N3) portal reads. The
@@ -50,14 +51,14 @@ const ORDER_INCLUDE = {
   shipments: { orderBy: { createdAt: 'asc' }, include: { units: { select: { tagNumber: true, form: true, weight: true } }, invoice: { select: { id: true, number: true, status: true, totalCents: true, paidCents: true } } } },
 } as const
 
-function shapeOrder(o: any) {
+function shapeOrder(o: any, base: WeightUnitBase) {
   const ordered = o.lines.reduce((s: Decimal, l: any) => s.plus(String(l.weight || 0)), new Decimal(0))
   const shipped = o.lines.reduce((s: Decimal, l: any) => s.plus(String(l.shippedWeight || 0)), new Decimal(0))
   return {
     id: o.id, number: o.number, status: o.status, yardName: o.yard?.name || null, buyerReference: o.buyerReference || null, shipTo: o.shipTo || null, terms: o.terms || null, paymentTerms: o.paymentTerms,
     netDays: o.netDays, weightBasis: o.weightBasis, shipWindowStart: o.shipWindowStart, shipWindowEnd: o.shipWindowEnd, cancelReason: o.cancelReason || null, createdAt: o.createdAt,
     orderedWeight: ordered.toFixed(), shippedWeight: shipped.toFixed(),
-    valueCents: o.lines.reduce((s: number, l: any) => s + (l.unitPrice ? new Decimal(String(l.unitPrice)).times(String(l.weight)).times(100).toDecimalPlaces(0).toNumber() : 0), 0),
+    valueCents: o.lines.reduce((s: number, l: any) => s + estimateValueCents(String(l.weight), String(l.unitPrice ?? 0), l.unit, base), 0),
     lines: o.lines.map((l: any) => ({ id: l.id, materialName: l.materialName, weight: dec(l.weight), unit: l.unit, unitPrice: dec(l.unitPrice), shippedWeight: dec(l.shippedWeight), tolerancePercent: dec(l.tolerancePercent) })),
     shipments: o.shipments.map((s: any) => {
       const released = Boolean(s.releasedAt) && s.status !== 'cancelled'
@@ -77,14 +78,16 @@ function shapeOrder(o: any) {
 export async function accountSalesOrders(prisma: any, session: any, slug: string) {
   const { account } = await buyer(prisma, session, slug)
   const rows = await prisma.salesOrder.findMany({ where: { accountId: account.id, status: { not: 'draft' } }, include: ORDER_INCLUDE, orderBy: { createdAt: 'desc' }, take: 200 })
-  return rows.map(shapeOrder)
+  const settings = await businessSettings(prisma)
+  return rows.map((o: any) => shapeOrder(o, settings.weightUnit === 'kg' ? 'kg' : 'lb'))
 }
 
 export async function accountSalesOrder(prisma: any, session: any, slug: string, id: string) {
   const { account } = await buyer(prisma, session, slug)
   const o = await prisma.salesOrder.findFirst({ where: { id: String(id || ''), accountId: account.id, status: { not: 'draft' } }, include: ORDER_INCLUDE })
   if (!o) notFound('Order')
-  return shapeOrder(o)
+  const settings = await businessSettings(prisma)
+  return shapeOrder(o, settings.weightUnit === 'kg' ? 'kg' : 'lb')
 }
 
 // B7 claims --------------------------------------------------------------------------------

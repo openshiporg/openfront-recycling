@@ -87,6 +87,12 @@ Existing policy sources: `requireContact` in `commands/storefront-account.ts`, `
 
 Tests exercise actual GraphQL operations and the local private-upload response function, not a deployed browser/CDN. The code does not retract files already downloaded. Already cached responses from before this change may remain usable until their old lifetime expires. Direct S3 signed URLs remain valid for up to 300 seconds after issuance even if membership/visibility is revoked; this review did not replace them with an authenticated proxy or verify S3 transport. Treat that bounded revocation delay as an outstanding deployment limitation, not instantaneous revocation.
 
+## Buyer order value correction
+
+`accountSalesOrders` and `accountSalesOrder` now use the existing `estimateValueCents` helper from `features/recycling/ticketMath.ts`, with the business base weight unit. Each line is converted from base weight to its price unit before half-up rounding to cents, matching shipment invoice math. No stored values or invoices are modified.
+
+Checks: `npm run -s test:unit` → **14/14 pass** (including eight new projection regression cases covering all seven price units, lb/kg bases, null prices and per-line rounding); `npx tsc --noEmit` → exit 0. A read-only scratch-app probe through both portal functions confirms Mahoning order `cmws4rbxe00pguzrb3ac70kgk`: ordered weight `20000`, list/detail `valueCents: 285000` ($2,850); existing shipment invoice remains `286425` cents ($2,864.25). No app records changed, no deployment or live verification performed.
+
 ## Migration requirements
 
 The AccountDocument plural rename (`graphql: { plural: 'AccountDocumentItems' }`) is **GraphQL/Admin metadata only**: it changes generated list queries/types to free `accountDocuments` for the scoped portal query. It does not rename a Prisma model/table/column and requires **no new database migration**. Rebuild the schema and update any generated-list clients to `accountDocumentItems`. C12–C14 and this authorization/cache fix introduce no persistence schema changes.
